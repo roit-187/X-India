@@ -70,8 +70,19 @@ export default function AdminProductsPage() {
   };
 
   const formatINR = (price) => {
-    if (!price && price !== 0) return '-';
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(price);
+    if (price === null || price === undefined || price === '') return '-';
+    if (typeof price === 'string') {
+      const trimmed = price.trim();
+      if (trimmed.includes('₹') || trimmed.includes('-')) return trimmed.startsWith('₹') ? trimmed : `₹${trimmed}`;
+      const num = Number(trimmed.replace(/,/g, ''));
+      if (!isNaN(num)) {
+        return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+      }
+      return trimmed.startsWith('₹') ? trimmed : `₹${trimmed}`;
+    }
+    const num = Number(price);
+    if (isNaN(num)) return '-';
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
   };
 
   return (
