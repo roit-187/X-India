@@ -1,0 +1,456 @@
+/* ─── Seller Portfolio design tokens ────────────────────────────────────── */
+:root {
+  --p-slate: #0B1A2B;
+  --p-navy: #0F2B4C;
+  --p-blue: #1B6BFF;
+  --p-green: #00C48C;
+  --p-border: #E2E8F0;
+  --p-bg: #F8FAFC;
+  --p-text: #0F172A;
+  --p-text-med: #64748B;
+  --p-text-light: #94A3B8;
+}
+
+.portfolio-mono {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+.portfolio-header {
+  background: var(--p-slate);
+  color: #fff;
+  position: relative;
+}
+.portfolio-cover {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  opacity: 0.55;
+}
+.portfolio-header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px 28px;
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  margin-top: -64px;
+}
+.portfolio-logo {
+  width: 96px;
+  height: 96px;
+  border-radius: 16px;
+  border: 3px solid #fff;
+  object-fit: cover;
+  background: #fff;
+  flex-shrink: 0;
+}
+.portfolio-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.portfolio-name {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+}
+.portfolio-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--p-green);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.portfolio-location {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+  margin-top: 4px;
+}
+
+/* ─── Nav ────────────────────────────────────────────────────────────────── */
+.portfolio-nav {
+  background: var(--p-navy);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.portfolio-nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  gap: 4px;
+  padding: 0 24px;
+  overflow-x: auto;
+}
+.portfolio-nav-link {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 14px 16px;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  text-decoration: none;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.portfolio-nav-link:hover {
+  color: #fff;
+}
+.portfolio-nav-link.active {
+  color: #fff;
+  border-bottom-color: var(--p-blue);
+}
+
+/* ─── Page shell ─────────────────────────────────────────────────────────── */
+.portfolio-page {
+  background: var(--p-bg);
+  min-height: 60vh;
+}
+.portfolio-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+.portfolio-section-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--p-text);
+  margin: 0 0 16px;
+}
+
+/* ─── Stat / spec-sheet cards ────────────────────────────────────────────── */
+.portfolio-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.portfolio-stat-card {
+  background: #fff;
+  border: 1px solid var(--p-border);
+  border-radius: 12px;
+  padding: 16px;
+  position: relative;
+}
+.portfolio-stat-card::before,
+.portfolio-stat-card::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: var(--p-blue);
+  opacity: 0.5;
+}
+.portfolio-stat-card::before {
+  top: 4px;
+  left: 4px;
+  border-top: 2px solid var(--p-blue);
+  border-left: 2px solid var(--p-blue);
+}
+.portfolio-stat-card::after {
+  bottom: 4px;
+  right: 4px;
+  border-bottom: 2px solid var(--p-blue);
+  border-right: 2px solid var(--p-blue);
+}
+.portfolio-stat-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--p-slate);
+}
+.portfolio-stat-label {
+  font-size: 11px;
+  color: var(--p-text-med);
+  margin-top: 4px;
+}
+
+/* ─── About / prose ──────────────────────────────────────────────────────── */
+.portfolio-prose {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--p-text);
+  white-space: pre-line;
+}
+
+/* ─── Product grid ───────────────────────────────────────────────────────── */
+.portfolio-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.portfolio-product-card {
+  background: #fff;
+  border: 1px solid var(--p-border);
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.portfolio-product-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  background: var(--p-bg);
+}
+.portfolio-product-body {
+  padding: 12px;
+}
+.portfolio-product-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--p-text);
+  margin: 0 0 4px;
+}
+.portfolio-product-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--p-blue);
+}
+.portfolio-product-moq {
+  font-size: 11px;
+  color: var(--p-text-med);
+}
+
+/* ─── Gallery ─────────────────────────────────────────────────────────────── */
+.portfolio-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.portfolio-gallery-img {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--p-border);
+}
+.portfolio-video-wrap {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--p-border);
+}
+.portfolio-video-wrap video {
+  width: 100%;
+  display: block;
+}
+
+/* ─── Reviews ─────────────────────────────────────────────────────────────── */
+.portfolio-rating-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid var(--p-border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.portfolio-rating-number {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--p-slate);
+}
+.portfolio-rating-stars {
+  color: #F59E0B;
+  font-size: 14px;
+}
+.portfolio-review-card {
+  background: #fff;
+  border: 1px solid var(--p-border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.portfolio-review-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.portfolio-review-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--p-text);
+}
+.portfolio-review-comment {
+  font-size: 13px;
+  color: var(--p-text-med);
+  line-height: 1.6;
+}
+
+/* ─── Review form ─────────────────────────────────────────────────────────── */
+.portfolio-review-form {
+  background: #fff;
+  border: 1px solid var(--p-border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.portfolio-form-row {
+  margin-bottom: 12px;
+}
+.portfolio-form-row label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--p-text);
+  margin-bottom: 6px;
+}
+.portfolio-form-row input,
+.portfolio-form-row textarea {
+  width: 100%;
+  border: 1px solid var(--p-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.portfolio-star-picker {
+  display: flex;
+  gap: 6px;
+}
+.portfolio-star-picker button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #CBD5E1;
+  padding: 0;
+}
+.portfolio-star-picker button.filled {
+  color: #F59E0B;
+}
+.portfolio-submit-btn {
+  background: var(--p-blue);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.portfolio-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ─── Opportunity cards ──────────────────────────────────────────────────── */
+.portfolio-opportunity-card {
+  background: #fff;
+  border: 1px solid var(--p-border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+}
+.portfolio-opportunity-image {
+  width: 220px;
+  max-width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+.portfolio-opportunity-body {
+  flex: 1;
+  min-width: 220px;
+  padding: 16px;
+}
+.portfolio-opportunity-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--p-text);
+  margin: 0 0 6px;
+}
+.portfolio-opportunity-desc {
+  font-size: 12px;
+  color: var(--p-text-med);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+.portfolio-opportunity-figures {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.portfolio-opportunity-figure-label {
+  font-size: 10px;
+  color: var(--p-text-light);
+}
+.portfolio-opportunity-figure-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--p-slate);
+}
+
+/* ─── Contact ─────────────────────────────────────────────────────────────── */
+.portfolio-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.portfolio-contact-card {
+  background: #fff;
+  border: 1px solid var(--p-border);
+  border-radius: 12px;
+  padding: 18px;
+}
+.portfolio-contact-label {
+  font-size: 11px;
+  color: var(--p-text-med);
+  margin-bottom: 4px;
+}
+.portfolio-contact-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--p-text);
+}
+.portfolio-contact-link {
+  display: inline-block;
+  margin-top: 10px;
+  background: var(--p-green);
+  color: #fff;
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.portfolio-empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--p-text-med);
+  font-size: 14px;
+}
+
+.portfolio-pagination {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 24px;
+}
+.portfolio-pagination a,
+.portfolio-pagination span {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--p-border);
+  font-size: 12px;
+  color: var(--p-text);
+  text-decoration: none;
+}
+.portfolio-pagination .active {
+  background: var(--p-blue);
+  border-color: var(--p-blue);
+  color: #fff;
+}

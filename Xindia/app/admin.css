@@ -1,0 +1,182 @@
+/* ─── Admin Panel design tokens ─────────────────────────────────────────── */
+:root {
+  --adm-bg: #F8FAFC;
+  --adm-surface: #FFFFFF;
+  --adm-border: #E2E8F0;
+  --adm-text: #0F172A;
+  --adm-text-med: #64748B;
+  --adm-text-light: #94A3B8;
+  --adm-primary: #E8581C;
+  --adm-navy: #0F1B2D;
+  --adm-green: #10B981;
+  --adm-green-bg: #D1FAE5;
+  --adm-yellow: #F59E0B;
+  --adm-yellow-bg: #FEF3C7;
+  --adm-red: #EF4444;
+  --adm-red-bg: #FEE2E2;
+  --adm-gray-bg: #F1F5F9;
+  --adm-radius: 12px;
+  --adm-radius-sm: 8px;
+  --adm-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --adm-sidebar-width: 240px;
+}
+
+.admin-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--adm-bg);
+  font-family: var(--font-family, 'Inter', -apple-system, sans-serif);
+}
+
+.admin-sidebar {
+  width: var(--adm-sidebar-width);
+  background: var(--adm-navy);
+  color: #fff;
+  flex-shrink: 0;
+  padding: 24px 16px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.admin-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--adm-radius-sm);
+  color: rgba(255,255,255,0.7);
+  text-decoration: none;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.admin-sidebar-link:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.admin-sidebar-link.active { background: var(--adm-primary); color: #fff; }
+
+.admin-main {
+  flex: 1;
+  padding: 32px;
+  overflow-x: auto;
+}
+
+.admin-card {
+  background: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius);
+  box-shadow: var(--adm-shadow);
+  padding: 20px;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.admin-badge-green { background: var(--adm-green-bg); color: #047857; }
+.admin-badge-yellow { background: var(--adm-yellow-bg); color: #92400E; }
+.admin-badge-red { background: var(--adm-red-bg); color: #B91C1C; }
+.admin-badge-gray { background: var(--adm-gray-bg); color: var(--adm-text-med); }
+
+.admin-btn {
+  padding: 8px 16px;
+  border-radius: var(--adm-radius-sm);
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-btn-primary { background: var(--adm-primary); color: #fff; }
+.admin-btn-secondary { background: var(--adm-gray-bg); color: var(--adm-text); }
+.admin-btn-danger { background: var(--adm-red); color: #fff; }
+
+.admin-input, .admin-select {
+  padding: 8px 12px;
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-sm);
+  font-size: 14px;
+  background: #fff;
+}
+
+.admin-toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: var(--adm-border);
+  transition: background 0.15s;
+}
+.admin-toggle.on { background: var(--adm-green); }
+.admin-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.15s;
+}
+.admin-toggle.on .admin-toggle-knob { left: 20px; }
+
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.admin-modal {
+  background: #fff;
+  border-radius: var(--adm-radius);
+  padding: 24px;
+  width: 420px;
+  max-width: 90vw;
+}
+
+.admin-stat-card {
+  background: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius);
+  padding: 20px;
+}
+.admin-stat-value { font-size: 28px; font-weight: 700; color: var(--adm-text); }
+.admin-stat-label { font-size: 13px; color: var(--adm-text-med); margin-top: 4px; }
+
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+.admin-table th, .admin-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--adm-border);
+  font-size: 14px;
+}
+.admin-table th {
+  background: var(--adm-gray-bg);
+  font-weight: 600;
+  color: var(--adm-text-med);
+}

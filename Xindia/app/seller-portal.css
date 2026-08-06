@@ -1,0 +1,240 @@
+/* ─── Seller Portal design tokens ─────────────────────────────────────────── */
+:root {
+  --sp-bg: #F8FAFC;
+  --sp-surface: #FFFFFF;
+  --sp-border: #E2E8F0;
+  --sp-text: #0F172A;
+  --sp-text-med: #64748B;
+  --sp-text-light: #94A3B8;
+  --sp-primary: #E8581C;
+  --sp-navy: #0F1B2D;
+  --sp-green: #10B981;
+  --sp-green-bg: #D1FAE5;
+  --sp-yellow: #F59E0B;
+  --sp-yellow-bg: #FEF3C7;
+  --sp-red: #EF4444;
+  --sp-red-bg: #FEE2E2;
+  --sp-gray-bg: #F1F5F9;
+  --sp-radius: 12px;
+  --sp-radius-sm: 8px;
+  --sp-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --sp-sidebar-width: 240px;
+}
+
+.seller-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--sp-bg);
+  font-family: var(--font-family, 'Inter', -apple-system, sans-serif);
+}
+
+.seller-sidebar {
+  width: var(--sp-sidebar-width);
+  background: var(--sp-navy);
+  color: #fff;
+  flex-shrink: 0;
+  padding: 24px 16px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.seller-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--sp-radius-sm);
+  color: rgba(255,255,255,0.7);
+  text-decoration: none;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.seller-sidebar-link:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.seller-sidebar-link.active { background: var(--sp-primary); color: #fff; }
+
+.seller-main {
+  flex: 1;
+  padding: 32px;
+  overflow-x: auto;
+}
+
+.seller-card {
+  background: var(--sp-surface);
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius);
+  box-shadow: var(--sp-shadow);
+  padding: 20px;
+}
+
+.seller-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.seller-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.seller-badge-green { background: var(--sp-green-bg); color: #047857; }
+.seller-badge-yellow { background: var(--sp-yellow-bg); color: #92400E; }
+.seller-badge-red { background: var(--sp-red-bg); color: #B91C1C; }
+.seller-badge-gray { background: var(--sp-gray-bg); color: var(--sp-text-med); }
+
+.seller-btn {
+  padding: 8px 16px;
+  border-radius: var(--sp-radius-sm);
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.seller-btn-primary { background: var(--sp-primary); color: #fff; }
+.seller-btn-secondary { background: var(--sp-gray-bg); color: var(--sp-text); }
+.seller-btn-danger { background: var(--sp-red); color: #fff; }
+
+.seller-input, .seller-select {
+  padding: 8px 12px;
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius-sm);
+  font-size: 14px;
+  background: #fff;
+}
+
+.seller-accordion {
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius-sm);
+  margin-bottom: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+.seller-accordion-header {
+  padding: 14px 16px;
+  background: var(--sp-gray-bg);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 15px;
+}
+.seller-accordion-body {
+  padding: 16px;
+}
+
+/* ─── Dashboard stat cards ─────────────────────────────────────────────────── */
+.seller-stat-card {
+  background: var(--sp-surface);
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius);
+  box-shadow: var(--sp-shadow);
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.seller-stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--sp-icon-bg, rgba(232, 88, 28, 0.1));
+  color: var(--sp-icon-color, var(--sp-primary));
+}
+.seller-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--sp-text);
+  line-height: 1.2;
+}
+.seller-stat-label {
+  font-size: 12.5px;
+  color: var(--sp-text-med);
+  margin-top: 2px;
+}
+
+/* ─── Trend chart card ─────────────────────────────────────────────────────── */
+.seller-chart-card {
+  background: var(--sp-surface);
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius);
+  box-shadow: var(--sp-shadow);
+  padding: 20px 24px;
+}
+.seller-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+.seller-chart-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sp-text);
+  margin: 0;
+}
+.seller-chart-subtitle {
+  font-size: 12px;
+  color: var(--sp-text-light);
+}
+
+/* ─── Product cards ─────────────────────────────────────────────────────────── */
+.seller-product-card {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.seller-product-thumb {
+  position: relative;
+  height: 150px;
+  background: var(--sp-gray-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.seller-product-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.seller-product-thumb-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255,255,255,0.9);
+  border-radius: 999px;
+  padding: 3px 6px;
+  box-shadow: var(--sp-shadow);
+}
+
+/* ─── Empty state ───────────────────────────────────────────────────────────── */
+.seller-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ─── Skeleton loading state ───────────────────────────────────────────────── */
+.seller-skeleton-block {
+  background: linear-gradient(90deg, #E2E8F0 25%, #EDF2F7 37%, #E2E8F0 63%);
+  background-size: 400% 100%;
+  border-radius: 6px;
+  animation: seller-skeleton-shimmer 1.4s ease infinite;
+}
+@keyframes seller-skeleton-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
