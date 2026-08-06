@@ -1,11 +1,11 @@
 import '../admin.css';
 import AdminSidebar from '@/components/admin/AdminSidebar';
-import AuthGuard from '@/components/AuthGuard';
+import BfcacheReload from '@/components/BfcacheReload';
 
 export default function AdminLayout({ children }) {
   return (
     <div className="admin-shell">
-      <AuthGuard />
+      <BfcacheReload />
       <AdminSidebar />
       <main className="admin-main">{children}</main>
     </div>
