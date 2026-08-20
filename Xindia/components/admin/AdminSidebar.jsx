@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Factory, Users, Package, CreditCard, LogOut } from 'lucide-react';
+import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Star, LogOut } from 'lucide-react';
 import SearchBar from './SearchBar';
 
 const LINKS = [
@@ -11,6 +11,8 @@ const LINKS = [
   { href: '/admin/buyers', label: 'Buyers', icon: Users },
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/plans', label: 'Plans & Pricing', icon: CreditCard },
+  { href: '/admin/credits', label: 'Credits & Policy', icon: Coins },
+  { href: '/admin/reviews', label: 'Reviews & Moderation', icon: Star },
 ];
 
 export default function AdminSidebar() {

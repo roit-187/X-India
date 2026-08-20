@@ -10,6 +10,7 @@ import Modal from '@/components/admin/Modal';
 export default function ManufacturerDetailPage({ params }) {
   const { id } = params;
   const [data, setData] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [noteText, setNoteText] = useState('');
@@ -23,12 +24,21 @@ export default function ManufacturerDetailPage({ params }) {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/admin/manufacturers/${id}`);
-      const result = await res.json();
+      const [mfrRes, reviewsRes] = await Promise.all([
+        fetch(`/api/admin/manufacturers/${id}`),
+        fetch(`/api/admin/reviews?targetId=${id}`),
+      ]);
+      const result = await mfrRes.json();
+      const reviewsResult = await reviewsRes.json();
+
       if (result.success) {
         setData(result);
       } else {
         setError(result.message || 'Failed to load manufacturer detail');
+      }
+
+      if (reviewsResult.success) {
+        setReviews(reviewsResult.reviews || []);
       }
     } catch (err) {
       console.error(err);
@@ -113,6 +123,61 @@ export default function ManufacturerDetailPage({ params }) {
     const resData = await res.json();
     if (!resData.success) {
       alert(resData.message || 'Failed to toggle product visibility');
+    } else {
+      loadData();
+    }
+  };
+
+  const handleDocumentStatus = async (docType, status) => {
+    const res = await fetch(`/api/admin/manufacturers/${id}/documents/${docType}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    const resData = await res.json();
+    if (!resData.success) {
+      alert(resData.message || 'Failed to update document status');
+    } else {
+      loadData();
+    }
+  };
+
+  const handleToggleReviewStatus = async (reviewId, currentStatus) => {
+    const nextStatus = currentStatus === 'approved' ? 'inactive' : 'approved';
+    const res = await fetch(`/api/admin/reviews/${reviewId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: nextStatus }),
+    });
+    const resData = await res.json();
+    if (!resData.success) {
+      alert(resData.message || 'Failed to update review status');
+    } else {
+      loadData();
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!confirm('Are you sure you want to permanently delete this review?')) return;
+    const res = await fetch(`/api/admin/reviews/${reviewId}`, { method: 'DELETE' });
+    const resData = await res.json();
+    if (!resData.success) {
+      alert(resData.message || 'Failed to delete review');
+    } else {
+      loadData();
+    }
+  };
+
+  const handleBlacklistReviewer = async (userId) => {
+    if (!confirm('Blacklist this user? This will hide all their reviews and revoke their access.')) return;
+    const res = await fetch(`/api/admin/users/${userId}/blacklist`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: 'Spam or malicious review' }),
+    });
+    const resData = await res.json();
+    if (!resData.success) {
+      alert(resData.message || 'Failed to blacklist user');
     } else {
       loadData();
     }
@@ -284,7 +349,7 @@ export default function ManufacturerDetailPage({ params }) {
                 GST Details
                 <Badge label={seller.gstVerified ? 'Verified' : 'Unverified'} variant={seller.gstVerified ? 'verified' : 'expired'} />
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 14, marginBottom: 20 }}>
                 <div><strong>GSTIN:</strong> {seller.gstNumber || '-'}</div>
                 <div><strong>Registration Date:</strong> {seller.gstRegistrationDate || '-'}</div>
                 <div><strong>Legal Name:</strong> {seller.gstLegalName || '-'}</div>
@@ -292,6 +357,65 @@ export default function ManufacturerDetailPage({ params }) {
                 <div><strong>Business Type:</strong> {seller.gstBusinessType || '-'}</div>
                 <div style={{ gridColumn: '1 / -1' }}><strong>GST Address:</strong> {seller.gstAddress || '-'}</div>
               </div>
+
+              {/* Uploaded Business Documents Hub */}
+              <h4 style={{ marginTop: 24, marginBottom: 12, borderTop: '1px solid #E2E8F0', paddingTop: 16 }}>
+                Uploaded Business Documents
+              </h4>
+              {seller.businessDocuments && Object.keys(seller.businessDocuments).length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {Object.entries(seller.businessDocuments).map(([docType, doc]) => (
+                    <div
+                      key={docType}
+                      style={{
+                        background: '#F8FAFC', borderRadius: 10, padding: '12px 16px',
+                        border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <strong style={{ textTransform: 'uppercase', fontSize: 13 }}>{docType} Document</strong>
+                          <Badge
+                            label={doc.status || 'pending'}
+                            variant={doc.status === 'verified' ? 'verified' : doc.status === 'rejected' ? 'blacklisted' : 'expired'}
+                          />
+                        </div>
+                        <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
+                          {doc.documentNumber && <span>Doc No: {doc.documentNumber} | </span>}
+                          {doc.documentName && <span>Name: {doc.documentName} | </span>}
+                          {doc.fileUrl && (
+                            <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#2563EB', fontWeight: 600 }}>
+                              View File ↗
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          onClick={() => handleDocumentStatus(docType, 'verified')}
+                          style={{
+                            padding: '6px 12px', borderRadius: 6, border: 'none',
+                            background: '#DCFCE7', color: '#15803D', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                          }}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleDocumentStatus(docType, 'rejected')}
+                          style={{
+                            padding: '6px 12px', borderRadius: 6, border: 'none',
+                            background: '#FEE2E2', color: '#B91C1C', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                          }}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ fontSize: 13, color: '#94A3B8', margin: 0 }}>No business documents uploaded yet</p>
+              )}
             </div>
           )}
 
@@ -345,6 +469,77 @@ export default function ManufacturerDetailPage({ params }) {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Seller Reviews & Feedback Moderation Hub */}
+          <div className="admin-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ margin: 0 }}>Reviews & Buyer Feedback ({reviews.length})</h3>
+              <div style={{ fontSize: 13, color: '#64748B' }}>
+                Average: <strong>{m.rating || 0} ★</strong> ({m.reviewCount || 0} reviews)
+              </div>
+            </div>
+
+            {reviews.length === 0 ? (
+              <p style={{ fontSize: 13, color: '#94A3B8' }}>No reviews recorded for this seller</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {reviews.map((r) => {
+                  const isAppr = r.status === 'approved';
+                  return (
+                    <div
+                      key={r._id}
+                      style={{
+                        background: '#F8FAFC', borderRadius: 12, padding: 14,
+                        border: `1px solid ${isAppr ? '#E2E8F0' : '#FEE2E2'}`,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <div>
+                          <strong>{r.reviewerName}</strong>
+                          {r.reviewerEmail && <span style={{ fontSize: 12, color: '#64748B' }}> ({r.reviewerEmail})</span>}
+                          <span style={{ fontSize: 12, color: '#F59E0B', marginLeft: 8 }}>{'★'.repeat(r.rating)}</span>
+                        </div>
+                        <Badge label={isAppr ? 'Approved' : 'Inactive (Hidden)'} variant={isAppr ? 'verified' : 'expired'} />
+                      </div>
+                      <p style={{ fontSize: 13, color: '#334155', margin: '4px 0 10px' }}>"{r.comment}"</p>
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={() => handleToggleReviewStatus(r._id, r.status)}
+                          style={{
+                            padding: '4px 10px', borderRadius: 6, border: '1px solid #CBD5E1',
+                            background: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                            color: isAppr ? '#B45309' : '#15803D',
+                          }}
+                        >
+                          {isAppr ? 'Hide (Make Inactive)' : 'Approve'}
+                        </button>
+                        {r.reviewerId && !r.reviewerId.isBlacklisted && (
+                          <button
+                            onClick={() => handleBlacklistReviewer(r.reviewerId._id || r.reviewerId)}
+                            style={{
+                              padding: '4px 10px', borderRadius: 6, border: '1px solid #FEE2E2',
+                              background: '#FFF5F5', fontSize: 11, fontWeight: 700, cursor: 'pointer', color: '#EF4444',
+                            }}
+                          >
+                            Blacklist User
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteReview(r._id)}
+                          style={{
+                            padding: '4px 10px', borderRadius: 6, border: '1px solid #E2E8F0',
+                            background: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', color: '#64748B',
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Verification Evidence */}
