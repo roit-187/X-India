@@ -18,7 +18,7 @@ export default function AdminDashboardPage() {
   const [verificationQueue, setVerificationQueue] = useState([]);
   const [verifPage, setVerifPage] = useState(1);
   const [verifTotalPages, setVerifTotalPages] = useState(1);
-  const [verifStatus, setVerifStatus] = useState('pending');
+  const [verifStatus, setVerifStatus] = useState('scheduled');
 
   // Verification Modals
   const [acceptTarget, setAcceptTarget] = useState(null);
@@ -226,7 +226,7 @@ export default function AdminDashboardPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h3 style={{ margin: 0 }}>Verification Queue</h3>
           <div style={{ display: 'flex', gap: 8 }}>
-            {['pending', 'accepted', 'scheduled'].map((st) => (
+            {['scheduled', 'accepted', 'rejected'].map((st) => (
               <button
                 key={st}
                 className={`admin-btn ${verifStatus === st ? 'admin-btn-primary' : 'admin-btn-secondary'}`}
@@ -254,24 +254,60 @@ export default function AdminDashboardPage() {
             {verificationQueue.map((req) => (
               <tr key={req._id}>
                 <td>
-                  <div>{req.userId?.firstName} {req.userId?.lastName}</div>
-                  <div style={{ fontSize: 12, color: '#64748B' }}>{req.userId?.email}</div>
+                  <div><strong>{req.userId?.firstName || 'Seller'} {req.userId?.lastName || ''}</strong></div>
+                  <div style={{ fontSize: 12, color: '#64748B' }}>{req.userId?.email || '-'}</div>
+                  {req.userId?.phone && <div style={{ fontSize: 11, color: '#94A3B8' }}>{req.userId.phone}</div>}
                 </td>
-                <td><strong>{req.manufacturerId?.name}</strong></td>
-                <td>{req.requestedLocation?.address || req.userId?.location || '-'}</td>
-                <td>{new Date(req.createdAt).toLocaleDateString()}</td>
-                <td><Badge label={req.status} variant={req.status === 'pending' ? 'grace' : 'active'} /></td>
                 <td>
-                  {req.status === 'pending' && (
-                    <button className="admin-btn admin-btn-primary" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => setAcceptTarget(req._id)}>
-                      Accept
-                    </button>
+                  {req.manufacturerId ? (
+                    <a
+                      href={`/admin/manufacturers/${req.manufacturerId._id}`}
+                      style={{ color: '#2563EB', fontWeight: 600, textDecoration: 'none' }}
+                    >
+                      {req.manufacturerId.name} ↗
+                    </a>
+                  ) : (
+                    <strong>{req.userId?.companyName || 'Unlinked Factory'}</strong>
                   )}
-                  {(req.status === 'accepted' || req.status === 'scheduled') && (
-                    <button className="admin-btn admin-btn-secondary" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => setDecisionTarget(req._id)}>
-                      Record Decision
-                    </button>
+                </td>
+                <td>{req.requestedLocation?.address || req.userId?.location || '-'}</td>
+                <td>
+                  {req.scheduledVisit?.date ? (
+                    <div>
+                      <strong>{req.scheduledVisit.date}</strong>
+                      <div style={{ fontSize: 12, color: '#EA580C', fontWeight: 600 }}>{req.scheduledVisit.slot}</div>
+                    </div>
+                  ) : (
+                    <span>{new Date(req.createdAt).toLocaleDateString()}</span>
                   )}
+                </td>
+                <td>
+                  <Badge
+                    label={req.status}
+                    variant={req.status === 'verified' ? 'verified' : req.status === 'rejected' ? 'expired' : 'active'}
+                  />
+                </td>
+                <td>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {req.status === 'scheduled' && (
+                      <button
+                        className="admin-btn admin-btn-primary"
+                        style={{ padding: '4px 10px', fontSize: 12 }}
+                        onClick={() => setAcceptTarget(req._id)}
+                      >
+                        Accept Visit
+                      </button>
+                    )}
+                    {(req.status === 'accepted' || req.status === 'scheduled') && (
+                      <button
+                        className="admin-btn admin-btn-secondary"
+                        style={{ padding: '4px 10px', fontSize: 12 }}
+                        onClick={() => setDecisionTarget(req._id)}
+                      >
+                        Record Decision
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
