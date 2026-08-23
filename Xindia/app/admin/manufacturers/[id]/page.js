@@ -63,6 +63,17 @@ export default function ManufacturerDetailPage({ params }) {
 
   // Document Reject Modal State
   const [rejectDocModal, setRejectDocModal] = useState(null); // { docType, label, rejectionReason: '' }
+  const [role, setRole] = useState(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('admin_profile');
+      if (stored) {
+        const p = JSON.parse(stored);
+        setRole(p.role);
+      }
+    } catch {}
+  }, []);
 
   const loadData = useCallback(async () => {
     try {
@@ -386,10 +397,12 @@ export default function ManufacturerDetailPage({ params }) {
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>Active Account:</span>
-              <Toggle checked={m.isActive} onChange={handleToggleActive} />
-            </div>
+            {role !== 'STAFF' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>Active Account:</span>
+                <Toggle checked={m.isActive} onChange={handleToggleActive} />
+              </div>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 600 }}>Verified Badge:</span>
               <Toggle checked={m.verified} onChange={handleToggleVerified} />
@@ -403,10 +416,12 @@ export default function ManufacturerDetailPage({ params }) {
                 <Edit3 size={14} />
                 Edit Profile
               </button>
-              {seller && (seller.isBlacklisted || (seller.blockedUntil && new Date(seller.blockedUntil) > new Date())) ? (
-                <button className="admin-btn admin-btn-secondary" onClick={handleUnblock}>Unblock Seller</button>
-              ) : (
-                <button className="admin-btn admin-btn-danger" onClick={() => setShowBlockModal(true)}>Block Seller</button>
+              {role !== 'STAFF' && (
+                seller && (seller.isBlacklisted || (seller.blockedUntil && new Date(seller.blockedUntil) > new Date())) ? (
+                  <button className="admin-btn admin-btn-secondary" onClick={handleUnblock}>Unblock Seller</button>
+                ) : (
+                  <button className="admin-btn admin-btn-danger" onClick={() => setShowBlockModal(true)}>Block Seller</button>
+                )
               )}
             </div>
           </div>
@@ -669,7 +684,7 @@ export default function ManufacturerDetailPage({ params }) {
                         >
                           {isAppr ? 'Hide (Make Inactive)' : 'Approve'}
                         </button>
-                        {r.reviewerId && !r.reviewerId.isBlacklisted && (
+                        {role !== 'STAFF' && r.reviewerId && !r.reviewerId.isBlacklisted && (
                           <button
                             onClick={() => handleBlacklistReviewer(r.reviewerId._id || r.reviewerId)}
                             style={{
