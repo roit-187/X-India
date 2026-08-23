@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Package, MessageSquareText, MessagesSquare, Star, Coins, CalendarClock } from 'lucide-react';
+import Link from 'next/link';
+import { Package, MessageSquareText, MessagesSquare, Star, Coins, CalendarClock, ArrowRight } from 'lucide-react';
 import StatCard from '@/components/seller-portal/StatCard';
 import InquiriesTrendChart from '@/components/seller-portal/InquiriesTrendChart';
 import Badge from '@/components/admin/Badge';
@@ -88,12 +89,21 @@ export default function SellerDashboardPage() {
           <div style={{ background: completionPct === 100 ? '#10B981' : '#E8581C', height: '100%', width: `${completionPct}%`, transition: 'width 0.3s' }} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8, fontSize: 13 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8, fontSize: 13, marginBottom: 12 }}>
           {stats.mandatoryFieldsComplete && Object.entries(stats.mandatoryFieldsComplete).map(([key, isDone]) => (
             <div key={key} style={{ color: isDone ? '#047857' : '#92400E' }}>
               {isDone ? '✓' : '✗'} <span style={{ textTransform: 'capitalize' }}>{key}</span>
             </div>
           ))}
+        </div>
+
+        <div style={{ paddingTop: 10, borderTop: '1px solid var(--sp-border)', display: 'flex', justifyContent: 'flex-end' }}>
+          <Link
+            href="/seller-portal/profile"
+            style={{ fontSize: 13, fontWeight: 700, color: 'var(--sp-primary)', display: 'inline-flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
+          >
+            Edit Profile & Onboarding Details <ArrowRight size={14} />
+          </Link>
         </div>
       </div>
 
