@@ -237,8 +237,11 @@
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--p-border);
+  background-color: #0F172A;
+  width: 100%;
 }
-.portfolio-video-wrap video {
+.portfolio-video-wrap video,
+.portfolio-video-wrap iframe {
   width: 100%;
   display: block;
 }

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getSeller } from '@/lib/api';
+import YouTubePlayer from '@/components/common/YouTubePlayer';
 
 export const metadata = { title: 'Factory & Machinery' };
 
@@ -44,8 +45,10 @@ export default async function FactoryPage({ params }) {
         <>
           <h2 className="portfolio-section-title">Factory Tour</h2>
           <div className="portfolio-video-wrap">
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-            <video src={seller.factoryVideo} controls preload="metadata" />
+            <YouTubePlayer
+              videoUrl={seller.factoryVideo}
+              title={`${seller.name || 'Factory'} Tour Video`}
+            />
           </div>
         </>
       )}
