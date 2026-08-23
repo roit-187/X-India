@@ -21,6 +21,9 @@ import {
   X,
   ShieldCheck,
   ClipboardList,
+  Search,
+  Tag,
+  Package,
 } from 'lucide-react';
 import YouTubePlayer from '@/components/common/YouTubePlayer';
 import { extractYouTubeId, isValidYouTubeUrl } from '@/lib/youtube';
@@ -58,6 +61,25 @@ const CERTIFICATION_SUGGESTIONS = [
   'RoHS Compliant',
 ];
 
+const SUGGESTED_PRODUCTS = [
+  'T-shirts',
+  'Hoodies',
+  'Polo shirts',
+  'Activewear',
+  'Sportswear',
+  'Ethnic wear',
+  'Denim',
+  'Jackets',
+  'Precision CNC Parts',
+  'High-Tension Fasteners',
+  'Corrugated Boxes',
+  'Rigid Packaging',
+  'Plastic Injection Moulds',
+  'Pharma Formulations',
+];
+
+const INITIAL_CATEGORY_COUNT = 10;
+
 export default function ProfileEditForm({ initialData, onUpdateSuccess }) {
   const {
     register,
@@ -94,10 +116,24 @@ export default function ProfileEditForm({ initialData, onUpdateSuccess }) {
   const [availableCategories, setAvailableCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
 
-  // Categories state (array of category IDs)
+  // Category search & custom categories
+  const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const [selectedCategoryIds, setSelectedCategoryIds] = useState(() => {
     return (initialData?.categories || []).map((c) => (typeof c === 'string' ? c : c._id));
   });
+  const [selectedSubcategories, setSelectedSubcategories] = useState(() => {
+    return initialData?.manufacturingSubcategories || [];
+  });
+  const [customCategories, setCustomCategories] = useState(() => {
+    return initialData?.customCategories || [];
+  });
+  const [customCategoryInput, setCustomCategoryInput] = useState('');
+
+  // Primary Products ("What specifically do you make?")
+  const [selectedProducts, setSelectedProducts] = useState(() => {
+    return initialData?.primaryProducts || [];
+  });
+  const [customProductInput, setCustomProductInput] = useState('');
 
   // Certifications: separate immutable (already saved) from newly added
   const initialCerts = useMemo(() => {
@@ -121,7 +157,7 @@ export default function ProfileEditForm({ initialData, onUpdateSuccess }) {
   const [formError, setFormError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Fetch available categories from server
+  // Fetch available categories with children taxonomy
   useEffect(() => {
     async function loadCategories() {
       try {
@@ -150,6 +186,84 @@ export default function ProfileEditForm({ initialData, onUpdateSuccess }) {
     );
   };
 
+  const toggleSubcategory = (subSlug) => {
+    setSelectedSubcategories((prev) =>
+      prev.includes(subSlug) ? prev.filter((s) => s !== subSlug) : [...prev, subSlug]
+    );
+  };
+
+  const handleAddCustomCategory = () => {
+    const clean = customCategoryInput.trim();
+    if (!clean) return;
+    if (!customCategories.includes(clean)) {
+      setCustomCategories((prev) => [...prev, clean]);
+    }
+    setCustomCategoryInput('');
+  };
+
+  const handleRemoveCustomCategory = (cat) => {
+    setCustomCategories((prev) => prev.filter((c) => c !== cat));
+  };
+
+  // Products toggle & add
+  const toggleProduct = (prod) => {
+    setSelectedProducts((prev) =>
+      prev.includes(prod) ? prev.filter((p) => p !== prod) : [...prev, prod]
+    );
+  };
+
+  const handleAddCustomProduct = () => {
+    const clean = customProductInput.trim();
+    if (!clean) return;
+    if (!selectedProducts.includes(clean)) {
+      setSelectedProducts((prev) => [...prev, clean]);
+    }
+    setCustomProductInput('');
+  };
+
+  const handleRemoveProduct = (prod) => {
+    setSelectedProducts((prev) => prev.filter((p) => p !== prod));
+  };
+
+  // Filtered categories & top 10 logic
+  const filteredCategories = useMemo(() => {
+    if (!categorySearchQuery.trim()) {
+      return availableCategories;
+    }
+    const q = categorySearchQuery.toLowerCase();
+    return availableCategories.filter((c) => c.name.toLowerCase().includes(q));
+  }, [availableCategories, categorySearchQuery]);
+
+  const displayedCategories = useMemo(() => {
+    if (categorySearchQuery.trim()) {
+      return filteredCategories;
+    }
+    // Show top 10 plus any category that is already selected
+    const top = availableCategories.slice(0, INITIAL_CATEGORY_COUNT);
+    const selectedOverflow = availableCategories.filter(
+      (c) => selectedCategoryIds.includes(c._id) && !top.some((t) => t._id === c._id)
+    );
+    return [...top, ...selectedOverflow];
+  }, [availableCategories, filteredCategories, categorySearchQuery, selectedCategoryIds]);
+
+  // Derived subcategory options based on selected categories
+  const availableSubcategories = useMemo(() => {
+    const selectedCats = availableCategories.filter((c) => selectedCategoryIds.includes(c._id));
+    const subMap = new Map();
+    selectedCats.forEach((cat) => {
+      (cat.children || []).forEach((child) => {
+        if (!subMap.has(child.slug)) {
+          subMap.set(child.slug, child);
+        }
+      });
+    });
+    return Array.from(subMap.values());
+  }, [availableCategories, selectedCategoryIds]);
+
+  const allDisplayProducts = useMemo(() => {
+    return Array.from(new Set([...SUGGESTED_PRODUCTS, ...selectedProducts]));
+  }, [selectedProducts]);
+
   const handleAddNewCert = (certName) => {
     const clean = (certName || certInput).trim();
     if (!clean) return;
@@ -165,7 +279,7 @@ export default function ProfileEditForm({ initialData, onUpdateSuccess }) {
     setNewCertifications((prev) => prev.filter((c) => c !== cert));
   };
 
-  // Logo file upload handler
+  // Media handlers
   const handleLogoChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -175,7 +289,6 @@ export default function ProfileEditForm({ initialData, onUpdateSuccess }) {
     reader.readAsDataURL(file);
   };
 
-  // Cover file upload handler
   const handleCoverChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -185,7 +298,6 @@ export default function ProfileEditForm({ initialData, onUpdateSuccess }) {
     reader.readAsDataURL(file);
   };
 
-  // Additional Factory Photos handlers
   const handleAddPhotos = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -235,8 +347,11 @@ export default function ProfileEditForm({ initialData, onUpdateSuccess }) {
       formData.append('companyEmail', values.companyEmail ? values.companyEmail.trim() : '');
       formData.append('address', values.address ? values.address.trim() : '');
 
-      // Categories
+      // Categories, Subcategories, Custom Categories & Primary Products
       formData.append('categories', JSON.stringify(selectedCategoryIds));
+      formData.append('manufacturingSubcategories', JSON.stringify(selectedSubcategories));
+      formData.append('customCategories', JSON.stringify(customCategories));
+      formData.append('primaryProducts', JSON.stringify(selectedProducts));
 
       // Certifications: All locked + newly added
       const combinedCerts = [...lockedCertifications, ...newCertifications];
@@ -309,7 +424,7 @@ export default function ProfileEditForm({ initialData, onUpdateSuccess }) {
               {isMandatory ? (
                 <span style={{ color: '#E8581C', fontWeight: 600 }}>Required Profile Section</span>
               ) : (
-                <span style={{ color: '#10B981', fontWeight: 600 }}>Optional Showcase</span>
+                <span style={{ color: '#10B981', fontWeight: 600 }}>Showcase & Search Optimization</span>
               )}
             </div>
           </div>
@@ -840,50 +955,275 @@ export default function ProfileEditForm({ initialData, onUpdateSuccess }) {
         )}
       </div>
 
-      {/* ─── 3. Product Categories & Industries ─────────────────────────── */}
+      {/* ─── 3. Categories, Subcategories & Products (What Do You Make) ───── */}
       <div className="seller-accordion">
-        {renderHeader('3. Product Categories & Industries', 'categories', Layers, false)}
+        {renderHeader('3. Categories, Subcategories & Products ("What Do You Make")', 'categories', Layers, false)}
         {openSection === 'categories' && (
           <div className="seller-accordion-body">
-            <p style={{ fontSize: 13, color: 'var(--sp-text-med)', marginBottom: 16 }}>
-              Select the manufacturing industries and product categories that best describe your production capabilities.
-            </p>
+            {/* 3.1 Main Categories */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <label className="seller-field-label" style={{ marginBottom: 2 }}>
+                    Main Manufacturing Categories ({selectedCategoryIds.length} selected)
+                  </label>
+                  <span className="seller-field-hint">
+                    Select your primary industry verticals. Search to view all categories.
+                  </span>
+                </div>
 
-            {loadingCategories ? (
-              <div style={{ fontSize: 13, color: 'var(--sp-text-med)' }}>Loading categories...</div>
-            ) : availableCategories.length === 0 ? (
-              <div style={{ fontSize: 13, color: 'var(--sp-text-med)' }}>No categories configured.</div>
-            ) : (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {availableCategories.map((cat) => {
-                  const isSelected = selectedCategoryIds.includes(cat._id);
-                  return (
-                    <button
-                      key={cat._id}
-                      type="button"
-                      onClick={() => toggleCategory(cat._id)}
+                {/* Search Bar */}
+                <div style={{ position: 'relative', width: 220 }}>
+                  <input
+                    type="text"
+                    className="seller-input"
+                    placeholder="Search categories..."
+                    value={categorySearchQuery}
+                    onChange={(e) => setCategorySearchQuery(e.target.value)}
+                    style={{ width: '100%', paddingLeft: 30, fontSize: 12.5, height: 34 }}
+                  />
+                  <Search size={14} color="var(--sp-text-med)" style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)' }} />
+                </div>
+              </div>
+
+              {loadingCategories ? (
+                <div style={{ fontSize: 13, color: 'var(--sp-text-med)' }}>Loading categories...</div>
+              ) : displayedCategories.length === 0 ? (
+                <div style={{ fontSize: 13, color: 'var(--sp-text-med)' }}>No categories found matching &quot;{categorySearchQuery}&quot;.</div>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {displayedCategories.map((cat) => {
+                    const isSelected = selectedCategoryIds.includes(cat._id);
+                    return (
+                      <button
+                        key={cat._id}
+                        type="button"
+                        onClick={() => toggleCategory(cat._id)}
+                        style={{
+                          padding: '7px 14px',
+                          borderRadius: 20,
+                          fontSize: 13,
+                          fontWeight: 600,
+                          border: isSelected ? '1px solid var(--sp-primary)' : '1px solid var(--sp-border)',
+                          background: isSelected ? 'rgba(232, 88, 28, 0.1)' : 'var(--sp-surface)',
+                          color: isSelected ? 'var(--sp-primary)' : 'var(--sp-text)',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {isSelected && <CheckCircle size={14} color="var(--sp-primary)" />}
+                        {cat.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Custom Category Input */}
+              <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--sp-border)' }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--sp-text-med)', marginBottom: 6 }}>
+                  Don&apos;t see your category? Add custom category:
+                </div>
+                <div style={{ display: 'flex', gap: 8, maxWidth: 420 }}>
+                  <input
+                    className="seller-input"
+                    style={{ flex: 1, height: 34, fontSize: 12.5 }}
+                    placeholder="e.g. Aerospace Fasteners, Solar Panels"
+                    value={customCategoryInput}
+                    onChange={(e) => setCustomCategoryInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCustomCategory();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="seller-btn seller-btn-secondary"
+                    onClick={handleAddCustomCategory}
+                    style={{ padding: '6px 14px', fontSize: 12.5 }}
+                  >
+                    + Add
+                  </button>
+                </div>
+
+                {customCategories.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                    {customCategories.map((c) => (
+                      <span
+                        key={c}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          background: 'rgba(232, 88, 28, 0.08)',
+                          border: '1px solid var(--sp-primary)',
+                          color: 'var(--sp-primary)',
+                          padding: '4px 10px',
+                          borderRadius: 14,
+                          fontSize: 12,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {c}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCustomCategory(c)}
+                          style={{ background: 'none', border: 'none', color: 'var(--sp-primary)', cursor: 'pointer', padding: 0 }}
+                        >
+                          <X size={13} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 3.2 Subcategories (Based on selected categories) */}
+            {availableSubcategories.length > 0 && (
+              <div style={{ marginBottom: 20, paddingTop: 14, borderTop: '1px solid var(--sp-border)' }}>
+                <label className="seller-field-label" style={{ marginBottom: 2 }}>
+                  Specific Subcategories ({selectedSubcategories.length} selected)
+                </label>
+                <span className="seller-field-hint" style={{ display: 'block', marginBottom: 10 }}>
+                  Select the sub-domains that match your workshop production lines.
+                </span>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {availableSubcategories.map((sub) => {
+                    const isSelected = selectedSubcategories.includes(sub.slug);
+                    return (
+                      <button
+                        key={sub.slug}
+                        type="button"
+                        onClick={() => toggleSubcategory(sub.slug)}
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: 16,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          border: isSelected ? '1px solid #7C3AED' : '1px solid var(--sp-border)',
+                          background: isSelected ? '#F5F3FF' : 'var(--sp-surface)',
+                          color: isSelected ? '#7C3AED' : 'var(--sp-text)',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {isSelected && <CheckCircle size={12} color="#7C3AED" />}
+                        {sub.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 3.3 What Specifically Do You Make (Primary Products) */}
+            <div style={{ paddingTop: 14, borderTop: '1px solid var(--sp-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                <Package size={16} color="var(--sp-primary)" />
+                <label className="seller-field-label" style={{ margin: 0 }}>
+                  What specifically do you make? (Product Tags)
+                </label>
+              </div>
+              <span className="seller-field-hint" style={{ display: 'block', marginBottom: 12 }}>
+                Add specific product keywords and components your factory manufactures (e.g. T-shirts, Fasteners, CNC Bushings).
+              </span>
+
+              {/* Selected product badges */}
+              {selectedProducts.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                  {selectedProducts.map((p) => (
+                    <span
+                      key={p}
                       style={{
-                        padding: '7px 14px',
-                        borderRadius: 20,
-                        fontSize: 13,
-                        fontWeight: 600,
-                        border: isSelected ? '1px solid var(--sp-primary)' : '1px solid var(--sp-border)',
-                        background: isSelected ? 'rgba(232, 88, 28, 0.1)' : 'var(--sp-surface)',
-                        color: isSelected ? 'var(--sp-primary)' : 'var(--sp-text)',
-                        cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: 6,
-                        transition: 'all 0.15s ease',
+                        background: '#ECFDF5',
+                        border: '1px solid #10B981',
+                        color: '#047857',
+                        padding: '4px 10px',
+                        borderRadius: 14,
+                        fontSize: 12,
+                        fontWeight: 600,
                       }}
                     >
-                      {isSelected && <CheckCircle size={14} color="var(--sp-primary)" />}
-                      {cat.name}
-                    </button>
-                  );
-                })}
+                      {p}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveProduct(p)}
+                        style={{ background: 'none', border: 'none', color: '#047857', cursor: 'pointer', padding: 0 }}
+                      >
+                        <X size={13} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Add Custom Product */}
+              <div style={{ display: 'flex', gap: 8, maxWidth: 460, marginBottom: 12 }}>
+                <input
+                  className="seller-input"
+                  style={{ flex: 1, height: 34, fontSize: 12.5 }}
+                  placeholder="e.g. Brass Turned Fasteners, Cotton Polo Shirts"
+                  value={customProductInput}
+                  onChange={(e) => setCustomProductInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomProduct();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="seller-btn seller-btn-secondary"
+                  onClick={handleAddCustomProduct}
+                  style={{ padding: '6px 14px', fontSize: 12.5 }}
+                >
+                  + Add Product
+                </button>
               </div>
-            )}
+
+              {/* Suggested Product Chips */}
+              <div>
+                <span style={{ fontSize: 11.5, color: 'var(--sp-text-med)', marginRight: 6 }}>Popular Suggestions:</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                  {allDisplayProducts.map((item) => {
+                    const isSelected = selectedProducts.includes(item);
+                    return (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => toggleProduct(item)}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: 12,
+                          fontSize: 11.5,
+                          background: isSelected ? '#D1FAE5' : 'var(--sp-gray-bg)',
+                          border: isSelected ? '1px solid #10B981' : '1px solid var(--sp-border)',
+                          color: isSelected ? '#047857' : 'var(--sp-text)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {isSelected ? '✓ ' : '+ '}
+                        {item}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -1110,7 +1450,7 @@ export default function ProfileEditForm({ initialData, onUpdateSuccess }) {
         }}
       >
         <div style={{ fontSize: 12.5, color: 'var(--sp-text-med)' }}>
-          All profile changes immediately synchronize with your mobile app and web storefront.
+          All profile changes immediately synchronize with your mobile app and web portfolio.
         </div>
         <button
           type="submit"

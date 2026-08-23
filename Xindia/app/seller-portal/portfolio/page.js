@@ -212,9 +212,9 @@ export default function SellerPortfolioPage() {
         }}
       >
         <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: 'var(--sp-text)' }}>Public Storefront</h1>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: 'var(--sp-text)' }}>Business Portfolio</h1>
           <p style={{ margin: '6px 0 0', fontSize: 13.5, color: 'var(--sp-text-med)' }}>
-            Manage your public buyer-facing marketplace URL, review mandatory publish requirements, and download your branded QR card.
+            Manage your public business portfolio URL, review mandatory publish requirements, and download your branded QR card.
           </p>
           <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center' }}>
             <Badge label={isPublished ? 'Live on Marketplace' : 'Draft Mode'} variant={isPublished ? 'published' : 'draft'} />

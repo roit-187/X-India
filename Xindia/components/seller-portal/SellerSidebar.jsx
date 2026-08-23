@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Building2, Globe, Package, Rocket, Users, LogOut } from 'lucide-react';
+import { LayoutDashboard, Building2, FileText, Package, Rocket, Users, LogOut } from 'lucide-react';
 
 const LINKS = [
   { href: '/seller-portal/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/seller-portal/profile', label: 'My Profile', icon: Building2 },
-  { href: '/seller-portal/portfolio', label: 'Storefront', icon: Globe },
+  { href: '/seller-portal/portfolio', label: 'Portfolio', icon: FileText },
   { href: '/seller-portal/products', label: 'Products', icon: Package },
   { href: '/seller-portal/opportunities', label: 'Opportunities', icon: Rocket },
   { href: '/seller-portal/buyer-activity', label: 'Buyer Activity', icon: Users },

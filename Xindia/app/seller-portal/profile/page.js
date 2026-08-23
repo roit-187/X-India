@@ -94,14 +94,14 @@ export default function SellerProfilePage() {
           </div>
         </div>
 
-        {/* Quick Link to Storefront Management */}
+        {/* Quick Link to Portfolio Management */}
         <Link
           href="/seller-portal/portfolio"
           className="seller-btn seller-btn-secondary"
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none', fontSize: 13.5 }}
         >
           <Globe size={16} color="var(--sp-primary)" />
-          Storefront & Publishing
+          Portfolio & Publishing
           <ArrowUpRight size={14} />
         </Link>
       </div>
