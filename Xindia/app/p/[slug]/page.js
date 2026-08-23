@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getSeller, getSellerProducts, getSellerOpportunity } from '@/lib/api';
+import YouTubePlayer from '@/components/common/YouTubePlayer';
 
 export default async function OverviewPage({ params }) {
   const seller = await getSeller(params.slug);
@@ -48,9 +49,20 @@ export default async function OverviewPage({ params }) {
       </div>
 
       <h2 className="portfolio-section-title">About</h2>
-      <p className="portfolio-prose" style={{ marginBottom: 32 }}>
+      <p className="portfolio-prose" style={{ marginBottom: seller.introVideo ? 20 : 32 }}>
         {seller.portfolioAbout || seller.description || 'This seller has not added a description yet.'}
       </p>
+
+      {seller.introVideo && (
+        <div style={{ marginBottom: 32 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10, color: 'var(--p-text)' }}>
+            Meet the Founder & Leadership
+          </h3>
+          <div style={{ maxWidth: 640, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--p-border)' }}>
+            <YouTubePlayer videoUrl={seller.introVideo} />
+          </div>
+        </div>
+      )}
 
       {topProducts.length > 0 && (
         <>

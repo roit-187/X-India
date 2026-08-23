@@ -82,6 +82,7 @@ export default function PortfolioEditForm({ initialData, mandatoryStatus, onUpda
       exportPercentage: initialData?.exportPercentage || '',
       aboutFactory: initialData?.aboutFactory || '',
       factoryVideo: initialData?.factoryVideo || '',
+      introVideo: initialData?.introVideo || '',
       buyerContactPhone: initialData?.buyerContactPhone || '',
       businessPhone: initialData?.businessPhone || '',
       whatsappNumber: initialData?.whatsappNumber || '',
@@ -224,6 +225,7 @@ export default function PortfolioEditForm({ initialData, mandatoryStatus, onUpda
       formData.append('exportPercentage', values.exportPercentage ? values.exportPercentage.trim() : '');
       formData.append('aboutFactory', values.aboutFactory ? values.aboutFactory.trim() : '');
       formData.append('factoryVideo', values.factoryVideo ? values.factoryVideo.trim() : '');
+      formData.append('introVideo', values.introVideo ? values.introVideo.trim() : '');
 
       // Contact & Location
       formData.append('buyerContactPhone', values.buyerContactPhone ? values.buyerContactPhone.trim() : '');
@@ -459,6 +461,62 @@ export default function PortfolioEditForm({ initialData, mandatoryStatus, onUpda
                   About overview must be at least 80 characters long to publish.
                 </span>
               )}
+            </div>
+
+            {/* Founder / Seller Intro Video */}
+            <div className="seller-field-group" style={{ marginTop: 16 }}>
+              <label className="seller-field-label">
+                Founder / Seller Intro Video (YouTube Link)
+              </label>
+              <p style={{ fontSize: 12.5, color: 'var(--sp-text-med)', marginBottom: 10 }}>
+                Optional video of the founder or leadership team introducing the company, production vision, and quality standards to prospective buyers.
+              </p>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                <div style={{ position: 'relative', flex: 1 }}>
+                  <input
+                    className="seller-input"
+                    style={{ width: '100%', paddingLeft: 36 }}
+                    placeholder="e.g. https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                    {...register('introVideo')}
+                  />
+                  <Youtube
+                    size={18}
+                    color="#DC2626"
+                    style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+                  />
+                </div>
+                {watch('introVideo') && (
+                  <button
+                    type="button"
+                    className="seller-btn seller-btn-secondary"
+                    onClick={() => setValue('introVideo', '', { shouldDirty: true })}
+                    title="Remove intro video link"
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#EF4444', borderColor: '#FCA5A5' }}
+                  >
+                    <Trash2 size={16} />
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {watch('introVideo') ? (
+                extractYouTubeId(watch('introVideo')) ? (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#10B981', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <CheckCircle size={15} />
+                      Connected Founder Intro Video — Live Preview:
+                    </div>
+                    <div style={{ maxWidth: 480, border: '1px solid var(--sp-border)', borderRadius: 12, overflow: 'hidden' }}>
+                      <YouTubePlayer videoUrl={watch('introVideo')} />
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12, color: '#F59E0B', display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                    <AlertCircle size={15} />
+                    Please enter a valid YouTube video or Shorts link (e.g. https://youtu.be/xyz).
+                  </div>
+                )
+              ) : null}
             </div>
           </div>
         )}
