@@ -86,7 +86,6 @@ export default function PortfolioEditForm({ initialData, mandatoryStatus, onUpda
       businessPhone: initialData?.businessPhone || '',
       whatsappNumber: initialData?.whatsappNumber || '',
       companyEmail: initialData?.companyEmail || '',
-      website: initialData?.website || '',
       address: initialData?.address || '',
     },
   });
@@ -231,7 +230,6 @@ export default function PortfolioEditForm({ initialData, mandatoryStatus, onUpda
       formData.append('businessPhone', values.businessPhone ? values.businessPhone.trim() : '');
       formData.append('whatsappNumber', values.whatsappNumber ? values.whatsappNumber.trim() : '');
       formData.append('companyEmail', values.companyEmail ? values.companyEmail.trim() : '');
-      formData.append('website', values.website ? values.website.trim() : '');
       formData.append('address', values.address ? values.address.trim() : '');
 
       // Categories
@@ -891,17 +889,6 @@ export default function PortfolioEditForm({ initialData, mandatoryStatus, onUpda
                   style={{ width: '100%' }}
                   placeholder="sales@company.com"
                   {...register('companyEmail')}
-                />
-              </div>
-
-              <div className="seller-field-group">
-                <label className="seller-field-label">Official Website URL</label>
-                <input
-                  type="url"
-                  className="seller-input"
-                  style={{ width: '100%' }}
-                  placeholder="https://company.com"
-                  {...register('website')}
                 />
               </div>
             </div>
