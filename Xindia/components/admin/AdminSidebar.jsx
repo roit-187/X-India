@@ -13,6 +13,7 @@ const ALL_LINKS = [
   { href: '/admin/buyers', label: 'Buyers', icon: Users, adminOnly: false },
   { href: '/admin/products', label: 'Products', icon: Package, adminOnly: false },
   { href: '/admin/reviews', label: 'Reviews & Moderation', icon: Star, adminOnly: false },
+  { href: '/admin/staff', label: 'Staff & Team', icon: UserCog, adminOnly: true },
   { href: '/admin/plans', label: 'Plans & Pricing', icon: CreditCard, adminOnly: true },
   { href: '/admin/credits', label: 'Credits & Policy', icon: Coins, adminOnly: true },
   { href: '/admin/settings', label: 'System & Server', icon: Settings, adminOnly: true },

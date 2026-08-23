@@ -62,8 +62,8 @@ export async function middleware(request) {
       res.cookies.delete('admin_token');
       return noStore(res);
     }
-    // Restrict STAFF accounts from sensitive system, plan, and credit administration pages
-    const ADMIN_ONLY_PATHS = ['/admin/settings', '/admin/plans', '/admin/credits'];
+    // Restrict STAFF accounts from sensitive system, staff, plan, and credit administration pages
+    const ADMIN_ONLY_PATHS = ['/admin/staff', '/admin/settings', '/admin/plans', '/admin/credits'];
     if (payload.role === 'STAFF' && ADMIN_ONLY_PATHS.some((p) => pathname.startsWith(p))) {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
