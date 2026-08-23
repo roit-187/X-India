@@ -58,14 +58,13 @@ const Hero = () => {
             All on one trusted platform.
           </motion.p>
 
-          <motion.div variants={itemVariants} className="hero-ctas">
-            <a href="/login" className="btn-primary">
-              <Sparkles size={18} />
-              Start a Business — Free
+          <motion.div variants={itemVariants} className="hero-audience-text">
+            <a href="#manufacturers" className="hero-audience-link">
+              For Manufacturers
             </a>
-            <a href="/seller-portal/dashboard" className="btn-secondary">
-              <Factory size={18} />
-              List Your Business — Free
+            <span className="hero-audience-dot">•</span>
+            <a href="#entrepreneurs" className="hero-audience-link">
+              For Entrepreneurs
             </a>
           </motion.div>
 

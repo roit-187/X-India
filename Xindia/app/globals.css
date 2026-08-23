@@ -360,6 +360,32 @@ button {
   flex-wrap: wrap;
 }
 
+.hero-audience-text {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.hero-audience-link {
+  color: rgba(255, 255, 255, 0.88);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.hero-audience-link:hover {
+  color: #FF5500;
+}
+
+.hero-audience-dot {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 14px;
+}
+
 .btn-primary {
   display: inline-flex;
   align-items: center;
