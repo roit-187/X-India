@@ -16,6 +16,17 @@ export default function BuyersPage() {
   const [blockMode, setBlockMode] = useState('temporary'); // 'temporary' | 'blacklist'
   const [days, setDays] = useState(30);
   const [reason, setReason] = useState('');
+  const [role, setRole] = useState(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('admin_profile');
+      if (stored) {
+        const p = JSON.parse(stored);
+        setRole(p.role);
+      }
+    } catch {}
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -155,29 +166,37 @@ export default function BuyersPage() {
       {/* Block Modal */}
       <Modal open={!!targetBuyer} onClose={() => setTargetBuyer(null)} title="Block Buyer">
         <form onSubmit={handleBlockSubmit}>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Block Type</label>
-            <div style={{ display: 'flex', gap: 16 }}>
-              <label style={{ fontSize: 14 }}>
-                <input
-                  type="radio"
-                  name="blockMode"
-                  value="temporary"
-                  checked={blockMode === 'temporary'}
-                  onChange={() => setBlockMode('temporary')}
-                /> Block temporarily
-              </label>
-              <label style={{ fontSize: 14 }}>
-                <input
-                  type="radio"
-                  name="blockMode"
-                  value="blacklist"
-                  checked={blockMode === 'blacklist'}
-                  onChange={() => setBlockMode('blacklist')}
-                /> Blacklist permanently
-              </label>
+          {role !== 'STAFF' && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Block Type</label>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <label style={{ fontSize: 14 }}>
+                  <input
+                    type="radio"
+                    name="blockMode"
+                    value="temporary"
+                    checked={blockMode === 'temporary'}
+                    onChange={() => setBlockMode('temporary')}
+                  /> Block temporarily
+                </label>
+                <label style={{ fontSize: 14 }}>
+                  <input
+                    type="radio"
+                    name="blockMode"
+                    value="blacklist"
+                    checked={blockMode === 'blacklist'}
+                    onChange={() => setBlockMode('blacklist')}
+                  /> Blacklist permanently
+                </label>
+              </div>
             </div>
-          </div>
+          )}
+
+          {role === 'STAFF' && (
+            <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 8, padding: '10px 12px', marginBottom: 14, fontSize: 13, color: '#1E40AF' }}>
+              Staff accounts can temporarily suspend buyer accounts. Please provide a clear justification reason.
+            </div>
+          )}
 
           {blockMode === 'temporary' && (
             <div style={{ marginBottom: 16 }}>

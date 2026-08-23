@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Edit3, Building2, Phone, MapPin, Factory, Landmark, ShieldCheck, Check, X, FileText } from 'lucide-react';
 import Badge from '@/components/admin/Badge';
 import Toggle from '@/components/admin/Toggle';
 import Modal from '@/components/admin/Modal';
@@ -20,6 +20,49 @@ export default function ManufacturerDetailPage({ params }) {
   const [blockMode, setBlockMode] = useState('temporary');
   const [blockDays, setBlockDays] = useState(30);
   const [blockReason, setBlockReason] = useState('');
+
+  // Profile Editor Modal State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editTab, setEditTab] = useState('identity'); // 'identity' | 'contact' | 'factory' | 'bank'
+  const [editSaving, setEditSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    companyName: '',
+    companyOwner: '',
+    businessType: 'Manufacturer',
+    legalStatus: '',
+    yearOfEstablishment: '',
+    gstNumber: '',
+    industry: '',
+    manufacturingDetails: '',
+    companyEmail: '',
+    buyerContactPhone: '',
+    businessPhone: '',
+    whatsappNumber: '',
+    fullAddress: '',
+    city: '',
+    state: '',
+    pincode: '',
+    aboutFactory: '',
+    factorySize: '',
+    machinesCount: '',
+    employeesCount: '',
+    monthlyCapacity: '',
+    annualTurnover: '',
+    exportPercentage: '',
+    marketCovered: '',
+    factoryVideo: '',
+    introVideo: '',
+    bankDetails: {
+      accountName: '',
+      accountNumber: '',
+      ifscCode: '',
+      bankName: '',
+      branchName: '',
+    },
+  });
+
+  // Document Reject Modal State
+  const [rejectDocModal, setRejectDocModal] = useState(null); // { docType, label, rejectionReason: '' }
 
   const loadData = useCallback(async () => {
     try {
@@ -128,16 +171,104 @@ export default function ManufacturerDetailPage({ params }) {
     }
   };
 
-  const handleDocumentStatus = async (docType, status) => {
+  const handleOpenEditModal = () => {
+    const m = data?.manufacturer || {};
+    const seller = data?.sellerUser || {};
+    setEditForm({
+      companyName: seller.companyName || m.name || '',
+      companyOwner: seller.companyOwner || m.companyOwner || '',
+      businessType: seller.businessType || m.businessType || 'Manufacturer',
+      legalStatus: seller.legalStatus || m.legalStatus || '',
+      yearOfEstablishment: seller.yearOfEstablishment ? String(seller.yearOfEstablishment) : (m.yearOfEstablishment ? String(m.yearOfEstablishment) : ''),
+      gstNumber: seller.gstNumber || m.gstNumber || '',
+      industry: seller.industry || m.industry || '',
+      manufacturingDetails: seller.manufacturingDetails || m.description || '',
+      
+      companyEmail: seller.companyEmail || m.contact?.email || seller.email || '',
+      buyerContactPhone: seller.buyerContactPhone || m.buyerContactPhone || m.contact?.phone || '',
+      businessPhone: seller.businessPhone || m.businessPhone || seller.phone || '',
+      whatsappNumber: seller.whatsappNumber || m.whatsappNumber || '',
+      
+      fullAddress: seller.fullAddress || m.address || '',
+      city: seller.location || '',
+      state: seller.state || '',
+      pincode: seller.pincode || '',
+      
+      aboutFactory: seller.aboutFactory || m.aboutFactory || '',
+      factorySize: seller.factorySize || m.factorySize || '',
+      machinesCount: seller.machinesCount !== undefined ? String(seller.machinesCount) : (m.machinesCount !== undefined ? String(m.machinesCount) : ''),
+      employeesCount: seller.employeesCount !== undefined ? String(seller.employeesCount) : (m.employeesCount !== undefined ? String(m.employeesCount) : ''),
+      monthlyCapacity: seller.monthlyCapacity || m.monthlyCapacity || '',
+      annualTurnover: seller.annualTurnover || m.annualTurnover || '',
+      exportPercentage: seller.exportPercentage || m.exportPercentage || '',
+      marketCovered: seller.marketCovered || m.marketCovered || '',
+      factoryVideo: seller.factoryVideo || m.factoryVideo || '',
+      introVideo: seller.introVideo || m.introVideo || '',
+      
+      bankDetails: {
+        accountName: seller.bankDetails?.accountName || '',
+        accountNumber: seller.bankDetails?.accountNumber || '',
+        ifscCode: seller.bankDetails?.ifscCode || '',
+        bankName: seller.bankDetails?.bankName || '',
+        branchName: seller.bankDetails?.branchName || '',
+      },
+    });
+    setEditTab('identity');
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/admin/manufacturers/${id}/profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        setShowEditModal(false);
+        alert(resData.message || 'Seller profile updated successfully!');
+        loadData();
+      } else {
+        alert(resData.message || 'Failed to update profile');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error saving profile');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleApproveDocument = async (docType) => {
     const res = await fetch(`/api/admin/manufacturers/${id}/documents/${docType}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ action: 'approve' }),
     });
     const resData = await res.json();
     if (!resData.success) {
-      alert(resData.message || 'Failed to update document status');
+      alert(resData.message || 'Failed to approve document');
     } else {
+      loadData();
+    }
+  };
+
+  const handleConfirmRejectDocument = async (e) => {
+    e.preventDefault();
+    if (!rejectDocModal) return;
+    const res = await fetch(`/api/admin/manufacturers/${id}/documents/${rejectDocModal.docType}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reject', rejectionReason: rejectDocModal.rejectionReason }),
+    });
+    const resData = await res.json();
+    if (!resData.success) {
+      alert(resData.message || 'Failed to reject document');
+    } else {
+      setRejectDocModal(null);
       loadData();
     }
   };
@@ -263,11 +394,21 @@ export default function ManufacturerDetailPage({ params }) {
               <span style={{ fontSize: 13, fontWeight: 600 }}>Verified Badge:</span>
               <Toggle checked={m.verified} onChange={handleToggleVerified} />
             </div>
-            {seller && (seller.isBlacklisted || (seller.blockedUntil && new Date(seller.blockedUntil) > new Date())) ? (
-              <button className="admin-btn admin-btn-secondary" onClick={handleUnblock}>Unblock Seller</button>
-            ) : (
-              <button className="admin-btn admin-btn-danger" onClick={() => setShowBlockModal(true)}>Block Seller</button>
-            )}
+            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+              <button
+                className="admin-btn admin-btn-primary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13 }}
+                onClick={handleOpenEditModal}
+              >
+                <Edit3 size={14} />
+                Edit Profile
+              </button>
+              {seller && (seller.isBlacklisted || (seller.blockedUntil && new Date(seller.blockedUntil) > new Date())) ? (
+                <button className="admin-btn admin-btn-secondary" onClick={handleUnblock}>Unblock Seller</button>
+              ) : (
+                <button className="admin-btn admin-btn-danger" onClick={() => setShowBlockModal(true)}>Block Seller</button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -288,7 +429,17 @@ export default function ManufacturerDetailPage({ params }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Business Details */}
           <div className="admin-card">
-            <h3 style={{ marginTop: 0, marginBottom: 16 }}>Business Details</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ margin: 0 }}>Business Details</h3>
+              <button
+                className="admin-btn admin-btn-secondary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '4px 10px' }}
+                onClick={handleOpenEditModal}
+              >
+                <Edit3 size={13} />
+                Edit Profile
+              </button>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 14 }}>
               <div><strong>Business Type:</strong> {m.businessType || '-'}</div>
               <div><strong>Legal Status:</strong> {m.legalStatus || '-'}</div>
@@ -391,24 +542,28 @@ export default function ManufacturerDetailPage({ params }) {
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button
-                          onClick={() => handleDocumentStatus(docType, 'verified')}
-                          style={{
-                            padding: '6px 12px', borderRadius: 6, border: 'none',
-                            background: '#DCFCE7', color: '#15803D', fontWeight: 700, fontSize: 12, cursor: 'pointer',
-                          }}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleDocumentStatus(docType, 'rejected')}
-                          style={{
-                            padding: '6px 12px', borderRadius: 6, border: 'none',
-                            background: '#FEE2E2', color: '#B91C1C', fontWeight: 700, fontSize: 12, cursor: 'pointer',
-                          }}
-                        >
-                          Reject
-                        </button>
+                        {doc.status !== 'verified' && (
+                          <button
+                            onClick={() => handleApproveDocument(docType)}
+                            style={{
+                              padding: '6px 12px', borderRadius: 6, border: 'none',
+                              background: '#DCFCE7', color: '#15803D', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                            }}
+                          >
+                            Approve
+                          </button>
+                        )}
+                        {doc.status !== 'rejected' && (
+                          <button
+                            onClick={() => setRejectDocModal({ docType, label: `${docType.toUpperCase()} Certificate`, rejectionReason: '' })}
+                            style={{
+                              padding: '6px 12px', borderRadius: 6, border: 'none',
+                              background: '#FEE2E2', color: '#B91C1C', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                            }}
+                          >
+                            Reject
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -742,6 +897,454 @@ export default function ManufacturerDetailPage({ params }) {
             <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setShowBlockModal(false)}>Cancel</button>
             <button type="submit" className="admin-btn admin-btn-danger" disabled={!blockReason.trim()}>
               {blockMode === 'temporary' ? 'Block Seller' : 'Blacklist Seller'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Document Rejection Modal */}
+      <Modal open={!!rejectDocModal} onClose={() => setRejectDocModal(null)} title={`Reject ${rejectDocModal?.label || 'Document'}`}>
+        <form onSubmit={handleConfirmRejectDocument}>
+          <p style={{ fontSize: 13.5, color: '#475569', marginBottom: 12 }}>
+            Please state the reason for rejecting this document. The seller will be notified to re-upload.
+          </p>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Rejection Reason</label>
+            <textarea
+              className="admin-input"
+              style={{ width: '100%', minHeight: 80 }}
+              placeholder="e.g., Image is blurry, name mismatch with GST, expired certificate..."
+              value={rejectDocModal?.rejectionReason || ''}
+              onChange={(e) => setRejectDocModal((prev) => ({ ...prev, rejectionReason: e.target.value }))}
+              required
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setRejectDocModal(null)}>Cancel</button>
+            <button type="submit" className="admin-btn admin-btn-danger" disabled={!rejectDocModal?.rejectionReason?.trim()}>
+              Confirm Reject
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Comprehensive Edit Manufacturer Profile Modal */}
+      <Modal open={showEditModal} onClose={() => setShowEditModal(false)} title="Edit Manufacturer Profile">
+        <form onSubmit={handleEditSubmit} style={{ maxHeight: '75vh', display: 'flex', flexDirection: 'column' }}>
+          {/* Tab Selection */}
+          <div style={{ display: 'flex', gap: 6, borderBottom: '1px solid #E2E8F0', paddingBottom: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+            {[
+              { key: 'identity', label: 'Company & Legal', icon: Building2 },
+              { key: 'contact', label: 'Contact & Address', icon: Phone },
+              { key: 'factory', label: 'Factory & Specs', icon: Factory },
+              { key: 'bank', label: 'Bank & Financials', icon: Landmark },
+            ].map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setEditTab(key)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: 6,
+                  border: 'none',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  background: editTab === key ? '#1E293B' : '#F1F5F9',
+                  color: editTab === key ? '#FFFFFF' : '#475569',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <Icon size={14} />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ overflowY: 'auto', flex: 1, paddingRight: 4, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Tab 1: Identity & Business */}
+            {editTab === 'identity' && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Company Name *</label>
+                    <input
+                      className="admin-input"
+                      value={editForm.companyName}
+                      onChange={(e) => setEditForm({ ...editForm, companyName: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Company Owner / Authorized Person</label>
+                    <input
+                      className="admin-input"
+                      value={editForm.companyOwner}
+                      onChange={(e) => setEditForm({ ...editForm, companyOwner: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Business Type</label>
+                    <select
+                      className="admin-select"
+                      value={editForm.businessType}
+                      onChange={(e) => setEditForm({ ...editForm, businessType: e.target.value })}
+                    >
+                      <option value="Manufacturer">Manufacturer</option>
+                      <option value="Exporter">Exporter</option>
+                      <option value="OEM / ODM Supplier">OEM / ODM Supplier</option>
+                      <option value="Wholesaler">Wholesaler</option>
+                      <option value="Trader">Trader</option>
+                      <option value="Distributor">Distributor</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Legal Status</label>
+                    <select
+                      className="admin-select"
+                      value={editForm.legalStatus}
+                      onChange={(e) => setEditForm({ ...editForm, legalStatus: e.target.value })}
+                    >
+                      <option value="">Select legal status</option>
+                      <option value="Private Limited (Pvt Ltd)">Private Limited (Pvt Ltd)</option>
+                      <option value="Public Limited">Public Limited</option>
+                      <option value="Limited Liability Partnership (LLP)">Limited Liability Partnership (LLP)</option>
+                      <option value="Partnership Firm">Partnership Firm</option>
+                      <option value="Sole Proprietorship">Sole Proprietorship</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Year of Establishment</label>
+                    <input
+                      type="number"
+                      className="admin-input"
+                      placeholder="e.g., 2012"
+                      value={editForm.yearOfEstablishment}
+                      onChange={(e) => setEditForm({ ...editForm, yearOfEstablishment: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>GST Number (GSTIN)</label>
+                    <input
+                      className="admin-input"
+                      placeholder="e.g., 07AAAAA0000A1Z5"
+                      value={editForm.gstNumber}
+                      onChange={(e) => setEditForm({ ...editForm, gstNumber: e.target.value.toUpperCase() })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Primary Industry / Sector</label>
+                  <input
+                    className="admin-input"
+                    placeholder="e.g., Apparel & Textiles, CNC Machinery, Packaging..."
+                    value={editForm.industry}
+                    onChange={(e) => setEditForm({ ...editForm, industry: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Detailed Company / Manufacturing Description</label>
+                  <textarea
+                    className="admin-input"
+                    rows={4}
+                    placeholder="Describe manufacturing expertise, history, certifications, special capabilities..."
+                    value={editForm.manufacturingDetails}
+                    onChange={(e) => setEditForm({ ...editForm, manufacturingDetails: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Tab 2: Contact & Address */}
+            {editTab === 'contact' && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Company Email</label>
+                    <input
+                      type="email"
+                      className="admin-input"
+                      value={editForm.companyEmail}
+                      onChange={(e) => setEditForm({ ...editForm, companyEmail: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Buyer Contact Phone (Public)</label>
+                    <input
+                      className="admin-input"
+                      placeholder="+91..."
+                      value={editForm.buyerContactPhone}
+                      onChange={(e) => setEditForm({ ...editForm, buyerContactPhone: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Business Direct Phone</label>
+                    <input
+                      className="admin-input"
+                      placeholder="+91..."
+                      value={editForm.businessPhone}
+                      onChange={(e) => setEditForm({ ...editForm, businessPhone: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>WhatsApp Business Number</label>
+                    <input
+                      className="admin-input"
+                      placeholder="+91..."
+                      value={editForm.whatsappNumber}
+                      onChange={(e) => setEditForm({ ...editForm, whatsappNumber: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Full Factory / Registered Address</label>
+                  <textarea
+                    className="admin-input"
+                    rows={2}
+                    placeholder="Street address, Plot / Shed No, Industrial Area..."
+                    value={editForm.fullAddress}
+                    onChange={(e) => setEditForm({ ...editForm, fullAddress: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>City / Location</label>
+                    <input
+                      className="admin-input"
+                      value={editForm.city}
+                      onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>State</label>
+                    <input
+                      className="admin-input"
+                      value={editForm.state}
+                      onChange={(e) => setEditForm({ ...editForm, state: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Pincode</label>
+                    <input
+                      className="admin-input"
+                      value={editForm.pincode}
+                      onChange={(e) => setEditForm({ ...editForm, pincode: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Tab 3: Factory & Specs */}
+            {editTab === 'factory' && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Factory Floor Size</label>
+                    <input
+                      className="admin-input"
+                      placeholder="e.g., 25,000 sq. ft."
+                      value={editForm.factorySize}
+                      onChange={(e) => setEditForm({ ...editForm, factorySize: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Monthly Capacity</label>
+                    <input
+                      className="admin-input"
+                      placeholder="e.g., 50,000 units / month"
+                      value={editForm.monthlyCapacity}
+                      onChange={(e) => setEditForm({ ...editForm, monthlyCapacity: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Number of Machines</label>
+                    <input
+                      type="number"
+                      className="admin-input"
+                      value={editForm.machinesCount}
+                      onChange={(e) => setEditForm({ ...editForm, machinesCount: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Employees Count</label>
+                    <input
+                      type="number"
+                      className="admin-input"
+                      value={editForm.employeesCount}
+                      onChange={(e) => setEditForm({ ...editForm, employeesCount: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Annual Turnover</label>
+                    <input
+                      className="admin-input"
+                      placeholder="e.g., 10 Cr - 25 Cr"
+                      value={editForm.annualTurnover}
+                      onChange={(e) => setEditForm({ ...editForm, annualTurnover: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Export Percentage</label>
+                    <input
+                      className="admin-input"
+                      placeholder="e.g., 35%"
+                      value={editForm.exportPercentage}
+                      onChange={(e) => setEditForm({ ...editForm, exportPercentage: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Markets Covered</label>
+                  <input
+                    className="admin-input"
+                    placeholder="e.g., Pan-India, North America, Middle East..."
+                    value={editForm.marketCovered}
+                    onChange={(e) => setEditForm({ ...editForm, marketCovered: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>About Factory & Infrastructure Details</label>
+                  <textarea
+                    className="admin-input"
+                    rows={3}
+                    placeholder="Describe manufacturing lines, automated setups, QC labs..."
+                    value={editForm.aboutFactory}
+                    onChange={(e) => setEditForm({ ...editForm, aboutFactory: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Factory Tour Video URL</label>
+                    <input
+                      className="admin-input"
+                      placeholder="YouTube URL"
+                      value={editForm.factoryVideo}
+                      onChange={(e) => setEditForm({ ...editForm, factoryVideo: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Company Overview Video URL</label>
+                    <input
+                      className="admin-input"
+                      placeholder="YouTube URL"
+                      value={editForm.introVideo}
+                      onChange={(e) => setEditForm({ ...editForm, introVideo: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Tab 4: Bank Details */}
+            {editTab === 'bank' && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Account Beneficiary Name</label>
+                    <input
+                      className="admin-input"
+                      value={editForm.bankDetails?.accountName || ''}
+                      onChange={(e) => setEditForm({
+                        ...editForm,
+                        bankDetails: { ...editForm.bankDetails, accountName: e.target.value },
+                      })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Account Number</label>
+                    <input
+                      className="admin-input"
+                      value={editForm.bankDetails?.accountNumber || ''}
+                      onChange={(e) => setEditForm({
+                        ...editForm,
+                        bankDetails: { ...editForm.bankDetails, accountNumber: e.target.value },
+                      })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>IFSC Code</label>
+                    <input
+                      className="admin-input"
+                      value={editForm.bankDetails?.ifscCode || ''}
+                      onChange={(e) => setEditForm({
+                        ...editForm,
+                        bankDetails: { ...editForm.bankDetails, ifscCode: e.target.value.toUpperCase() },
+                      })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Bank Name</label>
+                    <input
+                      className="admin-input"
+                      value={editForm.bankDetails?.bankName || ''}
+                      onChange={(e) => setEditForm({
+                        ...editForm,
+                        bankDetails: { ...editForm.bankDetails, bankName: e.target.value },
+                      })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#334155' }}>Branch Name</label>
+                    <input
+                      className="admin-input"
+                      value={editForm.bankDetails?.branchName || ''}
+                      onChange={(e) => setEditForm({
+                        ...editForm,
+                        bankDetails: { ...editForm.bankDetails, branchName: e.target.value },
+                      })}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', borderTop: '1px solid #E2E8F0', paddingTop: 14, marginTop: 16 }}>
+            <button
+              type="button"
+              className="admin-btn admin-btn-secondary"
+              onClick={() => setShowEditModal(false)}
+              disabled={editSaving}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="admin-btn admin-btn-primary"
+              disabled={editSaving}
+            >
+              {editSaving ? 'Saving Changes...' : 'Save Profile Changes'}
             </button>
           </div>
         </form>

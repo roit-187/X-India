@@ -28,6 +28,14 @@ export default function AdminReviewsPage() {
   const [blacklistModal, setBlacklistModal] = useState({ open: false, user: null, reason: '' });
   const [processingId, setProcessingId] = useState(null);
   const [actionAlert, setActionAlert] = useState({ type: '', text: '' });
+  const [role, setRole] = useState(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('admin_profile');
+      if (stored) setRole(JSON.parse(stored).role);
+    } catch {}
+  }, []);
 
   const loadReviews = useCallback(async () => {
     try {
@@ -307,8 +315,8 @@ export default function AdminReviewsPage() {
                     {isApproved ? 'Hide (Make Inactive)' : 'Approve & Publish'}
                   </button>
 
-                  {/* Blacklist Reviewer */}
-                  {review.reviewerId && !isUserBlacklisted && (
+                  {/* Blacklist Reviewer (Admin only) */}
+                  {role !== 'STAFF' && review.reviewerId && !isUserBlacklisted && (
                     <button
                       onClick={() => setBlacklistModal({ open: true, user: review.reviewerId, reason: 'Spam/Abusive reviews' })}
                       style={{

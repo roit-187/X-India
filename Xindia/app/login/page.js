@@ -35,6 +35,17 @@ function LoginContent() {
       });
       const data = await res.json();
       if (data.success) {
+        // Persist role/permissions so sidebar and pages can do role-based rendering
+        // without decoding the HttpOnly cookie.
+        if (data.admin) {
+          localStorage.setItem('admin_profile', JSON.stringify({
+            id: data.admin.id,
+            username: data.admin.username,
+            email: data.admin.email,
+            role: data.admin.role,
+            permissions: data.admin.permissions || [],
+          }));
+        }
         router.push('/admin/dashboard');
       } else {
         setAdminError(data.message || 'Login failed');
@@ -153,7 +164,7 @@ function LoginContent() {
             cursor: 'pointer',
           }}
         >
-          Admin
+          Admin / Staff
         </button>
         <button
           type="button"
