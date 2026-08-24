@@ -9,7 +9,7 @@ import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 const formatPrice = (amount) => `₹${Number(amount).toLocaleString('en-IN')}`;
 
 export default function AdminCreditsPage() {
-  const { isSuperAdmin, loaded } = useAdminPermissions();
+  const { canManageCredits, loaded } = useAdminPermissions();
   const [settings, setSettings] = useState({
     dailyFreeCredits: 3,
     maxWeeklyCreditCap: 20,
@@ -56,7 +56,7 @@ export default function AdminCreditsPage() {
     loadData();
   }, []);
 
-  if (loaded && !isSuperAdmin) {
+  if (loaded && !canManageCredits) {
     return (
       <div style={{ maxWidth: 600, margin: '60px auto', textAlign: 'center', padding: 32 }} className="admin-card">
         <AlertTriangle size={48} color="#EF4444" style={{ margin: '0 auto 16px' }} />

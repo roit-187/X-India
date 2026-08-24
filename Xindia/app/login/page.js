@@ -2,11 +2,13 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import WebConsentModal from '@/components/legal/WebConsentModal';
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState(searchParams.get('tab') === 'seller' ? 'seller' : 'admin');
+  const [activeModalDocType, setActiveModalDocType] = useState(null);
 
   // Admin form state
   const [username, setUsername] = useState('');
@@ -344,6 +346,32 @@ function LoginContent() {
           )}
         </div>
       )}
+
+      {/* DPDP Legal footer links */}
+      <div style={{ marginTop: 24, textAlign: 'center', fontSize: 12, color: '#64748B' }}>
+        <span>By accessing this portal, you agree to Xindia's </span>
+        <button
+          type="button"
+          onClick={() => setActiveModalDocType('BUYER_TERMS')}
+          style={{ background: 'none', border: 'none', color: '#E8581C', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+        >
+          Terms of Service
+        </button>
+        <span> & </span>
+        <button
+          type="button"
+          onClick={() => setActiveModalDocType('BUYER_PRIVACY')}
+          style={{ background: 'none', border: 'none', color: '#E8581C', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+        >
+          Privacy Policy
+        </button>
+      </div>
+
+      <WebConsentModal
+        isOpen={!!activeModalDocType}
+        docType={activeModalDocType}
+        onClose={() => setActiveModalDocType(null)}
+      />
     </div>
   );
 }

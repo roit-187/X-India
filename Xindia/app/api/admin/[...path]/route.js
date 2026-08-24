@@ -16,6 +16,31 @@ async function proxy(request, { params }) {
     return Response.json({ success: false, message: 'Not authenticated' }, { status: 401 });
   }
 
+  // [SEC-LOW-03] CSRF: verify the request originates from the admin portal's
+  // own host on mutating methods. The Origin (or fallback Referer) header is
+  // checked against the app's own URL. Browsers always set at least one of
+  // them for same-site + cross-site fetch/form requests.
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
+    const expectedHost = new URL(
+      process.env.NEXT_PUBLIC_ADMIN_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    ).host;
+    const originHeader = request.headers.get('origin');
+    const refererHeader = request.headers.get('referer');
+    const source = originHeader || refererHeader;
+    if (source) {
+      try {
+        const sourceHost = new URL(source).host;
+        if (sourceHost !== expectedHost) {
+          console.warn(`[admin proxy] CSRF: blocked request from ${sourceHost} (expected ${expectedHost})`);
+          return Response.json({ success: false, message: 'Forbidden' }, { status: 403 });
+        }
+      } catch {
+        return Response.json({ success: false, message: 'Forbidden' }, { status: 403 });
+      }
+    }
+    // No Origin/Referer from a browser means it's a server-side call — allow.
+  }
+
   if (!isSafePathSegments(params.path)) {
     return Response.json({ success: false, message: 'Invalid path' }, { status: 400 });
   }

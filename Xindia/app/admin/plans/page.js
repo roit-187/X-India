@@ -138,7 +138,7 @@ function PlanCard({ plan, billing, onEdit, onDelete }) {
 }
 
 export default function AdminPlansPage() {
-  const { isSuperAdmin, loaded } = useAdminPermissions();
+  const { canManagePlans, loaded } = useAdminPermissions();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [billing, setBilling] = useState('monthly');
@@ -166,7 +166,7 @@ export default function AdminPlansPage() {
     loadPlans();
   }, []);
 
-  if (loaded && !isSuperAdmin) {
+  if (loaded && !canManagePlans) {
     return (
       <div style={{ maxWidth: 600, margin: '60px auto', textAlign: 'center', padding: 32 }} className="admin-card">
         <AlertTriangle size={48} color="#EF4444" style={{ margin: '0 auto 16px' }} />

@@ -23,6 +23,7 @@ import Badge from '@/components/admin/Badge';
 import Toggle from '@/components/admin/Toggle';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
+// MASTER_ADMIN is intentionally omitted — it can only be created via seed script.
 const ROLES = [
   { value: 'STAFF', label: 'Staff (Operations)', desc: 'Can verify docs, edit profiles, moderate' },
   { value: 'SUPPORT_AGENT', label: 'Support Agent', desc: 'Customer support and profile assistance' },
@@ -30,7 +31,18 @@ const ROLES = [
   { value: 'COMPLIANCE_OFFICER', label: 'Compliance Officer', desc: 'Document verification & verification decisions' },
   { value: 'OPERATIONS_ADMIN', label: 'Operations Admin', desc: 'Operations, seller status & onboarding' },
   { value: 'PLATFORM_ADMIN', label: 'Platform Admin', desc: 'Full administrative access' },
-  { value: 'SUPER_ADMIN', label: 'Super Admin', desc: 'Master root administrator' },
+  { value: 'SUPER_ADMIN', label: 'Super Admin', desc: 'Can manage all staff and permissions' },
+  { value: '__CUSTOM__', label: '＋ Custom Role...', desc: 'Define a custom department or team role' },
+];
+
+const ALL_STANDARD_PERMISSIONS = [
+  'manufacturers.edit',
+  'documents.verify',
+  'reviews.moderate',
+  'buyers.block',
+  'products.moderate',
+  'plans.manage',
+  'credits.manage',
 ];
 
 const ROLE_COLORS = {
@@ -49,6 +61,8 @@ const PRESET_PERMISSIONS = [
   { key: 'reviews.moderate', label: 'Moderate Reviews & Feedback' },
   { key: 'buyers.block', label: 'Suspend & Block Buyers' },
   { key: 'products.moderate', label: 'Manage Product Visibility' },
+  { key: 'plans.manage', label: 'Manage Subscription Plans & Pricing' },
+  { key: 'credits.manage', label: 'Manage Credit Packages & Policy' },
 ];
 
 function generateStrongPassword() {
@@ -82,6 +96,7 @@ export default function AdminStaffPage() {
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState('STAFF');
+  const [newCustomRole, setNewCustomRole] = useState('');
   const [newPermissions, setNewPermissions] = useState([
     'manufacturers.edit',
     'documents.verify',
@@ -91,6 +106,7 @@ export default function AdminStaffPage() {
 
   // Edit form state
   const [editRole, setEditRole] = useState('');
+  const [editCustomRole, setEditCustomRole] = useState('');
   const [editPermissions, setEditPermissions] = useState([]);
   const [editActive, setEditActive] = useState(true);
 
@@ -139,14 +155,37 @@ export default function AdminStaffPage() {
     setNewEmail('');
     setNewPassword(generateStrongPassword());
     setNewRole('STAFF');
+    setNewCustomRole('');
     setNewPermissions(['manufacturers.edit', 'documents.verify', 'reviews.moderate']);
     setShowNewPassword(true);
     setCreateModalOpen(true);
   };
 
+  // When role changes in create modal, auto-check all perms for SUPER_ADMIN.
+  const handleNewRoleChange = (val) => {
+    setNewRole(val);
+    if (val === 'SUPER_ADMIN') {
+      setNewPermissions([...ALL_STANDARD_PERMISSIONS]);
+    } else if (val !== '__CUSTOM__') {
+      // Reset to default set for non-super roles.
+      setNewPermissions(['manufacturers.edit', 'documents.verify', 'reviews.moderate']);
+    }
+  };
+
+  // When role changes in edit modal, auto-check all perms for SUPER_ADMIN.
+  const handleEditRoleChange = (val) => {
+    setEditRole(val);
+    if (val === 'SUPER_ADMIN') {
+      setEditPermissions([...ALL_STANDARD_PERMISSIONS]);
+    }
+  };
+
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     if (!newUsername.trim() || !newEmail.trim() || !newPassword) return;
+    // Resolve effective role (custom or standard).
+    const effectiveRole = newRole === '__CUSTOM__' ? newCustomRole.trim() : newRole;
+    if (!effectiveRole) return;
     setSubmitting(true);
     try {
       const res = await fetch('/api/admin/staff', {
@@ -156,7 +195,7 @@ export default function AdminStaffPage() {
           username: newUsername.trim(),
           email: newEmail.trim(),
           password: newPassword,
-          role: newRole,
+          role: effectiveRole,
           permissions: newPermissions,
         }),
       });
@@ -178,6 +217,7 @@ export default function AdminStaffPage() {
   const handleOpenEditModal = (staff) => {
     setEditTarget(staff);
     setEditRole(staff.role);
+    setEditCustomRole('');
     setEditPermissions(staff.permissions || []);
     setEditActive(staff.active !== false);
   };
@@ -185,13 +225,15 @@ export default function AdminStaffPage() {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!editTarget) return;
+    const effectiveEditRole = editRole === '__CUSTOM__' ? editCustomRole.trim() : editRole;
+    if (!effectiveEditRole) return;
     setSubmitting(true);
     try {
       const res = await fetch(`/api/admin/staff/${editTarget._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          role: editRole,
+          role: effectiveEditRole,
           permissions: editPermissions,
           active: editActive,
         }),
@@ -587,12 +629,23 @@ export default function AdminStaffPage() {
               className="admin-select"
               style={{ width: '100%' }}
               value={newRole}
-              onChange={(e) => setNewRole(e.target.value)}
+              onChange={(e) => handleNewRoleChange(e.target.value)}
             >
-              {ROLES.filter((r) => r.value !== 'SUPER_ADMIN').map((r) => (
+              {ROLES.map((r) => (
                 <option key={r.value} value={r.value}>{r.label} — {r.desc}</option>
               ))}
             </select>
+            {newRole === '__CUSTOM__' && (
+              <input
+                className="admin-input"
+                style={{ marginTop: 8, width: '100%' }}
+                placeholder="e.g. Regional Coordinator, Catalog Manager"
+                value={newCustomRole}
+                onChange={(e) => setNewCustomRole(e.target.value)}
+                maxLength={40}
+                autoFocus
+              />
+            )}
           </div>
 
           <div style={{ marginBottom: 20 }}>
@@ -636,12 +689,23 @@ export default function AdminStaffPage() {
               className="admin-select"
               style={{ width: '100%' }}
               value={editRole}
-              onChange={(e) => setEditRole(e.target.value)}
+              onChange={(e) => handleEditRoleChange(e.target.value)}
             >
               {ROLES.map((r) => (
                 <option key={r.value} value={r.value}>{r.label} — {r.desc}</option>
               ))}
             </select>
+            {editRole === '__CUSTOM__' && (
+              <input
+                className="admin-input"
+                style={{ marginTop: 8, width: '100%' }}
+                placeholder="e.g. Regional Coordinator, Catalog Manager"
+                value={editCustomRole}
+                onChange={(e) => setEditCustomRole(e.target.value)}
+                maxLength={40}
+                autoFocus
+              />
+            )}
           </div>
 
           <div style={{ marginBottom: 16 }}>
