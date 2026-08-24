@@ -15,8 +15,10 @@ import {
   AlertTriangle,
   ExternalLink,
 } from 'lucide-react';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 export default function AdminReviewsPage() {
+  const { isSuperAdmin, hasPermission } = useAdminPermissions();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
@@ -28,14 +30,6 @@ export default function AdminReviewsPage() {
   const [blacklistModal, setBlacklistModal] = useState({ open: false, user: null, reason: '' });
   const [processingId, setProcessingId] = useState(null);
   const [actionAlert, setActionAlert] = useState({ type: '', text: '' });
-  const [role, setRole] = useState(null);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('admin_profile');
-      if (stored) setRole(JSON.parse(stored).role);
-    } catch {}
-  }, []);
 
   const loadReviews = useCallback(async () => {
     try {
@@ -302,21 +296,23 @@ export default function AdminReviewsPage() {
                 {/* Actions Footer */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, alignItems: 'center', borderTop: '1px solid #F1F5F9', paddingTop: 12 }}>
                   {/* Toggle Active / Inactive */}
-                  <button
-                    onClick={() => handleToggleStatus(review._id, review.status)}
-                    disabled={processingId === review._id}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px',
-                      borderRadius: 8, border: '1px solid #CBD5E1', background: isApproved ? '#FFFBEB' : '#F0FDF4',
-                      color: isApproved ? '#B45309' : '#15803D', fontWeight: 700, fontSize: 12, cursor: 'pointer',
-                    }}
-                  >
-                    {isApproved ? <EyeOff size={14} /> : <Eye size={14} />}
-                    {isApproved ? 'Hide (Make Inactive)' : 'Approve & Publish'}
-                  </button>
+                  {hasPermission('reviews.moderate') && (
+                    <button
+                      onClick={() => handleToggleStatus(review._id, review.status)}
+                      disabled={processingId === review._id}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px',
+                        borderRadius: 8, border: '1px solid #CBD5E1', background: isApproved ? '#FFFBEB' : '#F0FDF4',
+                        color: isApproved ? '#B45309' : '#15803D', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                      }}
+                    >
+                      {isApproved ? <EyeOff size={14} /> : <Eye size={14} />}
+                      {isApproved ? 'Hide (Make Inactive)' : 'Approve & Publish'}
+                    </button>
+                  )}
 
-                  {/* Blacklist Reviewer (Admin only) */}
-                  {role !== 'STAFF' && review.reviewerId && !isUserBlacklisted && (
+                  {/* Blacklist Reviewer (Super Admin only) */}
+                  {isSuperAdmin && review.reviewerId && !isUserBlacklisted && (
                     <button
                       onClick={() => setBlacklistModal({ open: true, user: review.reviewerId, reason: 'Spam/Abusive reviews' })}
                       style={{
@@ -329,18 +325,20 @@ export default function AdminReviewsPage() {
                     </button>
                   )}
 
-                  {/* Delete Button */}
-                  <button
-                    onClick={() => handleDeleteReview(review._id)}
-                    disabled={processingId === review._id}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px',
-                      borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff',
-                      color: '#64748B', fontWeight: 700, fontSize: 12, cursor: 'pointer',
-                    }}
-                  >
-                    <Trash2 size={14} /> Delete
-                  </button>
+                  {/* Delete Button (Super Admin only) */}
+                  {isSuperAdmin && (
+                    <button
+                      onClick={() => handleDeleteReview(review._id)}
+                      disabled={processingId === review._id}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px',
+                        borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff',
+                        color: '#64748B', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                      }}
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
+                  )}
                 </div>
               </div>
             );

@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Plus, Pencil, Trash2, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import PlanModal from '@/components/admin/PlanModal';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 const formatPrice = (amount) =>
   `₹${Number(amount).toLocaleString('en-IN')}`;
@@ -136,6 +138,7 @@ function PlanCard({ plan, billing, onEdit, onDelete }) {
 }
 
 export default function AdminPlansPage() {
+  const { isSuperAdmin, loaded } = useAdminPermissions();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [billing, setBilling] = useState('monthly');
@@ -159,7 +162,24 @@ export default function AdminPlansPage() {
     }
   };
 
-  useEffect(() => { loadPlans(); }, []);
+  useEffect(() => {
+    loadPlans();
+  }, []);
+
+  if (loaded && !isSuperAdmin) {
+    return (
+      <div style={{ maxWidth: 600, margin: '60px auto', textAlign: 'center', padding: 32 }} className="admin-card">
+        <AlertTriangle size={48} color="#EF4444" style={{ margin: '0 auto 16px' }} />
+        <h2 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px', color: '#0F172A' }}>Access Restricted</h2>
+        <p style={{ color: '#64748B', fontSize: 14, margin: '0 0 20px' }}>
+          Plans and pricing management is strictly restricted to Super Administrators.
+        </p>
+        <Link href="/admin/dashboard" className="admin-btn admin-btn-primary">
+          Back to Dashboard
+        </Link>
+      </div>
+    );
+  }
 
   const openAdd = () => setModalState({ open: true, plan: null, isNew: true });
   const openEdit = (plan) => setModalState({ open: true, plan, isNew: false });

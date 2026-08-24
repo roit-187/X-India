@@ -3,8 +3,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import BuyerCard from '@/components/admin/BuyerCard';
 import Modal from '@/components/admin/Modal';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 export default function BuyersPage() {
+  const { isSuperAdmin, hasPermission } = useAdminPermissions();
   const [buyers, setBuyers] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -16,17 +18,6 @@ export default function BuyersPage() {
   const [blockMode, setBlockMode] = useState('temporary'); // 'temporary' | 'blacklist'
   const [days, setDays] = useState(30);
   const [reason, setReason] = useState('');
-  const [role, setRole] = useState(null);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('admin_profile');
-      if (stored) {
-        const p = JSON.parse(stored);
-        setRole(p.role);
-      }
-    } catch {}
-  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -48,6 +39,7 @@ export default function BuyersPage() {
   useEffect(() => { load(); }, [load]);
 
   const handleOpenBlockModal = (buyer) => {
+    if (!hasPermission('buyers.block')) return;
     setTargetBuyer(buyer);
     setBlockMode('temporary');
     setDays(30);
@@ -56,9 +48,12 @@ export default function BuyersPage() {
 
   const handleBlockSubmit = async (e) => {
     e.preventDefault();
-    if (!targetBuyer || !reason.trim()) return;
+    if (!hasPermission('buyers.block') || !targetBuyer || !reason.trim()) return;
 
-    const payload = blockMode === 'temporary'
+    // Staff cannot blacklist
+    const effectiveMode = isSuperAdmin ? blockMode : 'temporary';
+
+    const payload = effectiveMode === 'temporary'
       ? { mode: 'temporary', days: Number(days), reason }
       : { mode: 'blacklist', reason };
 
@@ -78,6 +73,7 @@ export default function BuyersPage() {
   };
 
   const handleUnblock = async (id) => {
+    if (!isSuperAdmin) return;
     const res = await fetch(`/api/admin/buyers/${id}/unblock`, {
       method: 'PATCH',
     });
@@ -147,6 +143,8 @@ export default function BuyersPage() {
             <BuyerCard
               key={b._id}
               buyer={b}
+              canBlock={hasPermission('buyers.block')}
+              canUnblock={isSuperAdmin}
               onOpenBlockModal={handleOpenBlockModal}
               onUnblock={handleUnblock}
             />
@@ -166,7 +164,7 @@ export default function BuyersPage() {
       {/* Block Modal */}
       <Modal open={!!targetBuyer} onClose={() => setTargetBuyer(null)} title="Block Buyer">
         <form onSubmit={handleBlockSubmit}>
-          {role !== 'STAFF' && (
+          {isSuperAdmin && (
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Block Type</label>
               <div style={{ display: 'flex', gap: 16 }}>
@@ -192,7 +190,7 @@ export default function BuyersPage() {
             </div>
           )}
 
-          {role === 'STAFF' && (
+          {!isSuperAdmin && (
             <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 8, padding: '10px 12px', marginBottom: 14, fontSize: 13, color: '#1E40AF' }}>
               Staff accounts can temporarily suspend buyer accounts. Please provide a clear justification reason.
             </div>

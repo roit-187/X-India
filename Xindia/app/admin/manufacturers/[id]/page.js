@@ -1,14 +1,14 @@
-'use client';
-
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Edit3, Building2, Phone, MapPin, Factory, Landmark, ShieldCheck, Check, X, FileText } from 'lucide-react';
+import { ArrowLeft, Edit3, Building2, Phone, MapPin, Factory, Landmark, ShieldCheck, Check, X, FileText, AlertTriangle } from 'lucide-react';
 import Badge from '@/components/admin/Badge';
 import Toggle from '@/components/admin/Toggle';
 import Modal from '@/components/admin/Modal';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 export default function ManufacturerDetailPage({ params }) {
   const { id } = params;
+  const { isSuperAdmin, hasPermission } = useAdminPermissions();
   const [data, setData] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,17 +63,6 @@ export default function ManufacturerDetailPage({ params }) {
 
   // Document Reject Modal State
   const [rejectDocModal, setRejectDocModal] = useState(null); // { docType, label, rejectionReason: '' }
-  const [role, setRole] = useState(null);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('admin_profile');
-      if (stored) {
-        const p = JSON.parse(stored);
-        setRole(p.role);
-      }
-    } catch {}
-  }, []);
 
   const loadData = useCallback(async () => {
     try {
@@ -397,7 +386,7 @@ export default function ManufacturerDetailPage({ params }) {
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-            {role !== 'STAFF' && (
+            {isSuperAdmin && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 13, fontWeight: 600 }}>Active Account:</span>
                 <Toggle checked={m.isActive} onChange={handleToggleActive} />
@@ -405,18 +394,26 @@ export default function ManufacturerDetailPage({ params }) {
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 600 }}>Verified Badge:</span>
-              <Toggle checked={m.verified} onChange={handleToggleVerified} />
+              {hasPermission('documents.verify') ? (
+                <Toggle checked={m.verified} onChange={handleToggleVerified} />
+              ) : (
+                <span style={{ fontSize: 13, fontWeight: 600, color: m.verified ? '#15803D' : '#64748B' }}>
+                  {m.verified ? 'Verified' : 'Unverified'}
+                </span>
+              )}
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-              <button
-                className="admin-btn admin-btn-primary"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13 }}
-                onClick={handleOpenEditModal}
-              >
-                <Edit3 size={14} />
-                Edit Profile
-              </button>
-              {role !== 'STAFF' && (
+              {hasPermission('manufacturers.edit') && (
+                <button
+                  className="admin-btn admin-btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13 }}
+                  onClick={handleOpenEditModal}
+                >
+                  <Edit3 size={14} />
+                  Edit Profile
+                </button>
+              )}
+              {isSuperAdmin && (
                 seller && (seller.isBlacklisted || (seller.blockedUntil && new Date(seller.blockedUntil) > new Date())) ? (
                   <button className="admin-btn admin-btn-secondary" onClick={handleUnblock}>Unblock Seller</button>
                 ) : (
@@ -427,10 +424,42 @@ export default function ManufacturerDetailPage({ params }) {
           </div>
         </div>
 
+        {/* Status Alerts visible to both staff and admins */}
+        {m.isActive === false && (
+          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '10px 14px', marginTop: 14, display: 'flex', alignItems: 'center', gap: 8, color: '#991B1B', fontSize: 13 }}>
+            <AlertTriangle size={16} />
+            <div>
+              <strong>Seller Account Deactivated:</strong> This account is currently deactivated and hidden from the public marketplace.
+              {m.deactivationReason && <span> (Reason: {m.deactivationReason})</span>}
+            </div>
+          </div>
+        )}
+        {seller?.isBlacklisted && (
+          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '10px 14px', marginTop: 14, display: 'flex', alignItems: 'center', gap: 8, color: '#991B1B', fontSize: 13 }}>
+            <AlertTriangle size={16} />
+            <div>
+              <strong>Seller Blacklisted:</strong> This account is permanently blacklisted.
+              {seller.blacklistReason && <span> (Reason: {seller.blacklistReason})</span>}
+            </div>
+          </div>
+        )}
+        {seller?.blockedUntil && !seller.isBlacklisted && new Date(seller.blockedUntil) > new Date() && (
+          <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 8, padding: '10px 14px', marginTop: 14, display: 'flex', alignItems: 'center', gap: 8, color: '#92400E', fontSize: 13 }}>
+            <AlertTriangle size={16} />
+            <div>
+              <strong>Seller Temporarily Blocked:</strong> Suspended until {new Date(seller.blockedUntil).toLocaleDateString()}.
+            </div>
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+          {m.isActive === false && <Badge label="Deactivated" variant="deactivated" />}
           {seller?.isBlacklisted && <Badge label="Blacklisted" variant="blacklisted" />}
           {seller?.blockedUntil && !seller.isBlacklisted && new Date(seller.blockedUntil) > new Date() && (
             <Badge label={`Blocked until ${new Date(seller.blockedUntil).toLocaleDateString()}`} variant="blocked" />
+          )}
+          {m.isActive !== false && !seller?.isBlacklisted && (!seller?.blockedUntil || new Date(seller.blockedUntil) <= new Date()) && (
+            <Badge label="Active" variant="active" />
           )}
           <Badge label={`Plan: ${m.planStatus}`} variant={m.planStatus} />
           {m.verified && <Badge label="Verified" variant="verified" />}
@@ -446,14 +475,16 @@ export default function ManufacturerDetailPage({ params }) {
           <div className="admin-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h3 style={{ margin: 0 }}>Business Details</h3>
-              <button
-                className="admin-btn admin-btn-secondary"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '4px 10px' }}
-                onClick={handleOpenEditModal}
-              >
-                <Edit3 size={13} />
-                Edit Profile
-              </button>
+              {hasPermission('manufacturers.edit') && (
+                <button
+                  className="admin-btn admin-btn-secondary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '4px 10px' }}
+                  onClick={handleOpenEditModal}
+                >
+                  <Edit3 size={13} />
+                  Edit Profile
+                </button>
+              )}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 14 }}>
               <div><strong>Business Type:</strong> {m.businessType || '-'}</div>
@@ -556,30 +587,32 @@ export default function ManufacturerDetailPage({ params }) {
                           )}
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        {doc.status !== 'verified' && (
-                          <button
-                            onClick={() => handleApproveDocument(docType)}
-                            style={{
-                              padding: '6px 12px', borderRadius: 6, border: 'none',
-                              background: '#DCFCE7', color: '#15803D', fontWeight: 700, fontSize: 12, cursor: 'pointer',
-                            }}
-                          >
-                            Approve
-                          </button>
-                        )}
-                        {doc.status !== 'rejected' && (
-                          <button
-                            onClick={() => setRejectDocModal({ docType, label: `${docType.toUpperCase()} Certificate`, rejectionReason: '' })}
-                            style={{
-                              padding: '6px 12px', borderRadius: 6, border: 'none',
-                              background: '#FEE2E2', color: '#B91C1C', fontWeight: 700, fontSize: 12, cursor: 'pointer',
-                            }}
-                          >
-                            Reject
-                          </button>
-                        )}
-                      </div>
+                      {hasPermission('documents.verify') && (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          {doc.status !== 'verified' && (
+                            <button
+                              onClick={() => handleApproveDocument(docType)}
+                              style={{
+                                padding: '6px 12px', borderRadius: 6, border: 'none',
+                                background: '#DCFCE7', color: '#15803D', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                              }}
+                            >
+                              Approve
+                            </button>
+                          )}
+                          {doc.status !== 'rejected' && (
+                            <button
+                              onClick={() => setRejectDocModal({ docType, label: `${docType.toUpperCase()} Certificate`, rejectionReason: '' })}
+                              style={{
+                                padding: '6px 12px', borderRadius: 6, border: 'none',
+                                background: '#FEE2E2', color: '#B91C1C', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                              }}
+                            >
+                              Reject
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -628,7 +661,13 @@ export default function ManufacturerDetailPage({ params }) {
                     <td>{p.category}</td>
                     <td><Badge label={p.status || 'active'} variant={p.isActive ? 'active' : 'expired'} /></td>
                     <td>
-                      <Toggle checked={p.isActive} onChange={() => handleToggleProductVisibility(p._id, p.isActive)} />
+                      {hasPermission('products.moderate') ? (
+                        <Toggle checked={p.isActive} onChange={() => handleToggleProductVisibility(p._id, p.isActive)} />
+                      ) : (
+                        <span style={{ fontSize: 12, color: p.isActive ? '#15803D' : '#94A3B8', fontWeight: 600 }}>
+                          {p.isActive ? 'Visible' : 'Hidden'}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -674,17 +713,19 @@ export default function ManufacturerDetailPage({ params }) {
                       </div>
                       <p style={{ fontSize: 13, color: '#334155', margin: '4px 0 10px' }}>"{r.comment}"</p>
                       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                        <button
-                          onClick={() => handleToggleReviewStatus(r._id, r.status)}
-                          style={{
-                            padding: '4px 10px', borderRadius: 6, border: '1px solid #CBD5E1',
-                            background: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                            color: isAppr ? '#B45309' : '#15803D',
-                          }}
-                        >
-                          {isAppr ? 'Hide (Make Inactive)' : 'Approve'}
-                        </button>
-                        {role !== 'STAFF' && r.reviewerId && !r.reviewerId.isBlacklisted && (
+                        {hasPermission('reviews.moderate') && (
+                          <button
+                            onClick={() => handleToggleReviewStatus(r._id, r.status)}
+                            style={{
+                              padding: '4px 10px', borderRadius: 6, border: '1px solid #CBD5E1',
+                              background: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                              color: isAppr ? '#B45309' : '#15803D',
+                            }}
+                          >
+                            {isAppr ? 'Hide (Make Inactive)' : 'Approve'}
+                          </button>
+                        )}
+                        {isSuperAdmin && r.reviewerId && !r.reviewerId.isBlacklisted && (
                           <button
                             onClick={() => handleBlacklistReviewer(r.reviewerId._id || r.reviewerId)}
                             style={{
@@ -695,15 +736,17 @@ export default function ManufacturerDetailPage({ params }) {
                             Blacklist User
                           </button>
                         )}
-                        <button
-                          onClick={() => handleDeleteReview(r._id)}
-                          style={{
-                            padding: '4px 10px', borderRadius: 6, border: '1px solid #E2E8F0',
-                            background: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', color: '#64748B',
-                          }}
-                        >
-                          Delete
-                        </button>
+                        {isSuperAdmin && (
+                          <button
+                            onClick={() => handleDeleteReview(r._id)}
+                            style={{
+                              padding: '4px 10px', borderRadius: 6, border: '1px solid #E2E8F0',
+                              background: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', color: '#64748B',
+                            }}
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -815,16 +858,18 @@ export default function ManufacturerDetailPage({ params }) {
               )}
             </div>
 
-            <form onSubmit={handleAddNote} style={{ display: 'flex', gap: 8 }}>
-              <input
-                className="admin-input"
-                style={{ flex: 1 }}
-                placeholder="Add a private note about this seller..."
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-              />
-              <button type="submit" className="admin-btn admin-btn-primary">Add Note</button>
-            </form>
+            {hasPermission(['manufacturers.edit', 'documents.verify']) && (
+              <form onSubmit={handleAddNote} style={{ display: 'flex', gap: 8 }}>
+                <input
+                  className="admin-input"
+                  style={{ flex: 1 }}
+                  placeholder="Add a private note about this seller..."
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                />
+                <button type="submit" className="admin-btn admin-btn-primary">Add Note</button>
+              </form>
+            )}
           </div>
         </div>
 
@@ -865,57 +910,61 @@ export default function ManufacturerDetailPage({ params }) {
         </div>
       </div>
 
-      <Modal open={pendingDeactivate} onClose={() => setPendingDeactivate(false)} title="Deactivate Seller">
-        <p style={{ marginBottom: 12 }}>Specify a reason for deactivating this seller account.</p>
-        <textarea
-          className="admin-input"
-          style={{ width: '100%', minHeight: 80 }}
-          placeholder="Reason for deactivation..."
-          value={deactivateReason}
-          onChange={(e) => setDeactivateReason(e.target.value)}
-        />
-        <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
-          <button className="admin-btn admin-btn-secondary" onClick={() => setPendingDeactivate(false)}>Cancel</button>
-          <button className="admin-btn admin-btn-danger" onClick={applyDeactivation}>Deactivate</button>
-        </div>
-      </Modal>
+      {isSuperAdmin && (
+        <Modal open={pendingDeactivate} onClose={() => setPendingDeactivate(false)} title="Deactivate Seller">
+          <p style={{ marginBottom: 12 }}>Specify a reason for deactivating this seller account.</p>
+          <textarea
+            className="admin-input"
+            style={{ width: '100%', minHeight: 80 }}
+            placeholder="Reason for deactivation..."
+            value={deactivateReason}
+            onChange={(e) => setDeactivateReason(e.target.value)}
+          />
+          <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
+            <button className="admin-btn admin-btn-secondary" onClick={() => setPendingDeactivate(false)}>Cancel</button>
+            <button className="admin-btn admin-btn-danger" onClick={applyDeactivation}>Deactivate</button>
+          </div>
+        </Modal>
+      )}
 
-      <Modal open={showBlockModal} onClose={() => setShowBlockModal(false)} title="Block Seller">
-        <form onSubmit={handleBlockSubmit}>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Block Type</label>
-            <div style={{ display: 'flex', gap: 16 }}>
-              <label style={{ fontSize: 14 }}>
-                <input type="radio" name="blockMode" value="temporary" checked={blockMode === 'temporary'} onChange={() => setBlockMode('temporary')} /> Block temporarily
-              </label>
-              <label style={{ fontSize: 14 }}>
-                <input type="radio" name="blockMode" value="blacklist" checked={blockMode === 'blacklist'} onChange={() => setBlockMode('blacklist')} /> Blacklist permanently
-              </label>
-            </div>
-          </div>
-          {blockMode === 'blacklist' && (
-            <div style={{ background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 13, color: '#92400E' }}>
-              This will permanently ban the seller, unpublish their portfolio, and block their phone number for 90 days (India SIM renewal period).
-            </div>
-          )}
-          {blockMode === 'temporary' && (
+      {isSuperAdmin && (
+        <Modal open={showBlockModal} onClose={() => setShowBlockModal(false)} title="Block Seller">
+          <form onSubmit={handleBlockSubmit}>
             <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Duration (days)</label>
-              <input type="number" min="1" max="365" className="admin-input" value={blockDays} onChange={(e) => setBlockDays(e.target.value)} required />
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Block Type</label>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <label style={{ fontSize: 14 }}>
+                  <input type="radio" name="blockMode" value="temporary" checked={blockMode === 'temporary'} onChange={() => setBlockMode('temporary')} /> Block temporarily
+                </label>
+                <label style={{ fontSize: 14 }}>
+                  <input type="radio" name="blockMode" value="blacklist" checked={blockMode === 'blacklist'} onChange={() => setBlockMode('blacklist')} /> Blacklist permanently
+                </label>
+              </div>
             </div>
-          )}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Reason</label>
-            <textarea className="admin-input" style={{ width: '100%', minHeight: 80 }} placeholder="Reason for blocking (required)" value={blockReason} onChange={(e) => setBlockReason(e.target.value)} required />
-          </div>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setShowBlockModal(false)}>Cancel</button>
-            <button type="submit" className="admin-btn admin-btn-danger" disabled={!blockReason.trim()}>
-              {blockMode === 'temporary' ? 'Block Seller' : 'Blacklist Seller'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+            {blockMode === 'blacklist' && (
+              <div style={{ background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 13, color: '#92400E' }}>
+                This will permanently ban the seller, unpublish their portfolio, and block their phone number for 90 days (India SIM renewal period).
+              </div>
+            )}
+            {blockMode === 'temporary' && (
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Duration (days)</label>
+                <input type="number" min="1" max="365" className="admin-input" value={blockDays} onChange={(e) => setBlockDays(e.target.value)} required />
+              </div>
+            )}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Reason</label>
+              <textarea className="admin-input" style={{ width: '100%', minHeight: 80 }} placeholder="Reason for blocking (required)" value={blockReason} onChange={(e) => setBlockReason(e.target.value)} required />
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setShowBlockModal(false)}>Cancel</button>
+              <button type="submit" className="admin-btn admin-btn-danger" disabled={!blockReason.trim()}>
+                {blockMode === 'temporary' ? 'Block Seller' : 'Blacklist Seller'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {/* Document Rejection Modal */}
       <Modal open={!!rejectDocModal} onClose={() => setRejectDocModal(null)} title={`Reject ${rejectDocModal?.label || 'Document'}`}>

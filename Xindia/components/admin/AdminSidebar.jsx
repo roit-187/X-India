@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
 import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Star, Settings, LogOut, ShieldCheck, UserCog } from 'lucide-react';
 import SearchBar from './SearchBar';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
-// All possible links — each has an optional `adminOnly` flag meaning STAFF cannot see it.
+// All possible links — each has an optional `adminOnly` flag meaning only SUPER_ADMIN can see it.
 const ALL_LINKS = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: false },
   { href: '/admin/manufacturers', label: 'Manufacturers', icon: Factory, adminOnly: false },
@@ -18,8 +18,6 @@ const ALL_LINKS = [
   { href: '/admin/credits', label: 'Credits & Policy', icon: Coins, adminOnly: true },
   { href: '/admin/settings', label: 'System & Server', icon: Settings, adminOnly: true },
 ];
-
-const ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'OPERATIONS_ADMIN', 'FINANCE_ADMIN', 'DEVOPS_ENGINEER', 'SECURITY_ADMIN', 'AUDITOR', 'COMPLIANCE_OFFICER'];
 
 const ROLE_LABELS = {
   SUPER_ADMIN: 'Super Admin',
@@ -47,22 +45,10 @@ function getRoleColor(role) {
 
 export default function AdminSidebar() {
   const pathname = usePathname();
-  const [profile, setProfile] = useState(null);
+  const { profile, role, isSuperAdmin, loaded } = useAdminPermissions();
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('admin_profile');
-      if (stored) setProfile(JSON.parse(stored));
-    } catch {
-      // ignore parse errors
-    }
-  }, []);
-
-  const role = profile?.role || null;
-  const isAdmin = !role || ADMIN_ROLES.includes(role);
-
-  // Filter links based on role
-  const links = ALL_LINKS.filter((link) => isAdmin || !link.adminOnly);
+  // Filter links: adminOnly links are restricted strictly to Super Admin
+  const links = ALL_LINKS.filter((link) => !link.adminOnly || isSuperAdmin);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });

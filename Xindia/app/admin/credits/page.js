@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Coins, Plus, Pencil, Trash2, ShieldCheck, Zap, Sliders, CheckCircle2, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Coins, Plus, Pencil, Trash2, ShieldCheck, Zap, Sliders, CheckCircle2, AlertCircle, AlertTriangle } from 'lucide-react';
 import CreditPackageModal from '@/components/admin/CreditPackageModal';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 const formatPrice = (amount) => `₹${Number(amount).toLocaleString('en-IN')}`;
 
 export default function AdminCreditsPage() {
+  const { isSuperAdmin, loaded } = useAdminPermissions();
   const [settings, setSettings] = useState({
     dailyFreeCredits: 3,
     maxWeeklyCreditCap: 20,
@@ -52,6 +55,21 @@ export default function AdminCreditsPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  if (loaded && !isSuperAdmin) {
+    return (
+      <div style={{ maxWidth: 600, margin: '60px auto', textAlign: 'center', padding: 32 }} className="admin-card">
+        <AlertTriangle size={48} color="#EF4444" style={{ margin: '0 auto 16px' }} />
+        <h2 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px', color: '#0F172A' }}>Access Restricted</h2>
+        <p style={{ color: '#64748B', fontSize: 14, margin: '0 0 20px' }}>
+          Credits and policy configuration is strictly restricted to Super Administrators.
+        </p>
+        <Link href="/admin/dashboard" className="admin-btn admin-btn-primary">
+          Back to Dashboard
+        </Link>
+      </div>
+    );
+  }
 
   // Save System Settings
   const handleSaveSettings = async (e) => {

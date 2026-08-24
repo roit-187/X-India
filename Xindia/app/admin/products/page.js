@@ -4,8 +4,10 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Badge from '@/components/admin/Badge';
 import Toggle from '@/components/admin/Toggle';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 export default function AdminProductsPage() {
+  const { hasPermission } = useAdminPermissions();
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -58,7 +60,7 @@ export default function AdminProductsPage() {
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   const handleToggleVisibility = async (product) => {
-    if (!product.manufacturerId) return;
+    if (!hasPermission('products.moderate') || !product.manufacturerId) return;
     const res = await fetch(`/api/admin/manufacturers/${product.manufacturerId}/products/${product._id}/visibility`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -229,7 +231,13 @@ export default function AdminProductsPage() {
                     <Badge label={p.isActive ? 'Active' : 'Hidden'} variant={p.isActive ? 'active' : 'expired'} />
                   </td>
                   <td>
-                    <Toggle checked={p.isActive} onChange={() => handleToggleVisibility(p)} />
+                    {hasPermission('products.moderate') ? (
+                      <Toggle checked={p.isActive} onChange={() => handleToggleVisibility(p)} />
+                    ) : (
+                      <span style={{ fontSize: 12, color: p.isActive ? '#15803D' : '#94A3B8', fontWeight: 600 }}>
+                        {p.isActive ? 'Visible' : 'Hidden'}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}

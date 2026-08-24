@@ -1,7 +1,7 @@
-'use strict';
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
   UserCog,
   UserPlus,
@@ -21,6 +21,7 @@ import {
 import Modal from '@/components/admin/Modal';
 import Badge from '@/components/admin/Badge';
 import Toggle from '@/components/admin/Toggle';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 const ROLES = [
   { value: 'STAFF', label: 'Staff (Operations)', desc: 'Can verify docs, edit profiles, moderate' },
@@ -60,6 +61,7 @@ function generateStrongPassword() {
 }
 
 export default function AdminStaffPage() {
+  const { isSuperAdmin, loaded } = useAdminPermissions();
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -294,6 +296,21 @@ export default function AdminStaffPage() {
   const activeCount = staffList.filter((s) => s.active).length;
   const staffRoleCount = staffList.filter((s) => s.role === 'STAFF').length;
   const adminRoleCount = staffList.filter((s) => ['SUPER_ADMIN', 'PLATFORM_ADMIN'].includes(s.role)).length;
+
+  if (loaded && !isSuperAdmin) {
+    return (
+      <div style={{ maxWidth: 600, margin: '60px auto', textAlign: 'center', padding: 32 }} className="admin-card">
+        <AlertTriangle size={48} color="#EF4444" style={{ margin: '0 auto 16px' }} />
+        <h2 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px', color: '#0F172A' }}>Access Restricted</h2>
+        <p style={{ color: '#64748B', fontSize: 14, margin: '0 0 20px' }}>
+          Staff and team management is strictly restricted to Super Administrators.
+        </p>
+        <Link href="/admin/dashboard" className="admin-btn admin-btn-primary">
+          Back to Dashboard
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', paddingBottom: 40 }}>

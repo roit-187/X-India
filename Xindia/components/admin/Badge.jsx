@@ -7,6 +7,8 @@ const VARIANT_MAP = {
   expired: 'admin-badge-red',
   blocked: 'admin-badge-red',
   blacklisted: 'admin-badge-red',
+  deactivated: 'admin-badge-red',
+  inactive: 'admin-badge-red',
   none: 'admin-badge-gray',
   draft: 'admin-badge-gray',
   published: 'admin-badge-green',

@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Server, Globe, ShieldAlert, CheckCircle2, AlertCircle, RefreshCw, Activity, Cpu, ArrowRight, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
+import { Server, Globe, ShieldAlert, CheckCircle2, AlertCircle, RefreshCw, Activity, Cpu, ArrowRight, ExternalLink, AlertTriangle } from 'lucide-react';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 export default function AdminSettingsPage() {
+  const { isSuperAdmin, loaded } = useAdminPermissions();
   const [settings, setSettings] = useState({
     serverApiUrl: 'https://ascend-ds0q.onrender.com',
     websiteUrl: 'https://x-india.vercel.app',
@@ -42,6 +45,21 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     loadSettings();
   }, []);
+
+  if (loaded && !isSuperAdmin) {
+    return (
+      <div style={{ maxWidth: 600, margin: '60px auto', textAlign: 'center', padding: 32 }} className="admin-card">
+        <AlertTriangle size={48} color="#EF4444" style={{ margin: '0 auto 16px' }} />
+        <h2 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px', color: '#0F172A' }}>Access Restricted</h2>
+        <p style={{ color: '#64748B', fontSize: 14, margin: '0 0 20px' }}>
+          System & server configuration is strictly restricted to Super Administrators.
+        </p>
+        <Link href="/admin/dashboard" className="admin-btn admin-btn-primary">
+          Back to Dashboard
+        </Link>
+      </div>
+    );
+  }
 
   // Ping Test Function
   const handleTestConnection = async () => {

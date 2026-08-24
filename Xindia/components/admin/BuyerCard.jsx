@@ -3,7 +3,13 @@
 import Link from 'next/link';
 import Badge from './Badge';
 
-export default function BuyerCard({ buyer, onOpenBlockModal, onUnblock }) {
+export default function BuyerCard({
+  buyer,
+  canBlock = false,
+  canUnblock = false,
+  onOpenBlockModal,
+  onUnblock,
+}) {
   const isBlocked = buyer.blockedUntil && new Date(buyer.blockedUntil) > new Date();
 
   // Determine active/passive: active if lastActiveAt within last 30 days
@@ -24,9 +30,13 @@ export default function BuyerCard({ buyer, onOpenBlockModal, onUnblock }) {
         </Link>
         <div>
           {buyer.isBlacklisted || isBlocked ? (
-            <button className="admin-btn admin-btn-secondary" onClick={() => onUnblock(buyer._id)}>Unblock</button>
+            canUnblock && (
+              <button className="admin-btn admin-btn-secondary" onClick={() => onUnblock(buyer._id)}>Unblock</button>
+            )
           ) : (
-            <button className="admin-btn admin-btn-danger" onClick={() => onOpenBlockModal(buyer)}>Block</button>
+            canBlock && (
+              <button className="admin-btn admin-btn-danger" onClick={() => onOpenBlockModal(buyer)}>Block</button>
+            )
           )}
         </div>
       </div>
