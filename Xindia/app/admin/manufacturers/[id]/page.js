@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Edit3, Building2, Phone, MapPin, Factory, Landmark, ShieldCheck, Check, X, FileText, AlertTriangle } from 'lucide-react';
