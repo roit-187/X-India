@@ -457,3 +457,197 @@
   border-color: var(--p-blue);
   color: #fff;
 }
+
+/* ─── Rich B2B Elements & Trust Badges ───────────────────────────────────── */
+.portfolio-header-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.portfolio-badge-pill {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+}
+.portfolio-trust-badge {
+  background: rgba(0, 196, 140, 0.15);
+  border: 1px solid #00C48C;
+  color: #00C48C;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.portfolio-cat-pill {
+  background: rgba(27, 107, 255, 0.2);
+  border: 1px solid rgba(27, 107, 255, 0.4);
+  color: #93C5FD;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+/* ─── Capabilities Grid ─────────────────────────────────────────────────── */
+.portfolio-capabilities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 32px;
+}
+.portfolio-cap-card {
+  background: #fff;
+  border: 1px solid var(--p-border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.portfolio-cap-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+}
+.portfolio-cap-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.portfolio-cap-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #EFF6FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1E40AF;
+  font-size: 16px;
+}
+.portfolio-cap-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--p-text);
+}
+.portfolio-cap-desc {
+  font-size: 11.5px;
+  color: var(--p-text-med);
+  line-height: 1.5;
+}
+
+/* ─── Tag Cloud & Primary Products ──────────────────────────────────────── */
+.portfolio-tag-cloud {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.portfolio-tag-chip {
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  color: #1E40AF;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 8px;
+}
+
+/* ─── Factory Story & Units ─────────────────────────────────────────────── */
+.portfolio-factory-story {
+  background: #fff;
+  border: 1px solid var(--p-border);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 28px;
+  line-height: 1.7;
+  color: #334155;
+  font-size: 13.5px;
+}
+.portfolio-units-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.portfolio-unit-card {
+  background: #fff;
+  border: 1px solid var(--p-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.portfolio-unit-img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+.portfolio-unit-body {
+  padding: 14px;
+}
+.portfolio-unit-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--p-text);
+  margin-bottom: 4px;
+}
+.portfolio-unit-cat {
+  font-size: 11px;
+  color: var(--p-text-med);
+}
+
+/* ─── Product Card Badges ────────────────────────────────────────────────── */
+.portfolio-product-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 4px;
+}
+.portfolio-product-dispatch {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #059669;
+  background: #ECFDF5;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.portfolio-product-custom-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.portfolio-custom-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #475569;
+  background: #F1F5F9;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* ─── GST Card ───────────────────────────────────────────────────────────── */
+.portfolio-gst-card {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+.portfolio-gst-num {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0F172A;
+}
+
