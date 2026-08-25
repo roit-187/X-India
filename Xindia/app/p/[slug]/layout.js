@@ -1,15 +1,18 @@
 import { notFound } from 'next/navigation';
 import '../../portfolio.css';
 import { getSeller } from '@/lib/api';
-import PortfolioHeader from '@/components/portfolio/PortfolioHeader';
-import PortfolioNav from '@/components/portfolio/PortfolioNav';
 
 export async function generateMetadata({ params }) {
   const seller = await getSeller(params.slug);
   if (!seller) return { title: 'Seller Not Found — XINDIA' };
   return {
-    title: `${seller.name} — XINDIA`,
+    title: `${seller.name} — Verified Manufacturer Digital Showroom | XINDIA`,
     description: (seller.portfolioAbout || seller.description || `${seller.name} on XINDIA — India's Business Launchpad.`).slice(0, 160),
+    openGraph: {
+      title: `${seller.name} — Verified Digital Showroom`,
+      description: (seller.portfolioAbout || seller.description || `${seller.name} on XINDIA`).slice(0, 160),
+      images: [seller.coverImage || seller.logo || 'https://xindia.market/og-image.jpg'],
+    },
   };
 }
 
@@ -33,8 +36,6 @@ export default async function SellerPortfolioLayout({ children, params }) {
 
   return (
     <div className="portfolio-page">
-      <PortfolioHeader seller={seller} />
-      <PortfolioNav slug={params.slug} />
       {children}
       <script
         type="application/ld+json"
