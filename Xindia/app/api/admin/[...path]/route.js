@@ -49,9 +49,13 @@ async function proxy(request, { params }) {
   const search = request.nextUrl.search;
   const targetUrl = `${API_URL}/api/v1/admin/${path}${search}`;
 
+  const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
+  const headers = { Authorization: `Bearer ${token}` };
+  if (clientIp) headers['X-Forwarded-For'] = clientIp;
+
   const init = {
     method: request.method,
-    headers: { Authorization: `Bearer ${token}` },
+    headers,
   };
 
   if (request.method !== 'GET' && request.method !== 'HEAD') {

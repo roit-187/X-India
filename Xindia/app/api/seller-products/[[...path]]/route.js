@@ -31,6 +31,29 @@ async function proxy(request, { params }) {
     return Response.json({ success: false, message: 'Invalid or expired session' }, { status: 401 });
   }
 
+  // [SEC-018/SEC-VULN-09 FIX] CSRF: verify the request originates from the same host on mutating methods.
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
+    const originHeader = request.headers.get('origin');
+    const refererHeader = request.headers.get('referer');
+    const source = originHeader || refererHeader;
+    if (source) {
+      try {
+        const sourceHost = new URL(source).host;
+        const currentHost =
+          request.headers.get('x-forwarded-host') ||
+          request.headers.get('host') ||
+          request.nextUrl?.host;
+
+        if (currentHost && sourceHost !== currentHost) {
+          console.warn(`[seller-products proxy] CSRF: blocked request from ${sourceHost} (expected ${currentHost})`);
+          return Response.json({ success: false, message: 'Forbidden' }, { status: 403 });
+        }
+      } catch {
+        return Response.json({ success: false, message: 'Forbidden' }, { status: 403 });
+      }
+    }
+  }
+
   if (params.path && !isSafePathSegments(params.path)) {
     return Response.json({ success: false, message: 'Invalid path' }, { status: 400 });
   }
@@ -51,9 +74,13 @@ async function proxy(request, { params }) {
   const searchString = search.toString();
   const targetUrl = `${API_URL}/api/products${path ? '/' + path : ''}${searchString ? '?' + searchString : ''}`;
 
+  const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
+  const headers = { Authorization: `Bearer ${token}` };
+  if (clientIp) headers['X-Forwarded-For'] = clientIp;
+
   const init = {
     method: request.method,
-    headers: { Authorization: `Bearer ${token}` },
+    headers,
   };
 
   if (request.method !== 'GET' && request.method !== 'HEAD') {

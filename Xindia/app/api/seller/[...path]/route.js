@@ -16,6 +16,32 @@ async function proxy(request, { params }) {
     return Response.json({ success: false, message: 'Not authenticated' }, { status: 401 });
   }
 
+  // [SEC-018 FIX] CSRF: verify the request originates from the same host on mutating methods.
+  // The Origin (or fallback Referer) header is checked dynamically against the incoming request's host.
+  // Browsers always set at least one of them for same-site + cross-site fetch/form requests.
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
+    const originHeader = request.headers.get('origin');
+    const refererHeader = request.headers.get('referer');
+    const source = originHeader || refererHeader;
+    if (source) {
+      try {
+        const sourceHost = new URL(source).host;
+        const currentHost =
+          request.headers.get('x-forwarded-host') ||
+          request.headers.get('host') ||
+          request.nextUrl?.host;
+
+        if (currentHost && sourceHost !== currentHost) {
+          console.warn(`[seller proxy] CSRF: blocked request from ${sourceHost} (expected ${currentHost})`);
+          return Response.json({ success: false, message: 'Forbidden' }, { status: 403 });
+        }
+      } catch {
+        return Response.json({ success: false, message: 'Forbidden' }, { status: 403 });
+      }
+    }
+    // No Origin/Referer from a browser means it's a server-side call — allow.
+  }
+
   if (!isSafePathSegments(params.path)) {
     return Response.json({ success: false, message: 'Invalid path' }, { status: 400 });
   }
@@ -23,9 +49,13 @@ async function proxy(request, { params }) {
   const search = request.nextUrl.search;
   const targetUrl = `${API_URL}/api/seller/${path}${search}`;
 
+  const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
+  const headers = { Authorization: `Bearer ${token}` };
+  if (clientIp) headers['X-Forwarded-For'] = clientIp;
+
   const init = {
     method: request.method,
-    headers: { Authorization: `Bearer ${token}` },
+    headers,
   };
 
   if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -49,3 +79,4 @@ async function proxy(request, { params }) {
 }
 
 export { proxy as GET, proxy as POST, proxy as PATCH, proxy as PUT, proxy as DELETE };
+

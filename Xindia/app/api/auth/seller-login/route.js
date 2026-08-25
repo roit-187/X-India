@@ -12,13 +12,16 @@ if (!process.env.NEXT_PUBLIC_API_URL) {
 export async function POST(request) {
   try {
     const body = await request.json();
+    const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
+    const headers = { 'Content-Type': 'application/json' };
+    if (clientIp) headers['X-Forwarded-For'] = clientIp;
 
     let res;
     let data;
     try {
       res = await fetch(`${API_URL}/api/seller/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(body),
       });
       data = await res.json();
