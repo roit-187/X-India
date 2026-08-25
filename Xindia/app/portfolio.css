@@ -837,6 +837,231 @@
   margin-bottom: 4px;
 }
 
+/* Review Form Card */
+.portfolio-review-form-card {
+  background: var(--p-card-bg);
+  border: 1px solid var(--p-border);
+  border-radius: var(--p-radius-xl);
+  padding: 26px 30px;
+  box-shadow: var(--p-shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.portfolio-review-form-card:hover {
+  border-color: var(--p-border-hover);
+  box-shadow: var(--p-shadow-md);
+}
+
+.portfolio-review-form-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--p-border);
+}
+
+.portfolio-review-form-header-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--p-radius-md);
+  background: var(--p-primary-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.portfolio-review-form-title {
+  font-size: 16.5px;
+  font-weight: 800;
+  color: var(--p-text);
+  margin: 0 0 3px 0;
+  letter-spacing: -0.01em;
+}
+
+.portfolio-review-form-desc {
+  font-size: 13px;
+  color: var(--p-text-muted);
+  margin: 0;
+}
+
+.portfolio-review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.portfolio-review-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 640px) {
+  .portfolio-review-form-card {
+    padding: 20px 18px;
+  }
+  .portfolio-review-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.portfolio-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.portfolio-form-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--p-text-med);
+  display: flex;
+  align-items: center;
+}
+
+.portfolio-required {
+  color: #EF4444;
+  margin-left: 3px;
+}
+
+.portfolio-form-input,
+.portfolio-form-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--p-text);
+  background: #FFFFFF;
+  border: 1px solid var(--p-border);
+  border-radius: var(--p-radius-md);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.portfolio-form-input:focus,
+.portfolio-form-textarea:focus {
+  border-color: var(--p-primary);
+  box-shadow: 0 0 0 3px var(--p-primary-glow);
+}
+
+.portfolio-form-input::placeholder,
+.portfolio-form-textarea::placeholder {
+  color: var(--p-text-light);
+}
+
+.portfolio-star-picker-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.portfolio-star-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #F8FAFC;
+  padding: 6px 10px;
+  border-radius: var(--p-radius-md);
+  border: 1px solid var(--p-border);
+}
+
+.portfolio-star-btn {
+  background: transparent;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.portfolio-star-btn:hover {
+  transform: scale(1.25);
+}
+
+.portfolio-star-icon {
+  transition: all 0.15s ease;
+}
+
+.portfolio-rating-label {
+  font-size: 13px;
+  color: var(--p-text-muted);
+}
+
+.portfolio-rating-label strong {
+  color: #D97706;
+  font-weight: 700;
+}
+
+.portfolio-form-alert {
+  padding: 11px 16px;
+  border-radius: var(--p-radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.portfolio-form-alert.error {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #DC2626;
+}
+
+.portfolio-form-alert.success {
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  color: #059669;
+}
+
+.portfolio-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.portfolio-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--p-primary-gradient);
+  color: #FFFFFF;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 11px 24px;
+  border: none;
+  border-radius: var(--p-radius-full);
+  cursor: pointer;
+  box-shadow: 0 4px 14px -2px rgba(232, 88, 28, 0.4);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.portfolio-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px -2px rgba(232, 88, 28, 0.55);
+}
+
+.portfolio-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.portfolio-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .portfolio-review-card {
   background: var(--p-card-bg);
   border: 1px solid var(--p-border);
