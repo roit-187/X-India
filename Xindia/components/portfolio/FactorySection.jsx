@@ -7,11 +7,7 @@ import {
   Cpu,
   Users,
   Layers,
-  Image as ImageIcon,
   Building,
-  ShieldCheck,
-  CheckCircle2,
-  Sparkles,
   Maximize2,
   X,
 } from 'lucide-react';

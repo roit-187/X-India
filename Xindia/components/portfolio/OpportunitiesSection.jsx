@@ -4,12 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import {
   Briefcase,
-  TrendingUp,
-  Package,
-  Clock,
-  Sparkles,
   MessageSquare,
-  ArrowRight,
 } from 'lucide-react';
 
 export default function OpportunitiesSection({ opportunities = [], seller }) {

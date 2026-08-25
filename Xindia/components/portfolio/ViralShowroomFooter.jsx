@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ShieldCheck, Sparkles, ArrowRight, Building2, ExternalLink } from 'lucide-react';
+import { ShieldCheck, Sparkles, ArrowRight } from 'lucide-react';
 
 export default function ViralShowroomFooter({ seller }) {
   return (

@@ -15,7 +15,6 @@ import {
   Layers,
   CheckCircle2,
   Building2,
-  Clock,
   Coins,
   BadgeCheck,
 } from 'lucide-react';

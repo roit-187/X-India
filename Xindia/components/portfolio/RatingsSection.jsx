@@ -7,8 +7,6 @@ import {
   MessageSquare,
   ShieldCheck,
   User,
-  Sparkles,
-  CheckCircle2,
 } from 'lucide-react';
 import ReviewForm from './ReviewForm';
 

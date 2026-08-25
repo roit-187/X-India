@@ -7,7 +7,6 @@ import {
   FileCheck2,
   MapPin,
   Building2,
-  Share2,
   Copy,
   Check,
   MessageSquare,
@@ -18,7 +17,6 @@ import {
   Globe2,
   Star,
   CheckCircle2,
-  ExternalLink,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 

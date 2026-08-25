@@ -8,12 +8,9 @@ import {
   Tag,
   Search,
   Sparkles,
-  Send,
   X,
   MessageSquare,
   CheckCircle2,
-  PhoneCall,
-  SlidersHorizontal,
 } from 'lucide-react';
 
 export default function ProductCatalogSection({ products = [], seller }) {

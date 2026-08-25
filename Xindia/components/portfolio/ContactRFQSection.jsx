@@ -15,7 +15,6 @@ import {
   User,
   Sparkles,
   CheckCircle2,
-  Clock,
   Lock,
 } from 'lucide-react';
 
