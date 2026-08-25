@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getSeller, getSellerReviews } from '@/lib/api';
 import ReviewForm from '@/components/portfolio/ReviewForm';
-import { Star, MessageSquareCheck, ShieldCheck, User } from 'lucide-react';
+import { Star, MessageSquare, ShieldCheck, User } from 'lucide-react';
 
 export const metadata = { title: 'Verified Ratings & Reviews — XINDIA' };
 
@@ -53,7 +53,7 @@ export default async function RatingsPage({ params }) {
 
       {(!reviews || reviews.length === 0) ? (
         <div className="portfolio-empty-state">
-          <MessageSquareCheck size={36} color="#94A3B8" style={{ marginBottom: 12 }} />
+          <MessageSquare size={36} color="#94A3B8" style={{ marginBottom: 12 }} />
           <div>No reviews yet. Be the first brand to leave feedback!</div>
         </div>
       ) : (
