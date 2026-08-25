@@ -28,16 +28,6 @@ const Navbar = () => {
         </a>
 
         <ul className="navbar-links">
-          <li className="nav-dropdown">
-            <a href="#entrepreneurs">
-              For Entrepreneurs <span className="nav-dropdown-arrow">▾</span>
-            </a>
-          </li>
-          <li className="nav-dropdown">
-            <a href="#manufacturers">
-              For Manufacturers <span className="nav-dropdown-arrow">▾</span>
-            </a>
-          </li>
           <li>
             <a href="/login" className="btn-download-nav">Login</a>
           </li>
@@ -67,30 +57,21 @@ const Navbar = () => {
               borderTop: '1px solid rgba(0,0,0,0.06)'
             }}
           >
-            {[
-              { label: 'For Entrepreneurs', href: '#entrepreneurs' },
-              { label: 'For Manufacturers', href: '#manufacturers' },
-              { label: 'Login', href: '/login' },
-            ].map((item, i) => (
-              <motion.a
-                key={item.label}
-                href={item.href}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                style={{
-                  display: 'block',
-                  padding: '12px 0',
-                  color: '#334155',
-                  fontSize: '15px',
-                  fontWeight: 500,
-                  borderBottom: '1px solid #f1f5f9'
-                }}
-                onClick={() => setMobileOpen(false)}
-              >
-                {item.label}
-              </motion.a>
-            ))}
+            <motion.a
+              href="/login"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              style={{
+                display: 'block',
+                padding: '12px 0',
+                color: '#E8581C',
+                fontSize: '15px',
+                fontWeight: 700,
+              }}
+              onClick={() => setMobileOpen(false)}
+            >
+              Login
+            </motion.a>
           </motion.div>
         )}
       </AnimatePresence>

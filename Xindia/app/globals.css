@@ -142,7 +142,7 @@ button {
 .navbar-logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
   font-size: 24px;
   font-weight: 800;
   color: var(--white);

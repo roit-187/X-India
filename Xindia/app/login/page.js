@@ -145,10 +145,31 @@ function LoginContent() {
 
   return (
     <div style={{ maxWidth: 420, margin: '80px auto', padding: 28, background: '#fff', borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.06)', fontFamily: 'sans-serif' }}>
+      {/* Back to Home */}
+      <a
+        href="/"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: 13,
+          fontWeight: 600,
+          color: '#64748B',
+          textDecoration: 'none',
+          marginBottom: 20,
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 12H5M5 12l7-7M5 12l7 7"/>
+        </svg>
+        Back to Home
+      </a>
+
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <h2 style={{ margin: '0 0 6px', fontSize: 24, fontWeight: 700 }}>Xindia Login</h2>
         <p style={{ margin: 0, fontSize: 13, color: '#64748B' }}>Access your administrative or seller portal</p>
       </div>
+
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid #E2E8F0', paddingBottom: 12 }}>
         <button
