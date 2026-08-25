@@ -10,7 +10,9 @@ import {
   Building,
   Maximize2,
   X,
+  Video,
 } from 'lucide-react';
+import YouTubePlayer from '@/components/common/YouTubePlayer';
 
 export default function FactorySection({ seller }) {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -103,7 +105,27 @@ export default function FactorySection({ seller }) {
           )}
         </motion.div>
 
-        {/* ─── 2. Machinery Story & Process Capabilities ─────────────────────── */}
+        {/* ─── 2. Factory Tour Video ────────────────────────────────────────── */}
+        {seller.factoryVideo && (
+          <motion.div
+            className="portfolio-factory-video-card"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-50px' }}
+            variants={itemVariants}
+          >
+            <div className="portfolio-compact-video-header">
+              <Video size={15} color="var(--p-primary)" />
+              <span>Official Factory Tour</span>
+              <span className="portfolio-video-verified-badge">Verified</span>
+            </div>
+            <div className="portfolio-compact-player-body">
+              <YouTubePlayer videoUrl={seller.factoryVideo} title="Factory Tour" showThumbnailFirst />
+            </div>
+          </motion.div>
+        )}
+
+        {/* ─── 3. Machinery Story & Process Capabilities ─────────────────────── */}
         {seller.aboutFactory && (
           <motion.div
             className="portfolio-about-container"

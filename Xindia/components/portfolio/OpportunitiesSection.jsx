@@ -8,6 +8,9 @@ import {
 } from 'lucide-react';
 
 export default function OpportunitiesSection({ opportunities = [], seller }) {
+  // Hide entire section if no opportunities have been added
+  if (!opportunities || opportunities.length === 0) return null;
+
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {

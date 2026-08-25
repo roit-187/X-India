@@ -46,6 +46,11 @@ export default function PortfolioStickyNav({ seller, totalProducts = 0, totalRev
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Filter nav tabs: hide Opportunities tab when there are none
+  const visibleSections = SECTIONS.filter(
+    (sec) => sec.id !== 'opportunities' || totalOpportunities > 0
+  );
+
   const handleNavClick = (e, id) => {
     e.preventDefault();
     const elem = document.getElementById(id);
@@ -80,7 +85,7 @@ export default function PortfolioStickyNav({ seller, totalProducts = 0, totalRev
 
         {/* Center navigation tabs */}
         <div className="portfolio-dock-tabs">
-          {SECTIONS.map((sec) => {
+          {visibleSections.map((sec) => {
             const Icon = sec.icon;
             const isActive = activeSection === sec.id;
 
