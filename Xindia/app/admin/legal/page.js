@@ -4,6 +4,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { Shield, ChevronDown, ChevronUp, CheckCircle, Clock, FileText, Globe, Save, Send, Eye, History, Users, AlertTriangle } from 'lucide-react';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
+function sanitizeHtml(html) {
+  if (!html) return '';
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+    .replace(/javascript\s*:/gi, 'blocked:')
+    .replace(/<iframe\b[^>]*>/gi, '')
+    .replace(/<object\b[^>]*>/gi, '')
+    .replace(/<embed\b[^>]*>/gi, '')
+    .replace(/<form\b[^>]*>/gi, '');
+}
+
 // ─── Document type config ─────────────────────────────────────────────────────
 const DOC_TYPES = [
   {
@@ -392,7 +404,7 @@ export default function AdminLegalPage() {
               {previewOpen && (
                 <div
                   style={{ marginTop: 12, padding: '12px 16px', background: '#F8FAFC', borderRadius: 8, fontSize: 13, lineHeight: 1.8, maxHeight: 300, overflowY: 'auto', border: '1px solid #E2E8F0' }}
-                  dangerouslySetInnerHTML={{ __html: current.contentEn }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(current.contentEn) }}
                 />
               )}
             </div>

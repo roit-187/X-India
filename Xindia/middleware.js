@@ -51,6 +51,23 @@ async function verifySellerToken(token) {
 }
 
 export async function middleware(request) {
+  // ── CSRF protection: reject cross-origin state-changing requests ──
+  const method = request.method;
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const origin = request.headers.get('origin');
+    const host = request.headers.get('host');
+    if (origin) {
+      const originUrl = new URL(origin);
+      const allowedOrigins = [host, 'localhost:3000', 'localhost:3001'];
+      if (!allowedOrigins.some(h => originUrl.host === h)) {
+        return new NextResponse(JSON.stringify({ error: 'CSRF validation failed' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
+  }
+
   const { pathname } = request.nextUrl;
   const adminTokenRaw = request.cookies.get('admin_token')?.value;
   const sellerTokenRaw = request.cookies.get('seller_token')?.value;

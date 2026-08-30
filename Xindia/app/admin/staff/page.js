@@ -67,9 +67,11 @@ const PRESET_PERMISSIONS = [
 
 function generateStrongPassword() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*';
+  const array = new Uint32Array(12);
+  crypto.getRandomValues(array);
   let pwd = '';
   for (let i = 0; i < 12; i++) {
-    pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    pwd += chars.charAt(array[i] % chars.length);
   }
   return pwd;
 }

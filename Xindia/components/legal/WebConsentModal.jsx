@@ -3,6 +3,18 @@
 import { useState, useEffect } from 'react';
 import { X, Shield, RefreshCw } from 'lucide-react';
 
+function sanitizeHtml(html) {
+  if (!html) return '';
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+    .replace(/javascript\s*:/gi, 'blocked:')
+    .replace(/<iframe\b[^>]*>/gi, '')
+    .replace(/<object\b[^>]*>/gi, '')
+    .replace(/<embed\b[^>]*>/gi, '')
+    .replace(/<form\b[^>]*>/gi, '');
+}
+
 const DOC_TITLES = {
   BUYER_PRIVACY: 'Privacy Policy',
   BUYER_TERMS: 'Terms & Conditions',
@@ -179,7 +191,7 @@ export default function WebConsentModal({ isOpen, docType, onClose }) {
                 lineHeight: 1.8,
                 color: '#334155',
               }}
-              dangerouslySetInnerHTML={{ __html: doc?.content || '<p>No content available.</p>' }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(doc?.content || '') || '<p>No content available.</p>' }}
             />
           )}
         </div>
