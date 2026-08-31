@@ -38,7 +38,7 @@ export default function WebConsentModal({ isOpen, docType, onClose }) {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/v1/legal/documents/${docType}/current?lang=${selectedLang}`);
+      const res = await fetch(`/api/legal/documents/${docType}/current?lang=${selectedLang}`);
       const data = await res.json();
       if (data.success && data.document) {
         setDoc(data.document);

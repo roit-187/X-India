@@ -40,7 +40,9 @@ export async function POST(request) {
       });
     }
 
-    return Response.json(data, { status: res.status });
+    // Strip the raw JWT from the client response — it's stored HttpOnly.
+    const { token: _token, ...rest } = data;
+    return Response.json(rest, { status: res.status });
   } catch (err) {
     return Response.json({ success: false, message: 'Authentication request failed' }, { status: 500 });
   }
