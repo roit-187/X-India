@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Star, Settings, LogOut, UserCog, Shield, Bell } from 'lucide-react';
+import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Tag, Star, Settings, LogOut, UserCog, Shield, Bell } from 'lucide-react';
 import SearchBar from './SearchBar';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
@@ -19,6 +19,7 @@ const ALL_LINKS = [
   { href: '/admin/staff',         label: 'Staff & Team',          icon: UserCog,         flag: 'staff' },
   { href: '/admin/plans',         label: 'Plans & Pricing',       icon: CreditCard,      flag: 'plans' },
   { href: '/admin/credits',       label: 'Credits & Policy',      icon: Coins,           flag: 'credits' },
+  { href: '/admin/promos',        label: 'Promo Codes',           icon: Tag,             flag: 'plans' },
   { href: '/admin/legal',         label: 'Legal & Compliance',    icon: Shield,          flag: 'super' },
   { href: '/admin/alerts',        label: 'Critical Alerts',       icon: Bell,            flag: 'super' },
   { href: '/admin/settings',      label: 'System & Server',       icon: Settings,        flag: 'super' },
