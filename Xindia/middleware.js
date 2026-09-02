@@ -116,5 +116,9 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/seller-portal/:path*', '/', '/login'],
+  // [Finding 2] Expanded from page-only to include /api/* so that CSRF
+  // Origin validation in the middleware function above also guards all
+  // Next.js API Route Handlers (POST/PATCH/DELETE to /api/admin/* and
+  // /api/seller/*) against cross-site request forgery.
+  matcher: ['/admin/:path*', '/seller-portal/:path*', '/api/:path*', '/', '/login'],
 };

@@ -11,6 +11,7 @@ export default function AdminSettingsPage() {
     serverApiUrl: 'https://ascend-ds0q.onrender.com',
     websiteUrl: 'https://x-india.vercel.app',
     isMaintenanceMode: false,
+    isGstVerificationEnabled: false,
   });
 
   const [loading, setLoading] = useState(true);
@@ -32,6 +33,7 @@ export default function AdminSettingsPage() {
           serverApiUrl: data.settings.serverApiUrl || 'https://ascend-ds0q.onrender.com',
           websiteUrl: data.settings.websiteUrl || 'https://x-india.vercel.app',
           isMaintenanceMode: Boolean(data.settings.isMaintenanceMode),
+          isGstVerificationEnabled: Boolean(data.settings.isGstVerificationEnabled),
         });
       }
     } catch (err) {
@@ -348,6 +350,75 @@ export default function AdminSettingsPage() {
                         height: 20,
                         width: 20,
                         left: settings.isMaintenanceMode ? 24 : 3,
+                        bottom: 3,
+                        backgroundColor: '#FFFFFF',
+                        transition: '0.2s',
+                        borderRadius: '50%',
+                      }}
+                    />
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* GSTIN Verification Switch Card */}
+            <div className="admin-card">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ background: settings.isGstVerificationEnabled ? '#DCFCE7' : '#F1F5F9', padding: 8, borderRadius: 8, color: settings.isGstVerificationEnabled ? '#16A34A' : 'var(--adm-text-med)' }}>
+                    <CheckCircle2 size={20} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--adm-text)' }}>
+                        Enforce GSTIN Verification
+                      </h3>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: 12,
+                          background: settings.isGstVerificationEnabled ? '#DCFCE7' : '#F1F5F9',
+                          color: settings.isGstVerificationEnabled ? '#15803D' : '#64748B',
+                        }}
+                      >
+                        {settings.isGstVerificationEnabled ? 'ACTIVE / ENFORCED' : 'BYPASS / DISABLED'}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 13, color: 'var(--adm-text-med)', marginTop: 2 }}>
+                      When enabled, the backend strictly verifies GSTIN structure & Luhn mod-36 check digit during seller onboarding and profile updates. When disabled, sellers can enter GSTIN without blocking registration.
+                    </p>
+                  </div>
+                </div>
+
+                <label style={{ position: 'relative', display: 'inline-block', width: 48, height: 26, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={settings.isGstVerificationEnabled}
+                    onChange={(e) => setSettings({ ...settings, isGstVerificationEnabled: e.target.checked })}
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                  />
+                  <span
+                    style={{
+                      position: 'absolute',
+                      cursor: 'pointer',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: settings.isGstVerificationEnabled ? '#16A34A' : '#CBD5E1',
+                      transition: '0.2s',
+                      borderRadius: 26,
+                    }}
+                  >
+                    <span
+                      style={{
+                        position: 'absolute',
+                        content: '',
+                        height: 20,
+                        width: 20,
+                        left: settings.isGstVerificationEnabled ? 24 : 3,
                         bottom: 3,
                         backgroundColor: '#FFFFFF',
                         transition: '0.2s',

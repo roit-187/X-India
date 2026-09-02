@@ -37,6 +37,10 @@ export default function ContactRFQSection({ seller }) {
 
   const websiteUrl = seller.contact?.website || (seller.website ? seller.website : null);
   const formattedWebsite = websiteUrl && !websiteUrl.startsWith('http') ? `https://${websiteUrl}` : websiteUrl;
+  // [Finding 13] Allowlist check: only render the link if the URL uses http/https
+  // with a valid hostname. Blocks javascript: URIs and other dangerous schemes.
+  const isSafeWebsite = formattedWebsite &&
+    /^https?:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.[a-zA-Z]{2,}/.test(formattedWebsite);
   const phone = seller.buyerContactPhone || seller.businessPhone || seller.contact?.phone;
   const whatsapp = seller.whatsappNumber || seller.contact?.whatsapp;
   const email = seller.contactMail || seller.companyEmail || seller.contact?.email;
@@ -297,7 +301,7 @@ export default function ContactRFQSection({ seller }) {
                 </a>
               )}
 
-              {formattedWebsite && (
+              {isSafeWebsite && (
                 <a
                   href={formattedWebsite}
                   target="_blank"
@@ -314,6 +318,7 @@ export default function ContactRFQSection({ seller }) {
                   <span className="portfolio-channel-btn-text">Visit Web</span>
                 </a>
               )}
+
 
               {seller.address && (
                 <div className="portfolio-channel-card non-clickable">
