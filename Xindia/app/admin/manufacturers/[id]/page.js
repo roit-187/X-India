@@ -761,9 +761,36 @@ export default function ManufacturerDetailPage({ params }) {
           {data.latestVerification && (
             <div className="admin-card">
               <h3 style={{ marginTop: 0, marginBottom: 16 }}>Verification Record</h3>
-              <div style={{ fontSize: 14, marginBottom: 8 }}>
+              <div style={{ fontSize: 14, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <strong>Status:</strong> <Badge label={data.latestVerification.status} variant={data.latestVerification.status === 'verified' ? 'verified' : 'expired'} />
+                {data.latestVerification.scheduledVisit?.rescheduledCount > 0 && (
+                  <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 4, backgroundColor: '#FEF3C7', color: '#92400E', fontWeight: 600 }}>
+                    Rescheduled ({data.latestVerification.scheduledVisit.rescheduledCount}x)
+                  </span>
+                )}
               </div>
+              {data.latestVerification.scheduledVisit?.date && (
+                <div style={{ fontSize: 14, marginBottom: 8 }}>
+                  <strong>Scheduled Visit:</strong> {data.latestVerification.scheduledVisit.date} ({data.latestVerification.scheduledVisit.slot})
+                  {data.latestVerification.scheduledVisit.rescheduledAt && (
+                    <span style={{ fontSize: 12, color: '#6B7280', marginLeft: 6 }}>
+                      (Updated: {new Date(data.latestVerification.scheduledVisit.rescheduledAt).toLocaleDateString()})
+                    </span>
+                  )}
+                </div>
+              )}
+              {data.latestVerification.scheduledVisit?.previousVisits && data.latestVerification.scheduledVisit.previousVisits.length > 0 && (
+                <div style={{ fontSize: 13, marginBottom: 10, padding: 8, backgroundColor: '#F9FAFB', borderRadius: 6 }}>
+                  <strong style={{ color: '#4B5563' }}>Reschedule History:</strong>
+                  <ul style={{ margin: '4px 0 0 16px', padding: 0, color: '#6B7280' }}>
+                    {data.latestVerification.scheduledVisit.previousVisits.map((prev, pIdx) => (
+                      <li key={pIdx}>
+                        Was: {prev.date} ({prev.slot}) — changed on {new Date(prev.rescheduledAt).toLocaleDateString()}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {data.latestVerification.assignedVerifier?.name && (
                 <div style={{ fontSize: 14, marginBottom: 8 }}>
                   <strong>Assigned Verifier:</strong> {data.latestVerification.assignedVerifier.name}

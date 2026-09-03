@@ -1,9 +1,9 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-async function apiFetch(path, { revalidate = 3600, ...init } = {}) {
+async function apiFetch(path, { revalidate = 3600, tags, ...init } = {}) {
   return fetch(`${API_URL}${path}`, {
     ...init,
-    next: { revalidate },
+    next: { revalidate, ...(tags ? { tags } : {}) },
   });
 }
 
@@ -24,9 +24,12 @@ export async function getSellerProducts(slug, { page = 1, category } = {}) {
 }
 
 export async function getSellerReviews(slug, { page = 1 } = {}) {
-  // Uncached — reviews are auto-approved and must appear immediately after
-  // submission, so this intentionally skips ISR caching (unlike other reads).
-  const res = await fetch(`${API_URL}/api/public/sellers/${slug}/reviews?page=${page}`, { cache: 'no-store' });
+  // HIGH-LOAD: Replaced cache: 'no-store' with 60s ISR revalidation and tags.
+  // This prevents Next.js from bailing out of static generation for the entire showroom page.
+  const res = await apiFetch(`/api/public/sellers/${slug}/reviews?page=${page}`, {
+    revalidate: 60,
+    tags: [`reviews-${slug}`],
+  });
   if (!res.ok) return { reviews: [], averageRating: 0, totalReviews: 0, totalPages: 1 };
   return res.json();
 }

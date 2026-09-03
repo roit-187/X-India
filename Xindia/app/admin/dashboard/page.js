@@ -276,6 +276,13 @@ export default function AdminDashboardPage() {
                     <div>
                       <strong>{req.scheduledVisit.date}</strong>
                       <div style={{ fontSize: 12, color: '#EA580C', fontWeight: 600 }}>{req.scheduledVisit.slot}</div>
+                      {req.scheduledVisit.rescheduledCount > 0 && (
+                        <div style={{ marginTop: 2 }}>
+                          <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, backgroundColor: '#FEF3C7', color: '#92400E', fontWeight: 700 }}>
+                            Rescheduled ({req.scheduledVisit.rescheduledCount}x)
+                          </span>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <span>{new Date(req.createdAt).toLocaleDateString()}</span>
