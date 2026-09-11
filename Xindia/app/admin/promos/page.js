@@ -20,6 +20,7 @@ import {
   X,
   AlertTriangle,
   ChevronDown,
+  Zap,
 } from 'lucide-react';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
@@ -365,11 +366,12 @@ export default function AdminPromosPage() {
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', gap: 4,
                         fontSize: 11.5, fontWeight: 600, padding: '3px 8px', borderRadius: 6,
-                        background: promo.appliesTo === 'ALL' ? '#EFF6FF' : promo.appliesTo === 'SUBSCRIPTION' ? '#F5F3FF' : '#FFFBEB',
-                        color: promo.appliesTo === 'ALL' ? '#1D4ED8' : promo.appliesTo === 'SUBSCRIPTION' ? '#6D28D9' : '#B45309',
+                        background: promo.appliesTo === 'ALL' ? '#EFF6FF' : promo.appliesTo === 'SUBSCRIPTION' ? '#F5F3FF' : promo.appliesTo === 'LEAD_BOOST' ? '#FFF7ED' : '#FFFBEB',
+                        color: promo.appliesTo === 'ALL' ? '#1D4ED8' : promo.appliesTo === 'SUBSCRIPTION' ? '#6D28D9' : promo.appliesTo === 'LEAD_BOOST' ? '#C2410C' : '#B45309',
                       }}>
                         {promo.appliesTo === 'SUBSCRIPTION' && <CreditCard size={12} />}
                         {promo.appliesTo === 'CREDITS' && <Coins size={12} />}
+                        {promo.appliesTo === 'LEAD_BOOST' && <Zap size={12} />}
                         {promo.appliesTo === 'ALL' && <Tag size={12} />}
                         {promo.appliesTo}
                       </span>
@@ -590,9 +592,10 @@ export default function AdminPromosPage() {
                     onChange={(e) => setFormData({ ...formData, appliesTo: e.target.value })}
                     style={{ width: '100%', padding: '9px 12px', border: '1px solid #D1D5DB', borderRadius: 8, fontSize: 13.5, background: '#fff' }}
                   >
-                    <option value="ALL">All (Plans & SmartCredits)</option>
+                    <option value="ALL">All (Plans, SmartCredits & Lead Boosts)</option>
                     <option value="SUBSCRIPTION">Subscriptions Only</option>
                     <option value="CREDITS">SmartCredits Only</option>
+                    <option value="LEAD_BOOST">Lead Boosts Only</option>
                   </select>
                 </div>
 
