@@ -18,7 +18,7 @@ const ALL_LINKS = [
   { href: '/admin/reviews',       label: 'Reviews & Moderation',  icon: Star,            flag: 'always' },
   { href: '/admin/staff',         label: 'Staff & Team',          icon: UserCog,         flag: 'staff' },
   { href: '/admin/plans',         label: 'Plans & Pricing',       icon: CreditCard,      flag: 'plans' },
-  { href: '/admin/credits',       label: 'Credits & Policy',      icon: Coins,           flag: 'credits' },
+  { href: '/admin/credits',       label: 'Credits & Boosts Pricing', icon: Coins,      flag: 'credits' },
   { href: '/admin/payments',      label: 'Payments & Ledger',     icon: Receipt,         flag: 'payments' },
   { href: '/admin/promos',        label: 'Promo Codes',           icon: Tag,             flag: 'plans' },
   { href: '/admin/legal',         label: 'Legal & Compliance',    icon: Shield,          flag: 'super' },
