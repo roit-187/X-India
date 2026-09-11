@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Server, Globe, ShieldAlert, CheckCircle2, AlertCircle, RefreshCw, Activity, Cpu, ArrowRight, ExternalLink, AlertTriangle, Mail, Phone } from 'lucide-react';
+import { Server, Globe, ShieldAlert, CheckCircle2, AlertCircle, RefreshCw, Activity, Cpu, ArrowRight, ExternalLink, AlertTriangle, Mail, Phone, MessageSquare, Smartphone, Zap, PhoneCall, Flame } from 'lucide-react';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 export default function AdminSettingsPage() {
@@ -14,6 +14,8 @@ export default function AdminSettingsPage() {
     isGstVerificationEnabled: false,
     supportEmail: 'Xindia369@gmail.com',
     supportPhone: '+91 8860260878',
+    primaryOtpProvider: 'WHATSAPP',
+    isFirebasePhoneAuthEnabled: true,
   });
 
   const [loading, setLoading] = useState(true);
@@ -38,6 +40,8 @@ export default function AdminSettingsPage() {
           isGstVerificationEnabled: Boolean(data.settings.isGstVerificationEnabled),
           supportEmail: data.settings.supportEmail || 'Xindia369@gmail.com',
           supportPhone: data.settings.supportPhone || '+91 8860260878',
+          primaryOtpProvider: data.settings.primaryOtpProvider || 'WHATSAPP',
+          isFirebasePhoneAuthEnabled: data.settings.isFirebasePhoneAuthEnabled !== false,
         });
       }
     } catch (err) {
@@ -486,6 +490,196 @@ export default function AdminSettingsPage() {
                     />
                   </span>
                 </label>
+              </div>
+            </div>
+
+            {/* Authentication & Phone OTP Gateway Card */}
+            <div className="admin-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ background: '#EFF6FF', padding: 8, borderRadius: 8, color: '#2563EB' }}>
+                  <Smartphone size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--adm-text)' }}>
+                    Authentication & Phone OTP Gateway
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--adm-text-med)' }}>
+                    Switch the active delivery provider between Meta WhatsApp and Firebase SMS anytime. Voice OTP remains active as a user fallback.
+                  </p>
+                </div>
+              </div>
+
+              {/* Provider Radio Selector Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                {/* WhatsApp Option */}
+                <div
+                  onClick={() => setSettings({ ...settings, primaryOtpProvider: 'WHATSAPP' })}
+                  style={{
+                    padding: 16,
+                    borderRadius: 'var(--adm-radius-sm)',
+                    border: settings.primaryOtpProvider === 'WHATSAPP' ? '2px solid #25D366' : '1px solid var(--adm-border)',
+                    background: settings.primaryOtpProvider === 'WHATSAPP' ? '#F0FDF4' : '#FFFFFF',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    position: 'relative',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ background: '#DCFCE7', padding: 6, borderRadius: 6, color: '#15803D' }}>
+                        <MessageSquare size={18} />
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--adm-text)' }}>
+                        Meta WhatsApp Cloud
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: 10,
+                        background: '#DCFCE7',
+                        color: '#15803D',
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      ~₹0.11 / OTP
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--adm-text-med)', lineHeight: 1.5 }}>
+                    Instant WhatsApp OTP delivered via Meta Business API. Best conversion, zero DLT carrier regulation issues.
+                  </p>
+                  {settings.primaryOtpProvider === 'WHATSAPP' && (
+                    <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#16A34A' }}>
+                      <CheckCircle2 size={13} /> ACTIVE PRIMARY GATEWAY
+                    </div>
+                  )}
+                </div>
+
+                {/* Firebase Option */}
+                <div
+                  onClick={() => setSettings({ ...settings, primaryOtpProvider: 'FIREBASE' })}
+                  style={{
+                    padding: 16,
+                    borderRadius: 'var(--adm-radius-sm)',
+                    border: settings.primaryOtpProvider === 'FIREBASE' ? '2px solid #F5820D' : '1px solid var(--adm-border)',
+                    background: settings.primaryOtpProvider === 'FIREBASE' ? '#FFFBEB' : '#FFFFFF',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    position: 'relative',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ background: '#FEF3C7', padding: 6, borderRadius: 6, color: '#D97706' }}>
+                        <Flame size={18} />
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--adm-text)' }}>
+                        Firebase Phone Auth (SMS)
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: 10,
+                        background: '#FEF3C7',
+                        color: '#B45309',
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      ~₹6.00 / SMS
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--adm-text-med)', lineHeight: 1.5 }}>
+                    Native cellular SMS OTP via Google Cloud Identity Platform. Zero DLT registration, billed to Firebase Blaze.
+                  </p>
+                  {settings.primaryOtpProvider === 'FIREBASE' && (
+                    <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#D97706' }}>
+                      <CheckCircle2 size={13} /> ACTIVE PRIMARY GATEWAY
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Secondary Switch: Firebase as Backup */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 14px',
+                  borderRadius: 'var(--adm-radius-sm)',
+                  background: '#F8FAFC',
+                  border: '1px solid var(--adm-border)',
+                  marginBottom: 12,
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--adm-text)' }}>
+                    Allow Firebase SMS as Dynamic Backup
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--adm-text-light)' }}>
+                    When WhatsApp is the primary gateway, permit users to fall back to Firebase SMS if WhatsApp fails.
+                  </div>
+                </div>
+                <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={settings.isFirebasePhoneAuthEnabled}
+                    onChange={(e) => setSettings({ ...settings, isFirebasePhoneAuthEnabled: e.target.checked })}
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                  />
+                  <span
+                    style={{
+                      position: 'absolute',
+                      cursor: 'pointer',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: settings.isFirebasePhoneAuthEnabled ? '#2563EB' : '#CBD5E1',
+                      transition: '0.2s',
+                      borderRadius: 24,
+                    }}
+                  >
+                    <span
+                      style={{
+                        position: 'absolute',
+                        content: '',
+                        height: 18,
+                        width: 18,
+                        left: settings.isFirebasePhoneAuthEnabled ? 22 : 3,
+                        bottom: 3,
+                        backgroundColor: '#FFFFFF',
+                        transition: '0.2s',
+                        borderRadius: '50%',
+                      }}
+                    />
+                  </span>
+                </label>
+              </div>
+
+              {/* Voice Fallback Notice */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 8,
+                  padding: '10px 14px',
+                  borderRadius: 'var(--adm-radius-sm)',
+                  background: '#EFF6FF',
+                  border: '1px solid #DBEAFE',
+                  fontSize: 12,
+                  color: '#1E40AF',
+                }}
+              >
+                <PhoneCall size={15} style={{ marginTop: 2, flexShrink: 0 }} />
+                <span>
+                  <strong>2Factor Voice Call Safety Net:</strong> Automated phone call OTP is permanently enabled as an on-demand button (<em>"Try Voice Call"</em>) for all mobile users. If WhatsApp or SMS are delayed, users can always receive their code via telephone call (~₹0.20 / call).
+                </span>
               </div>
             </div>
 
