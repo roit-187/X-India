@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Server, Globe, ShieldAlert, CheckCircle2, AlertCircle, RefreshCw, Activity, Cpu, ArrowRight, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Server, Globe, ShieldAlert, CheckCircle2, AlertCircle, RefreshCw, Activity, Cpu, ArrowRight, ExternalLink, AlertTriangle, Mail, Phone } from 'lucide-react';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 export default function AdminSettingsPage() {
@@ -12,6 +12,8 @@ export default function AdminSettingsPage() {
     websiteUrl: 'https://x-india.vercel.app',
     isMaintenanceMode: false,
     isGstVerificationEnabled: false,
+    supportEmail: 'Xindia369@gmail.com',
+    supportPhone: '+91 8860260878',
   });
 
   const [loading, setLoading] = useState(true);
@@ -34,6 +36,8 @@ export default function AdminSettingsPage() {
           websiteUrl: data.settings.websiteUrl || 'https://x-india.vercel.app',
           isMaintenanceMode: Boolean(data.settings.isMaintenanceMode),
           isGstVerificationEnabled: Boolean(data.settings.isGstVerificationEnabled),
+          supportEmail: data.settings.supportEmail || 'Xindia369@gmail.com',
+          supportPhone: data.settings.supportPhone || '+91 8860260878',
         });
       }
     } catch (err) {
@@ -302,6 +306,61 @@ export default function AdminSettingsPage() {
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--adm-text-light)', marginTop: 6 }}>
                   Default Vercel deployment: <code style={{ color: '#2563EB' }}>https://x-india.vercel.app</code>. When you connect your official domain (e.g. <code style={{ color: '#2563EB' }}>https://xindia.in</code>), change it here to update all generated seller QR codes and storefront links.
+                </div>
+              </div>
+            </div>
+
+            {/* Platform Support & Contact Info Card */}
+            <div className="admin-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ background: '#FEF3C7', padding: 8, borderRadius: 8, color: '#D97706' }}>
+                  <Mail size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--adm-text)' }}>
+                    Platform Support & Reviewer Contact Info
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--adm-text-med)' }}>
+                    Official contact channels displayed on public /contact page, invoices, and Google Play Console declarations.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--adm-text)', marginBottom: 6 }}>
+                    Official Support Email
+                  </label>
+                  <input
+                    type="email"
+                    className="admin-input"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)', fontSize: 14 }}
+                    value={settings.supportEmail || ''}
+                    onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
+                    placeholder="Xindia369@gmail.com"
+                    required
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--adm-text-light)', marginTop: 4 }}>
+                    Receives buyer/seller queries and Google Play reviewer messages.
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--adm-text)', marginBottom: 6 }}>
+                    Helpline & WhatsApp Number
+                  </label>
+                  <input
+                    type="text"
+                    className="admin-input"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)', fontSize: 14 }}
+                    value={settings.supportPhone || ''}
+                    onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value })}
+                    placeholder="+91 8860260878"
+                    required
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--adm-text-light)', marginTop: 4 }}>
+                    Official helpline number and direct WhatsApp chat target.
+                  </div>
                 </div>
               </div>
             </div>

@@ -43,6 +43,7 @@ export function useAdminPermissions() {
   const canManageStaff   = isSuperAdmin; // Staff management is NEVER delegatable.
   const canManagePlans   = isSuperAdmin || hasPermission('plans.manage');
   const canManageCredits = isSuperAdmin || hasPermission('credits.manage');
+  const canManagePayments = isSuperAdmin || role === 'FINANCE_ADMIN' || hasPermission('payments.manage');
 
   return {
     loaded,
@@ -57,6 +58,7 @@ export function useAdminPermissions() {
     canManageStaff,
     canManagePlans,
     canManageCredits,
+    canManagePayments,
     canManageSettings:  isSuperAdmin,
   };
 }

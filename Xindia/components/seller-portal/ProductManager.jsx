@@ -264,6 +264,15 @@ export default function ProductManager({ sellerId }) {
                     {p.hsnCode ? <span style={{ fontSize: 11, color: '#475569', backgroundColor: '#F1F5F9', padding: '2px 6px', borderRadius: 4 }}>HSN: {p.hsnCode}</span> : null}
                   </div>
 
+                  {/* Analytics Metrics Row */}
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 11, color: '#64748B', backgroundColor: '#F8FAFC', padding: '6px 10px', borderRadius: 6, marginTop: 8 }}>
+                    <span><strong style={{ color: '#0F172A' }}>{p.leads ?? 0}</strong> Leads</span>
+                    <span>·</span>
+                    <span><strong style={{ color: '#0F172A' }}>{p.views ?? 0}</strong> Views</span>
+                    <span>·</span>
+                    <span><strong style={{ color: '#0F172A' }}>{p.inquiries ?? 0}</strong> Inquiries</span>
+                  </div>
+
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', borderTop: '1px solid #E2E8F0', marginTop: 12, paddingTop: 12 }}>
                     <button className="seller-btn seller-btn-secondary" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => openEditModal(p)}>Edit</button>
                     <button className="seller-btn seller-btn-danger" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => setDeleteTarget(p._id)}>Delete</button>

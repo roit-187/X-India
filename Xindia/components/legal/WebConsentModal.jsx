@@ -2,17 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { X, Shield, RefreshCw } from 'lucide-react';
+import DOMPurify from 'isomorphic-dompurify';
 
 function sanitizeHtml(html) {
   if (!html) return '';
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
-    .replace(/javascript\s*:/gi, 'blocked:')
-    .replace(/<iframe\b[^>]*>/gi, '')
-    .replace(/<object\b[^>]*>/gi, '')
-    .replace(/<embed\b[^>]*>/gi, '')
-    .replace(/<form\b[^>]*>/gi, '');
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'b', 'i', 'strong', 'em', 'strike',
+      'ul', 'ol', 'li', 'br', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+      'span', 'div', 'blockquote', 'a'
+    ],
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
+  });
 }
 
 const DOC_TITLES = {

@@ -38,10 +38,10 @@ const Footer = () => {
     {
       title: 'Support',
       links: [
-        { name: 'Help Center', href: '#' },
-        { name: 'Safety & Trust', href: '#' },
-        { name: 'Terms & Conditions', href: '#' },
-        { name: 'Privacy Policy', href: '#' },
+        { name: 'Contact Support', href: '/contact' },
+        { name: 'Privacy Policy', href: '/privacy-policy' },
+        { name: 'Terms & Conditions', href: '/terms' },
+        { name: 'Trust & Verification', href: '/contact' },
       ]
     }
   ];
@@ -117,14 +117,14 @@ const Footer = () => {
         </motion.div>
 
         <div className="footer-bottom">
-          <p>© 2024 XINDIA. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} XINDIA. All rights reserved.</p>
           <p className="made-with-love">
             Made with <span className="heart">❤</span> in India
           </p>
           <div className="footer-bottom-links">
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Use</a>
-            <a href="#">Refund Policy</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+            <a href="/terms">Terms of Service</a>
+            <a href="/contact">Contact Support</a>
           </div>
         </div>
       </div>

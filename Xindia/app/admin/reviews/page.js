@@ -23,6 +23,7 @@ export default function AdminReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [targetTypeFilter, setTargetTypeFilter] = useState('');
+  const [deletionFilter, setDeletionFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [totalCount, setTotalCount] = useState(0);
 
@@ -37,6 +38,7 @@ export default function AdminReviewsPage() {
       const params = new URLSearchParams();
       if (statusFilter) params.set('status', statusFilter);
       if (targetTypeFilter) params.set('targetType', targetTypeFilter);
+      if (deletionFilter) params.set('deletionRequestStatus', deletionFilter);
       params.set('limit', '50');
 
       const res = await fetch(`/api/admin/reviews?${params.toString()}`);
@@ -50,7 +52,7 @@ export default function AdminReviewsPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, targetTypeFilter]);
+  }, [statusFilter, targetTypeFilter, deletionFilter]);
 
   useEffect(() => {
     loadReviews();
@@ -204,6 +206,18 @@ export default function AdminReviewsPage() {
           <option value="product">Catalog Products</option>
           <option value="opportunity">Business Opportunities</option>
         </select>
+
+        {/* Deletion Request Filter */}
+        <select
+          value={deletionFilter}
+          onChange={(e) => setDeletionFilter(e.target.value)}
+          style={{ padding: '8px 12px', borderRadius: 10, border: '1px solid #CBD5E1', fontSize: 13, fontWeight: 600, background: '#fff', outline: 'none' }}
+        >
+          <option value="">All Review Requests</option>
+          <option value="PENDING">⚠️ Deletion Requested (Pending)</option>
+          <option value="APPROVED">✓ Deletion Approved</option>
+          <option value="REJECTED">✕ Deletion Rejected</option>
+        </select>
       </div>
 
       {/* Reviews Table */}
@@ -273,6 +287,73 @@ export default function AdminReviewsPage() {
                     </span>
                   </div>
                 </div>
+
+                {/* Seller Deletion Request Banner */}
+                {review.deletionRequest && review.deletionRequest.status === 'PENDING' && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
+                    background: '#FFF7ED', border: '1px solid #FFEDD5', color: '#C2410C',
+                    padding: '12px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+                    marginBottom: 14,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 300px' }}>
+                      <AlertTriangle size={18} color="#EA580C" style={{ flexShrink: 0 }} />
+                      <span>
+                        Seller Deletion Request: "{review.deletionRequest.reason}"
+                        {review.deletionRequest.requestedBy?.companyName && (
+                          <span style={{ fontWeight: 500, color: '#9A3412', marginLeft: 6 }}>
+                            — from {review.deletionRequest.requestedBy.companyName}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                      {hasPermission('reviews.moderate') && (
+                        <>
+                          <button
+                            onClick={() => handleToggleStatus(review._id, 'inactive')}
+                            disabled={processingId === review._id}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 4,
+                              background: '#EA580C', color: '#FFF', border: 'none',
+                              padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <EyeOff size={13} /> Approve & Hide
+                          </button>
+                          <button
+                            onClick={() => handleToggleStatus(review._id, 'approved')}
+                            disabled={processingId === review._id}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 4,
+                              background: '#FFF', color: '#64748B', border: '1px solid #CBD5E1',
+                              padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Reject Request
+                          </button>
+                        </>
+                      )}
+                      {isSuperAdmin && (
+                        <button
+                          onClick={() => handleDeleteReview(review._id)}
+                          disabled={processingId === review._id}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 4,
+                            background: '#DC2626', color: '#FFF', border: 'none',
+                            padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <Trash2 size={13} /> Delete Review
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Rating & Comment */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>

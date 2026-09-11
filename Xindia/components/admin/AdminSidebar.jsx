@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Tag, Star, Settings, LogOut, UserCog, Shield, Bell } from 'lucide-react';
+import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Tag, Star, Settings, LogOut, UserCog, Shield, Bell, Receipt } from 'lucide-react';
 import SearchBar from './SearchBar';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
@@ -19,6 +19,7 @@ const ALL_LINKS = [
   { href: '/admin/staff',         label: 'Staff & Team',          icon: UserCog,         flag: 'staff' },
   { href: '/admin/plans',         label: 'Plans & Pricing',       icon: CreditCard,      flag: 'plans' },
   { href: '/admin/credits',       label: 'Credits & Policy',      icon: Coins,           flag: 'credits' },
+  { href: '/admin/payments',      label: 'Payments & Ledger',     icon: Receipt,         flag: 'payments' },
   { href: '/admin/promos',        label: 'Promo Codes',           icon: Tag,             flag: 'plans' },
   { href: '/admin/legal',         label: 'Legal & Compliance',    icon: Shield,          flag: 'super' },
   { href: '/admin/alerts',        label: 'Critical Alerts',       icon: Bell,            flag: 'super' },
@@ -58,17 +59,18 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const {
     profile, role, isSuperAdmin,
-    canManageStaff, canManagePlans, canManageCredits,
+    canManageStaff, canManagePlans, canManageCredits, canManagePayments,
     loaded,
   } = useAdminPermissions();
 
   // Resolve which links to show based on delegated capabilities.
   const links = ALL_LINKS.filter(({ flag }) => {
-    if (flag === 'always')  return true;
-    if (flag === 'staff')   return canManageStaff;
-    if (flag === 'plans')   return canManagePlans;
-    if (flag === 'credits') return canManageCredits;
-    if (flag === 'super')   return isSuperAdmin;
+    if (flag === 'always')   return true;
+    if (flag === 'staff')    return canManageStaff;
+    if (flag === 'plans')    return canManagePlans;
+    if (flag === 'credits')  return canManageCredits;
+    if (flag === 'payments') return canManagePayments;
+    if (flag === 'super')    return isSuperAdmin;
     return false;
   });
 

@@ -10,6 +10,7 @@ const ALERT_TYPES = [
   { key: 'CONSENT_WITHDRAWN', label: 'Consent Withdrawn' },
   { key: 'VERIFICATION_REQUEST', label: 'Verification Request' },
   { key: 'COMPLAINT', label: 'Complaint' },
+  { key: 'DELETE_REVIEW_REQUEST', label: 'Delete Review Requests' },
   { key: 'FLAG', label: 'Flag' },
   { key: 'SUSPICIOUS_ACTIVITY', label: 'Suspicious Activity' },
   { key: 'PAYMENT_DISPUTE', label: 'Payment Dispute' },
@@ -31,13 +32,14 @@ const SEVERITY_CONFIG = {
 };
 
 const TYPE_ICONS = {
-  ACCOUNT_DELETED:       '🗑',
-  CONSENT_WITHDRAWN:     '📋',
-  VERIFICATION_REQUEST:  '🔍',
-  COMPLAINT:             '⚠️',
-  FLAG:                  '🚩',
-  SUSPICIOUS_ACTIVITY:   '🔐',
-  PAYMENT_DISPUTE:       '💳',
+  ACCOUNT_DELETED:        '🗑',
+  CONSENT_WITHDRAWN:      '📋',
+  VERIFICATION_REQUEST:   '🔍',
+  COMPLAINT:              '⚠️',
+  DELETE_REVIEW_REQUEST:  '🗑️',
+  FLAG:                   '🚩',
+  SUSPICIOUS_ACTIVITY:    '🔐',
+  PAYMENT_DISPUTE:        '💳',
 };
 
 const STATUS_COLORS = {
@@ -111,6 +113,22 @@ function AlertDetail({ alert, onClose, onStatusChange }) {
           <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 20 }}>
             Created: {new Date(alert.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
           </div>
+
+          {alert.type === 'DELETE_REVIEW_REQUEST' && (
+            <div style={{ marginBottom: 18 }}>
+              <a
+                href="/admin/reviews?deletionRequestStatus=PENDING"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  background: '#FFF7ED', border: '1px solid #FDBA74', color: '#C2410C',
+                  padding: '9px 15px', borderRadius: 8, fontSize: 13, fontWeight: 700,
+                  textDecoration: 'none',
+                }}
+              >
+                Go to Review Moderation Hub →
+              </a>
+            </div>
+          )}
 
           <div style={{ marginBottom: 14 }}>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#64748B', marginBottom: 6 }}>Update Status</label>
