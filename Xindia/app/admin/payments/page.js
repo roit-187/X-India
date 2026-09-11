@@ -6,7 +6,6 @@ import {
   Receipt,
   Download,
   Search,
-  Filter,
   RefreshCw,
   Eye,
   RotateCcw,
@@ -15,7 +14,6 @@ import {
   AlertTriangle,
   Clock,
   ShieldAlert,
-  ArrowUpDown,
   Coins,
   CreditCard,
   Zap,
@@ -25,6 +23,7 @@ import {
   Printer,
 } from 'lucide-react';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
+import './payments.css';
 
 const formatInr = (amount) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount || 0);
@@ -42,18 +41,18 @@ const formatDate = (dateStr) => {
 };
 
 const STATUS_CONFIG = {
-  PAID: { label: 'Paid', color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800', icon: CheckCircle2 },
-  CREATED: { label: 'Created', color: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800', icon: Clock },
-  FAILED: { label: 'Failed', color: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800', icon: XCircle },
-  REFUND_PENDING: { label: 'Refund Pending', color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800', icon: AlertTriangle },
-  REFUNDED: { label: 'Refunded', color: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-800', icon: RotateCcw },
-  DISPUTED: { label: 'Disputed', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800', icon: ShieldAlert },
+  PAID: { label: 'Paid', statusClass: 'PAID', icon: CheckCircle2 },
+  CREATED: { label: 'Created', statusClass: 'CREATED', icon: Clock },
+  FAILED: { label: 'Failed', statusClass: 'FAILED', icon: XCircle },
+  REFUND_PENDING: { label: 'Refund Pending', statusClass: 'REFUND_PENDING', icon: AlertTriangle },
+  REFUNDED: { label: 'Refunded', statusClass: 'REFUNDED', icon: RotateCcw },
+  DISPUTED: { label: 'Disputed', statusClass: 'DISPUTED', icon: ShieldAlert },
 };
 
 const ITEM_TYPE_LABELS = {
-  CREDIT_BUNDLE: { label: 'SmartCredits', icon: Coins, color: 'text-amber-500' },
-  SELLER_SUBSCRIPTION: { label: 'Seller Plan', icon: CreditCard, color: 'text-blue-500' },
-  LEAD_BOOST: { label: 'RFQ Lead Boost', icon: Zap, color: 'text-orange-500' },
+  CREDIT_BUNDLE: { label: 'SmartCredits', icon: Coins, color: '#D97706' },
+  SELLER_SUBSCRIPTION: { label: 'Seller Plan', icon: CreditCard, color: '#2563EB' },
+  LEAD_BOOST: { label: 'RFQ Lead Boost', icon: Zap, color: '#EA580C' },
 };
 
 export default function AdminPaymentsPage() {
@@ -187,10 +186,10 @@ export default function AdminPaymentsPage() {
 
   if (loaded && !canManagePayments) {
     return (
-      <div className="flex h-96 flex-col items-center justify-center p-6 text-center">
-        <ShieldAlert className="mb-4 h-12 w-12 text-rose-500" />
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Access Restricted</h2>
-        <p className="mt-2 max-w-md text-sm text-slate-500 dark:text-slate-400">
+      <div className="payments-restricted">
+        <ShieldAlert size={48} color="#EF4444" style={{ marginBottom: 16 }} />
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0F172A', margin: '0 0 8px 0' }}>Access Restricted</h2>
+        <p style={{ fontSize: 13, color: '#64748B', maxWidth: 420, margin: 0 }}>
           You do not have administrative permissions to inspect payments or financial ledgers. Contact your Super Admin for access.
         </p>
       </div>
@@ -198,124 +197,110 @@ export default function AdminPaymentsPage() {
   }
 
   return (
-    <div className="min-h-screen space-y-6 p-6">
+    <div className="payments-page">
       {/* Toast Notification */}
       {toastMessage && (
-        <div
-          className={`fixed bottom-5 right-5 z-50 rounded-xl border px-4 py-3 shadow-lg transition-all ${
-            toastMessage.type === 'error'
-              ? 'border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200'
-              : 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200'
-          }`}
-        >
+        <div className={`payments-toast ${toastMessage.type === 'error' ? 'error' : 'success'}`}>
           {toastMessage.msg}
         </div>
       )}
 
       {/* Header */}
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-white">
-            <Receipt className="h-7 w-7 text-orange-600" />
-            Payments & Financial Ledger
+      <div className="payments-header">
+        <div className="payments-title-group">
+          <h1>
+            <Receipt size={26} color="#E8581C" />
+            Payments &amp; Financial Ledger
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p>
             Multi-channel revenue ledger, GST SAC 998439 compliance, and automated full-refund guarantees.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={fetchPayments}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        <div className="payments-header-actions">
+          <button onClick={fetchPayments} className="payments-btn payments-btn-outline">
+            <RefreshCw size={15} className={loading ? 'spin-icon' : ''} />
             Refresh
           </button>
-          <button
-            onClick={handleExportCsv}
-            className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700"
-          >
-            <Download className="h-4 w-4" />
+          <button onClick={handleExportCsv} className="payments-btn payments-btn-primary">
+            <Download size={15} />
             Export CSV
           </button>
         </div>
       </div>
 
       {/* Financial Metric Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="payments-metrics-grid">
         {/* Gross Revenue */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Gross Revenue</span>
-            <div className="rounded-lg bg-emerald-100 p-2 dark:bg-emerald-950/60">
-              <Receipt className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+        <div className="payments-metric-card">
+          <div className="payments-metric-header">
+            <span className="payments-metric-label">Gross Revenue</span>
+            <div className="payments-metric-icon-wrap green">
+              <Receipt size={18} />
             </div>
           </div>
-          <div className="mt-3 text-2xl font-extrabold text-slate-900 dark:text-white">
+          <div className="payments-metric-value">
             {formatInr(metrics.totalGrossRevenue)}
           </div>
-          <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-            <span>Seller: <strong className="text-slate-700 dark:text-slate-300">{formatInr(metrics.sellerRevenue || 0)}</strong></span>
+          <div className="payments-metric-footer">
+            <span>Seller: <strong style={{ color: '#0F172A' }}>{formatInr(metrics.sellerRevenue || 0)}</strong></span>
             <span>•</span>
-            <span>Buyer: <strong className="text-slate-700 dark:text-slate-300">{formatInr(metrics.buyerRevenue || 0)}</strong></span>
+            <span>Buyer: <strong style={{ color: '#0F172A' }}>{formatInr(metrics.buyerRevenue || 0)}</strong></span>
           </div>
         </div>
 
         {/* Total GST Collected */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total GST (18%)</span>
-            <div className="rounded-lg bg-blue-100 p-2 dark:bg-blue-950/60">
-              <FileSpreadsheet className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+        <div className="payments-metric-card">
+          <div className="payments-metric-header">
+            <span className="payments-metric-label">Total GST (18%)</span>
+            <div className="payments-metric-icon-wrap blue">
+              <FileSpreadsheet size={18} />
             </div>
           </div>
-          <div className="mt-3 text-2xl font-extrabold text-slate-900 dark:text-white">
+          <div className="payments-metric-value">
             {formatInr(metrics.totalGstCollected)}
           </div>
-          <div className="mt-1 text-xs text-slate-500">
+          <div className="payments-metric-footer">
             SAC: 998439 (CGST: {formatInr(metrics.cgstTotal)}, SGST: {formatInr(metrics.sgstTotal)})
           </div>
         </div>
 
         {/* Total Refunded */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Refunds Given</span>
-            <div className="rounded-lg bg-sky-100 p-2 dark:bg-sky-950/60">
-              <RotateCcw className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+        <div className="payments-metric-card">
+          <div className="payments-metric-header">
+            <span className="payments-metric-label">Refunds Given</span>
+            <div className="payments-metric-icon-wrap sky">
+              <RotateCcw size={18} />
             </div>
           </div>
-          <div className="mt-3 text-2xl font-extrabold text-slate-900 dark:text-white">
+          <div className="payments-metric-value">
             {formatInr(metrics.totalRefundedAmount)}
           </div>
-          <div className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+          <div className="payments-metric-footer" style={{ color: '#059669', fontWeight: 600 }}>
             100% full return guarantee (0% deduction)
           </div>
         </div>
 
         {/* Issues & Pending */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Pending Actions</span>
-            <div className="rounded-lg bg-amber-100 p-2 dark:bg-amber-950/60">
-              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+        <div className="payments-metric-card">
+          <div className="payments-metric-header">
+            <span className="payments-metric-label">Pending Actions</span>
+            <div className="payments-metric-icon-wrap amber">
+              <AlertTriangle size={18} />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {metrics.pendingRefundsCount || 0}
-            </span>
-            <span className="text-xs text-amber-600">Pending Refunds</span>
+          <div className="payments-metric-value" style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <span>{metrics.pendingRefundsCount || 0}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#D97706' }}>Pending Refunds</span>
           </div>
-          <div className="mt-1 text-xs text-slate-500">
-            Disputed chargebacks: <span className="font-semibold text-rose-600">{metrics.disputedCount || 0}</span>
+          <div className="payments-metric-footer">
+            Disputed chargebacks: <strong style={{ color: '#DC2626' }}>{metrics.disputedCount || 0}</strong>
           </div>
         </div>
       </div>
 
-      {/* Segregated Tab Switcher (Section 6.2) */}
-      <div className="flex flex-wrap border-b border-slate-200 dark:border-slate-800">
+      {/* Segregated Tab Switcher */}
+      <div className="payments-tabs">
         {[
           { id: 'all', label: 'All Transactions' },
           { id: 'seller', label: 'Seller Payments (Plans & Credits)' },
@@ -329,15 +314,11 @@ export default function AdminPaymentsPage() {
               setActiveTab(tab.id);
               setPagination((prev) => ({ ...prev, page: 1 }));
             }}
-            className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${
-              activeTab === tab.id
-                ? 'border-orange-500 text-orange-600 dark:text-orange-400'
-                : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-            }`}
+            className={`payments-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
           >
             <span>{tab.label}</span>
             {tab.badge > 0 && (
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-950/80 dark:text-amber-300">
+              <span className="payments-tab-badge">
                 {tab.badge}
               </span>
             )}
@@ -346,25 +327,25 @@ export default function AdminPaymentsPage() {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:flex-row md:items-center md:justify-between">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+      <div className="payments-filter-bar">
+        <div className="payments-search-wrap">
+          <Search size={16} className="payments-search-icon" />
           <input
             type="text"
             placeholder="Search Order ID, Payment ID, Email, Phone, Promo..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && fetchPayments()}
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
+            className="payments-search-input"
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="payments-filter-group">
           {/* Status Filter */}
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-orange-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            className="payments-select"
           >
             <option value="ALL">All Statuses</option>
             <option value="PAID">Paid</option>
@@ -379,7 +360,7 @@ export default function AdminPaymentsPage() {
           <select
             value={itemType}
             onChange={(e) => setItemType(e.target.value)}
-            className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-orange-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            className="payments-select"
           >
             <option value="ALL">All Channels</option>
             <option value="CREDIT_BUNDLE">SmartCredits</option>
@@ -392,14 +373,14 @@ export default function AdminPaymentsPage() {
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            className="payments-date-input"
           />
-          <span className="text-xs text-slate-400">to</span>
+          <span style={{ fontSize: 12, color: '#94A3B8' }}>to</span>
           <input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            className="payments-date-input"
           />
 
           {(search || status !== 'ALL' || itemType !== 'ALL' || dateFrom || dateTo) && (
@@ -411,7 +392,7 @@ export default function AdminPaymentsPage() {
                 setDateFrom('');
                 setDateTo('');
               }}
-              className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+              className="payments-reset-btn"
             >
               Reset
             </button>
@@ -420,151 +401,142 @@ export default function AdminPaymentsPage() {
       </div>
 
       {/* Ledger Table */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-400">
+      <div className="payments-table-card">
+        <div className="payments-table-responsive">
+          <table className="payments-table">
+            <thead>
               <tr>
-                <th className="px-5 py-3.5">Invoice / Order ID</th>
-                <th className="px-5 py-3.5">Customer & Role</th>
-                <th className="px-5 py-3.5">Channel / Item</th>
-                <th className="px-5 py-3.5">Amount (INR)</th>
-                <th className="px-5 py-3.5">GST (18%)</th>
-                <th className="px-5 py-3.5">Status</th>
-                <th className="px-5 py-3.5 text-right">Actions</th>
+                <th>Invoice / Order ID</th>
+                <th>Customer &amp; Role</th>
+                <th>Channel / Item</th>
+                <th>Amount (INR)</th>
+                <th>GST (18%)</th>
+                <th>Status</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody>
               {loading && payments.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-12 text-center text-slate-400">
-                    <RefreshCw className="mx-auto mb-2 h-6 w-6 animate-spin text-orange-500" />
-                    Loading payment records...
+                  <td colSpan="7" style={{ padding: '48px 0', textAlign: 'center', color: '#94A3B8' }}>
+                    <RefreshCw size={24} color="#E8581C" className="spin-icon" style={{ margin: '0 auto 8px auto' }} />
+                    <div>Loading payment records...</div>
                   </td>
                 </tr>
               ) : payments.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-12 text-center text-slate-400">
+                  <td colSpan="7" style={{ padding: '48px 0', textAlign: 'center', color: '#94A3B8' }}>
                     No payment records match your filters.
                   </td>
                 </tr>
               ) : (
                 payments.map((p) => {
                   const statusCfg = STATUS_CONFIG[p.status] || STATUS_CONFIG.CREATED;
-                  const itemCfg = ITEM_TYPE_LABELS[p.itemType] || { label: p.itemType, icon: Receipt, color: 'text-slate-500' };
+                  const itemCfg = ITEM_TYPE_LABELS[p.itemType] || { label: p.itemType, icon: Receipt, color: '#64748B' };
                   const ItemIcon = itemCfg.icon;
+                  const role = (p.payerRole || (p.itemType === 'LEAD_BOOST' ? 'buyer' : 'seller')).toLowerCase();
 
                   return (
-                    <tr key={p._id} className="transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                    <tr key={p._id}>
                       {/* Invoice & Order ID */}
-                      <td className="px-5 py-4">
+                      <td>
                         {p.invoiceNumber ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="inline-flex items-center rounded bg-blue-50 px-1.5 py-0.5 font-mono text-xs font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-                              {p.invoiceNumber}
-                            </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span className="badge-invoice">{p.invoiceNumber}</span>
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(p.invoiceNumber);
                                 showToast(`Copied ${p.invoiceNumber}`);
                               }}
-                              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                              className="payments-icon-btn"
                               title="Copy Invoice #"
                             >
-                              <Copy className="h-3 w-3" />
+                              <Copy size={13} />
                             </button>
                           </div>
                         ) : (
-                          <div className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-100">
+                          <div style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#0F172A' }}>
                             {p.orderId}
                           </div>
                         )}
-                        <div className="mt-0.5 text-xs text-slate-400">{formatDate(p.createdAt)}</div>
+                        <div style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 3 }}>{formatDate(p.createdAt)}</div>
                         {p.paymentId && (
-                          <div className="font-mono text-[11px] text-slate-400">PayID: {p.paymentId}</div>
+                          <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#64748B', marginTop: 2 }}>PayID: {p.paymentId}</div>
                         )}
                       </td>
 
                       {/* Customer & Role */}
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                              p.payerRole === 'buyer'
-                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300'
-                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                            }`}
-                          >
-                            {p.payerRole || (p.itemType === 'LEAD_BOOST' ? 'buyer' : 'seller')}
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span className={`badge-role ${role === 'buyer' ? 'buyer' : 'seller'}`}>
+                            {role}
                           </span>
-                          <span className="font-medium text-slate-800 dark:text-slate-200">
+                          <span style={{ fontWeight: 600, color: '#0F172A' }}>
                             {p.payerDetails?.name || p.userEmail || 'Anonymous'}
                           </span>
                         </div>
                         {p.payerDetails?.businessName && (
-                          <div className="text-xs text-slate-500">{p.payerDetails.businessName}</div>
+                          <div style={{ fontSize: 12, color: '#64748B', marginTop: 3 }}>{p.payerDetails.businessName}</div>
                         )}
                         {p.userEmail && p.payerDetails?.name && (
-                          <div className="text-[11px] text-slate-400">{p.userEmail}</div>
+                          <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{p.userEmail}</div>
                         )}
                       </td>
 
                       {/* Channel / Item */}
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
-                          <ItemIcon className={`h-4 w-4 ${itemCfg.color}`} />
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: '#0F172A' }}>
+                          <ItemIcon size={16} color={itemCfg.color} />
                           {itemCfg.label}
                         </div>
-                        <div className="text-xs text-slate-400">ID: {p.itemId}</div>
+                        <div style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 2 }}>ID: {p.itemId}</div>
                         {p.promoCode && (
-                          <span className="mt-1 inline-block rounded bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-600 dark:bg-orange-950/40 dark:text-orange-400">
+                          <span className="badge-promo">
                             Promo: {p.promoCode}
                           </span>
                         )}
                       </td>
 
                       {/* Amount */}
-                      <td className="px-5 py-4">
-                        <div className="font-bold text-slate-900 dark:text-white">
+                      <td>
+                        <div style={{ fontWeight: 800, fontSize: 14, color: '#0F172A' }}>
                           {formatInr(p.netAmount)}
                         </div>
                         {p.discountAmount > 0 && (
-                          <div className="text-xs text-emerald-600 dark:text-emerald-400">
+                          <div style={{ fontSize: 11, color: '#059669', fontWeight: 600, marginTop: 2 }}>
                             Saved {formatInr(p.discountAmount)}
                           </div>
                         )}
                       </td>
 
                       {/* GST */}
-                      <td className="px-5 py-4">
-                        <div className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      <td>
+                        <div style={{ fontSize: 12.5, fontWeight: 600, color: '#475569' }}>
                           {formatInr(p.tax?.totalTax)}
                         </div>
-                        <div className="text-[11px] text-slate-400">SAC: {p.tax?.sacCode || '998439'}</div>
+                        <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>SAC: {p.tax?.sacCode || '998439'}</div>
                       </td>
 
                       {/* Status Badge */}
-                      <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${statusCfg.color}`}
-                        >
-                          <statusCfg.icon className="h-3.5 w-3.5" />
+                      <td>
+                        <span className={`badge-status ${statusCfg.statusClass}`}>
+                          <statusCfg.icon size={13} />
                           {statusCfg.label}
                         </span>
                         {p.status === 'REFUND_PENDING' && (
-                          <div className="mt-1 text-[10px] text-amber-600">Will retry in 5m</div>
+                          <div style={{ fontSize: 10.5, color: '#D97706', marginTop: 3 }}>Will retry in 5m</div>
                         )}
                       </td>
 
                       {/* Actions */}
-                      <td className="px-5 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
                           <button
                             onClick={() => handleOpenDetails(p)}
-                            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                            className="payments-icon-btn"
                             title="Inspect Details"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye size={16} />
                           </button>
                           {p.status === 'PAID' && (
                             <button
@@ -573,10 +545,10 @@ export default function AdminPaymentsPage() {
                                 setRefundReason('Admin authorized refund');
                                 setRevokeBenefit(true);
                               }}
-                              className="rounded-lg p-1.5 text-rose-500 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950/40"
+                              className="payments-icon-btn danger"
                               title="Trigger Refund"
                             >
-                              <RotateCcw className="h-4 w-4" />
+                              <RotateCcw size={16} />
                             </button>
                           )}
                         </div>
@@ -590,23 +562,23 @@ export default function AdminPaymentsPage() {
         </div>
 
         {/* Pagination Strip */}
-        <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3 dark:border-slate-800 dark:bg-slate-900/60">
-          <span className="text-xs text-slate-500 dark:text-slate-400">
+        <div className="payments-pagination">
+          <span>
             Showing Page {pagination.page} of {pagination.totalPages} ({pagination.total} total transactions)
           </span>
 
-          <div className="flex items-center gap-2">
+          <div className="payments-pagination-btns">
             <button
               disabled={pagination.page <= 1}
               onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              className="payments-page-btn"
             >
               Previous
             </button>
             <button
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              className="payments-page-btn"
             >
               Next
             </button>
@@ -616,23 +588,23 @@ export default function AdminPaymentsPage() {
 
       {/* Details Drawer / Modal */}
       {detailsModalOpen && selectedPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+        <div className="payments-modal-overlay">
+          <div className="payments-modal">
             <button
               onClick={() => setDetailsModalOpen(false)}
-              className="absolute right-5 top-5 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
+              className="payments-modal-close"
             >
-              <X className="h-5 w-5" />
+              <X size={18} />
             </button>
 
-            <div className="flex items-center justify-between">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: 32 }}>
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  Tax Invoice & Audit Dossier
+                <h3 className="payments-modal-title">
+                  Tax Invoice &amp; Audit Dossier
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="payments-modal-subtitle">
                   {selectedPayment.payment?.invoiceNumber ? (
-                    <span className="font-semibold text-blue-600">Invoice: {selectedPayment.payment.invoiceNumber}</span>
+                    <span style={{ fontWeight: 700, color: '#1D4ED8' }}>Invoice: {selectedPayment.payment.invoiceNumber}</span>
                   ) : (
                     <span>Order: {selectedPayment.payment?.orderId}</span>
                   )}
@@ -640,106 +612,115 @@ export default function AdminPaymentsPage() {
               </div>
               <button
                 onClick={() => window.print()}
-                className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200"
+                className="payments-btn payments-btn-outline"
+                style={{ padding: '6px 12px', fontSize: 12 }}
               >
-                <Printer className="h-3.5 w-3.5" />
+                <Printer size={14} />
                 Print Invoice
               </button>
             </div>
 
-            <div className="mt-5 space-y-4 text-sm">
+            <div style={{ marginTop: 20 }}>
               {/* Customer Info */}
-              <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
-                <span className="text-xs font-semibold uppercase text-slate-400">Customer & Tax Identity</span>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+              <div className="payments-modal-box">
+                <div className="payments-modal-box-title">Customer &amp; Tax Identity</div>
+                <div className="payments-detail-grid">
                   <div>
-                    <span className="text-slate-400">Name:</span> {selectedPayment.payment?.payerDetails?.name || selectedPayment.payment?.userId?.name || 'N/A'}
+                    <span style={{ color: '#94A3B8' }}>Name:</span>{' '}
+                    <strong>{selectedPayment.payment?.payerDetails?.name || selectedPayment.payment?.userId?.name || 'N/A'}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-400">Business:</span> {selectedPayment.payment?.payerDetails?.businessName || 'N/A'}
+                    <span style={{ color: '#94A3B8' }}>Business:</span>{' '}
+                    <strong>{selectedPayment.payment?.payerDetails?.businessName || 'N/A'}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-400">Email:</span> {selectedPayment.payment?.userEmail || 'N/A'}
+                    <span style={{ color: '#94A3B8' }}>Email:</span>{' '}
+                    {selectedPayment.payment?.userEmail || 'N/A'}
                   </div>
                   <div>
-                    <span className="text-slate-400">Phone:</span> {selectedPayment.payment?.userPhone || 'N/A'}
+                    <span style={{ color: '#94A3B8' }}>Phone:</span>{' '}
+                    {selectedPayment.payment?.userPhone || 'N/A'}
                   </div>
                   <div>
-                    <span className="text-slate-400">GSTIN:</span> {selectedPayment.payment?.payerDetails?.gstin || 'Unregistered / Consumer'}
+                    <span style={{ color: '#94A3B8' }}>GSTIN:</span>{' '}
+                    <strong>{selectedPayment.payment?.payerDetails?.gstin || 'Unregistered / Consumer'}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-400">Role:</span> {selectedPayment.payment?.payerRole || selectedPayment.payment?.userId?.role || 'N/A'}
+                    <span style={{ color: '#94A3B8' }}>Role:</span>{' '}
+                    <span className={`badge-role ${selectedPayment.payment?.payerRole || 'buyer'}`}>
+                      {selectedPayment.payment?.payerRole || selectedPayment.payment?.userId?.role || 'N/A'}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Pricing & GST Breakdown */}
-              <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
-                <span className="text-xs font-semibold uppercase text-slate-400">Financial Breakdown (SAC 998439)</span>
-                <div className="mt-3 space-y-1.5 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Base Amount:</span>
-                    <span className="font-medium">{formatInr(selectedPayment.payment?.baseAmount)}</span>
+              <div className="payments-modal-box" style={{ background: '#FFFFFF' }}>
+                <div className="payments-modal-box-title">Financial Breakdown (SAC 998439)</div>
+                <div style={{ marginTop: 8 }}>
+                  <div className="payments-breakdown-row">
+                    <span>Base Amount:</span>
+                    <span>{formatInr(selectedPayment.payment?.baseAmount)}</span>
                   </div>
-                  <div className="flex justify-between text-emerald-600">
+                  <div className="payments-breakdown-row" style={{ color: '#059669' }}>
                     <span>Discount Applied:</span>
                     <span>-{formatInr(selectedPayment.payment?.discountAmount)}</span>
                   </div>
-                  <div className="flex justify-between border-t border-slate-100 pt-1.5 font-bold text-slate-900 dark:border-slate-800 dark:text-white">
+                  <div className="payments-breakdown-row total">
                     <span>Net Paid Amount:</span>
                     <span>{formatInr(selectedPayment.payment?.netAmount)}</span>
                   </div>
-                  <div className="flex justify-between text-slate-500">
+                  <div className="payments-breakdown-row" style={{ fontSize: 12, color: '#64748B' }}>
                     <span>CGST (9%):</span>
                     <span>{formatInr(selectedPayment.payment?.tax?.cgst)}</span>
                   </div>
-                  <div className="flex justify-between text-slate-500">
+                  <div className="payments-breakdown-row" style={{ fontSize: 12, color: '#64748B' }}>
                     <span>SGST (9%):</span>
                     <span>{formatInr(selectedPayment.payment?.tax?.sgst)}</span>
                   </div>
-                  <div className="flex justify-between text-slate-500">
+                  <div className="payments-breakdown-row" style={{ fontSize: 12, color: '#64748B' }}>
                     <span>IGST (18%):</span>
                     <span>{formatInr(selectedPayment.payment?.tax?.igst)}</span>
                   </div>
-                  <div className="flex justify-between border-t border-slate-100 pt-1.5 font-semibold text-slate-700 dark:border-slate-800 dark:text-slate-300">
+                  <div className="payments-breakdown-row" style={{ borderTop: '1px solid #E2E8F0', paddingTop: 6, fontWeight: 700 }}>
                     <span>Total GST Included:</span>
                     <span>{formatInr(selectedPayment.payment?.tax?.totalTax)}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Fulfillment & Mutex Info */}
-              <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
-                <span className="text-xs font-semibold uppercase text-slate-400">Fulfillment Verification</span>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+              {/* Fulfillment Verification */}
+              <div className="payments-modal-box">
+                <div className="payments-modal-box-title">Fulfillment Verification</div>
+                <div className="payments-detail-grid">
                   <div>
-                    <span className="text-slate-400">Fulfilled:</span>{' '}
-                    <span className="font-semibold text-emerald-600">
+                    <span style={{ color: '#94A3B8' }}>Fulfilled:</span>{' '}
+                    <strong style={{ color: selectedPayment.payment?.fulfillment?.fulfilled ? '#059669' : '#D97706' }}>
                       {selectedPayment.payment?.fulfillment?.fulfilled ? 'YES (Locked)' : 'NO'}
-                    </span>
+                    </strong>
                   </div>
                   <div>
-                    <span className="text-slate-400">Method:</span>{' '}
+                    <span style={{ color: '#94A3B8' }}>Method:</span>{' '}
                     {selectedPayment.payment?.fulfillment?.fulfillmentMethod || '—'}
                   </div>
                   <div>
-                    <span className="text-slate-400">Fulfilled At:</span>{' '}
+                    <span style={{ color: '#94A3B8' }}>Fulfilled At:</span>{' '}
                     {formatDate(selectedPayment.payment?.fulfillment?.fulfilledAt)}
                   </div>
                   <div>
-                    <span className="text-slate-400">Gateway PayID:</span>{' '}
-                    {selectedPayment.payment?.paymentId || '—'}
+                    <span style={{ color: '#94A3B8' }}>Gateway PayID:</span>{' '}
+                    <span style={{ fontFamily: 'monospace' }}>{selectedPayment.payment?.paymentId || '—'}</span>
                   </div>
                 </div>
               </div>
 
               {/* Refund Info if any */}
               {selectedPayment.payment?.refundDetails?.amount > 0 && (
-                <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/40">
-                  <span className="text-xs font-semibold uppercase text-sky-800 dark:text-sky-300">Refund Summary</span>
-                  <div className="mt-2 space-y-1 text-xs text-sky-900 dark:text-sky-200">
-                    <div>Refund ID: {selectedPayment.payment?.refundDetails?.refundId}</div>
-                    <div>Amount: {formatInr(selectedPayment.payment?.refundDetails?.amount)} (100% Full)</div>
+                <div className="payments-modal-box" style={{ background: '#F0F9FF', borderColor: '#BAE6FD' }}>
+                  <div className="payments-modal-box-title" style={{ color: '#0369A1' }}>Refund Summary</div>
+                  <div style={{ fontSize: 12.5, color: '#0C4A6E', lineHeight: 1.6 }}>
+                    <div>Refund ID: <strong>{selectedPayment.payment?.refundDetails?.refundId}</strong></div>
+                    <div>Amount: <strong>{formatInr(selectedPayment.payment?.refundDetails?.amount)}</strong> (100% Full)</div>
                     <div>ARN: {selectedPayment.payment?.refundDetails?.arn || 'Processing'}</div>
                     <div>Processed: {formatDate(selectedPayment.payment?.refundDetails?.processedAt)}</div>
                   </div>
@@ -752,69 +733,70 @@ export default function AdminPaymentsPage() {
 
       {/* Manual Refund Confirmation Modal */}
       {refundModalPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-rose-100 p-2.5 dark:bg-rose-950/60">
-                <RotateCcw className="h-6 w-6 text-rose-600 dark:text-rose-400" />
+        <div className="payments-modal-overlay">
+          <div className="payments-modal" style={{ maxWidth: 460 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ background: '#FEE2E2', color: '#DC2626', padding: 10, borderRadius: '50%' }}>
+                <RotateCcw size={22} />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">Issue 100% Full Refund</h3>
-                <p className="text-xs text-slate-500">Order: {refundModalPayment.orderId}</p>
+                <h3 className="payments-modal-title" style={{ fontSize: 16 }}>Issue 100% Full Refund</h3>
+                <p className="payments-modal-subtitle">Order: {refundModalPayment.orderId}</p>
               </div>
             </div>
 
-            <div className="mt-4 space-y-3 text-sm">
-              <div className="rounded-lg bg-slate-50 p-3 text-xs dark:bg-slate-800">
-                <div className="flex justify-between font-semibold text-slate-800 dark:text-slate-100">
+            <div style={{ marginTop: 16 }}>
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 600 }}>
                   <span>Customer Refund Amount:</span>
-                  <span className="text-emerald-600">{formatInr(refundModalPayment.netAmount)}</span>
+                  <span style={{ color: '#059669', fontWeight: 800 }}>{formatInr(refundModalPayment.netAmount)}</span>
                 </div>
-                <p className="mt-1 text-[11px] text-slate-400">
+                <p style={{ margin: '6px 0 0 0', fontSize: 11, color: '#64748B', lineHeight: 1.4 }}>
                   Platform absorbs the 2% Razorpay gateway fee. Customer receives 100% of their money back via optimum IMPS/UPI.
                 </p>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+              <div style={{ marginTop: 14 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>
                   Refund Reason (Audit Log)
                 </label>
                 <input
                   type="text"
                   value={refundReason}
                   onChange={(e) => setRefundReason(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-800 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  className="payments-search-input"
+                  style={{ padding: '8px 12px' }}
                 />
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
                 <input
                   type="checkbox"
                   id="revokeBenefit"
                   checked={revokeBenefit}
                   onChange={(e) => setRevokeBenefit(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
+                  style={{ width: 16, height: 16, cursor: 'pointer' }}
                 />
-                <label htmlFor="revokeBenefit" className="text-xs text-slate-600 dark:text-slate-300">
+                <label htmlFor="revokeBenefit" style={{ fontSize: 12, color: '#475569', cursor: 'pointer' }}>
                   Revoke delivered benefits (deduct credits, cancel plan tier, or disable boost)
                 </label>
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 24 }}>
               <button
                 disabled={refunding}
                 onClick={() => setRefundModalPayment(null)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="payments-btn payments-btn-outline"
               >
                 Cancel
               </button>
               <button
                 disabled={refunding}
                 onClick={handleExecuteRefund}
-                className="flex items-center gap-1.5 rounded-lg bg-rose-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-rose-700 disabled:opacity-50"
+                className="payments-btn payments-btn-danger"
               >
-                {refunding ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
+                {refunding ? <RefreshCw size={14} className="spin-icon" /> : <RotateCcw size={14} />}
                 Confirm Refund
               </button>
             </div>
