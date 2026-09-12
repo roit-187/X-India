@@ -1,4 +1,4 @@
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://x-india.vercel.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live';
 
 export default function robots() {
   return {

@@ -20,7 +20,7 @@ export default function FloatingQuickDock({ seller, slug }) {
   const whatsappNum = seller.whatsappNumber || seller.buyerContactPhone || seller.businessPhone;
   const showroomUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/p/${slug}`
-    : `${process.env.NEXT_PUBLIC_SITE_URL || 'https://x-india.vercel.app'}/p/${slug}`;
+    : `${process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live'}/p/${slug}`;
 
   const handleCopyLink = () => {
     if (navigator.clipboard) {

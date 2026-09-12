@@ -1,6 +1,6 @@
 import { getAllPublishedSlugs } from '@/lib/api';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://x-india.vercel.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live';
 const SUB_PAGES = ['', '/products', '/factory', '/ratings', '/opportunities', '/contact'];
 
 export default async function sitemap() {

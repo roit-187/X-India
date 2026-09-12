@@ -1,6 +1,6 @@
 import './globals.css';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://x-india.vercel.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live';
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),

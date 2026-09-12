@@ -23,7 +23,7 @@ export async function GET() {
     success: true,
     config: {
       serverApiUrl: process.env.NEXT_PUBLIC_API_URL || 'https://ascend-ds0q.onrender.com',
-      websiteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://x-india.vercel.app',
+      websiteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live',
       isMaintenanceMode: false,
       socialLinks: [],
       appVersionPolicy: {
