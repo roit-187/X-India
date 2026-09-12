@@ -22,7 +22,7 @@ export async function GET() {
   return Response.json({
     success: true,
     config: {
-      serverApiUrl: process.env.NEXT_PUBLIC_API_URL || 'https://ascend-ds0q.onrender.com',
+      serverApiUrl: process.env.NEXT_PUBLIC_API_URL || 'https://api.xindia.live',
       websiteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live',
       isMaintenanceMode: false,
       socialLinks: [],
