@@ -1,3 +1,29 @@
+// Extract dynamic API origin and WebSocket protocol from NEXT_PUBLIC_API_URL
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+let dynamicApiOrigins = '';
+if (rawApiUrl) {
+  try {
+    const parsed = new URL(rawApiUrl);
+    const httpOrigin = parsed.origin;
+    const wsProto = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsOrigin = `${wsProto}//${parsed.host}`;
+    dynamicApiOrigins = `${httpOrigin} ${wsOrigin}`;
+  } catch (_) {}
+}
+
+const connectSrcDirective = [
+  "connect-src 'self'",
+  "http://localhost:*",
+  "ws://localhost:*",
+  "https://*.onrender.com",
+  "wss://*.onrender.com",
+  dynamicApiOrigins,
+  "https://firebaseinstallations.googleapis.com",
+  "https://identitytoolkit.googleapis.com",
+  "https://securetoken.googleapis.com",
+  "https://www.googleapis.com",
+].filter(Boolean).join(' ');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -25,7 +51,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://*.googleusercontent.com",
-              "connect-src 'self' https://*.onrender.com wss://*.onrender.com https://firebaseinstallations.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com",
+              connectSrcDirective,
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",

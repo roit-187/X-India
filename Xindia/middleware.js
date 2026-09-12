@@ -80,7 +80,7 @@ export async function middleware(request) {
       return noStore(res);
     }
     // Restrict STAFF accounts from sensitive system, staff, plan, and credit administration pages
-    const ADMIN_ONLY_PATHS = ['/admin/staff', '/admin/settings', '/admin/plans', '/admin/credits', '/admin/payments', '/admin/legal', '/admin/alerts'];
+    const ADMIN_ONLY_PATHS = ['/admin/staff', '/admin/settings', '/admin/plans', '/admin/credits', '/admin/payments', '/admin/legal', '/admin/alerts', '/admin/broadcast'];
     if (payload.role === 'STAFF' && ADMIN_ONLY_PATHS.some((p) => pathname.startsWith(p))) {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }

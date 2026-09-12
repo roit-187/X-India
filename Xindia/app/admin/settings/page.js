@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Server, Globe, ShieldAlert, CheckCircle2, AlertCircle, RefreshCw, Activity, Cpu, ArrowRight, ExternalLink, AlertTriangle, Mail, Phone, MessageSquare, Smartphone, Zap, PhoneCall, Flame } from 'lucide-react';
+import { Server, Globe, ShieldAlert, CheckCircle2, AlertCircle, RefreshCw, Activity, Cpu, ArrowRight, ExternalLink, AlertTriangle, Mail, Phone, MessageSquare, Smartphone, Zap, PhoneCall, Flame, Trash2, Plus, Share2 } from 'lucide-react';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 export default function AdminSettingsPage() {
@@ -16,7 +16,19 @@ export default function AdminSettingsPage() {
     supportPhone: '+91 8860260878',
     primaryOtpProvider: 'WHATSAPP',
     isFirebasePhoneAuthEnabled: true,
+    socialLinks: [],
+    appVersionPolicy: {
+      minSupportedVersion: '1.0.0',
+      latestVersion: '1.0.0',
+      forceUpdateTitle: 'Update Required',
+      forceUpdateMessage: 'A critical update is required to continue using XINDIA. Please update from the Google Play Store.',
+      playStoreUrl: 'https://play.google.com/store/apps/details?id=com.xindia.marketplace',
+    },
   });
+
+  // State for adding a new social link
+  const [newPlatform, setNewPlatform] = useState('twitter');
+  const [newUrl, setNewUrl] = useState('');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,6 +37,40 @@ export default function AdminSettingsPage() {
   // Live Ping Test State
   const [pinging, setPinging] = useState(false);
   const [pingResult, setPingResult] = useState(null); // { success: true/false, latency: 120, message: '' }
+
+  // Social Links Management Handlers
+  const handleAddSocialLink = () => {
+    const trimmedUrl = newUrl.trim();
+    if (!trimmedUrl) return;
+    const exists = settings.socialLinks?.some((l) => l.platform === newPlatform);
+    if (exists) {
+      alert(`A profile for ${newPlatform} is already added. You can update its URL in the list below.`);
+      return;
+    }
+    const updated = [
+      ...(settings.socialLinks || []),
+      { platform: newPlatform, url: trimmedUrl, isActive: true },
+    ];
+    setSettings({ ...settings, socialLinks: updated });
+    setNewUrl('');
+  };
+
+  const handleUpdateSocialUrl = (index, url) => {
+    const updated = [...(settings.socialLinks || [])];
+    updated[index] = { ...updated[index], url };
+    setSettings({ ...settings, socialLinks: updated });
+  };
+
+  const handleToggleSocialActive = (index) => {
+    const updated = [...(settings.socialLinks || [])];
+    updated[index] = { ...updated[index], isActive: !updated[index].isActive };
+    setSettings({ ...settings, socialLinks: updated });
+  };
+
+  const handleDeleteSocialLink = (index) => {
+    const updated = (settings.socialLinks || []).filter((_, i) => i !== index);
+    setSettings({ ...settings, socialLinks: updated });
+  };
 
   // Load Settings from API
   const loadSettings = async () => {
@@ -42,6 +88,14 @@ export default function AdminSettingsPage() {
           supportPhone: data.settings.supportPhone || '+91 8860260878',
           primaryOtpProvider: data.settings.primaryOtpProvider || 'WHATSAPP',
           isFirebasePhoneAuthEnabled: data.settings.isFirebasePhoneAuthEnabled !== false,
+          socialLinks: Array.isArray(data.settings.socialLinks) ? data.settings.socialLinks : [],
+          appVersionPolicy: data.settings.appVersionPolicy || {
+            minSupportedVersion: '1.0.0',
+            latestVersion: '1.0.0',
+            forceUpdateTitle: 'Update Required',
+            forceUpdateMessage: 'A critical update is required to continue using XINDIA. Please update from the Google Play Store.',
+            playStoreUrl: 'https://play.google.com/store/apps/details?id=com.xindia.marketplace',
+          },
         });
       }
     } catch (err) {
@@ -369,6 +423,206 @@ export default function AdminSettingsPage() {
               </div>
             </div>
 
+            {/* Official Social Media Channels Card */}
+            <div className="admin-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ background: '#EDE9FE', padding: 8, borderRadius: 8, color: '#7C3AED' }}>
+                  <Share2 size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--adm-text)' }}>
+                    Official Social Media Channels & Profiles
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--adm-text-med)' }}>
+                    Add, edit, or delete platform handles. Active channels automatically appear in the website footer.
+                  </p>
+                </div>
+              </div>
+
+              {/* Add New Handle Bar */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 12,
+                  alignItems: 'center',
+                  background: '#F8FAFC',
+                  padding: '14px 16px',
+                  borderRadius: 'var(--adm-radius-sm)',
+                  border: '1px solid var(--adm-border)',
+                  marginBottom: 18,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ minWidth: 160 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--adm-text-med)', textTransform: 'uppercase', marginBottom: 4 }}>
+                    Platform
+                  </label>
+                  <select
+                    className="admin-input"
+                    style={{ width: '100%', padding: '8px 12px', fontSize: 13, borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)' }}
+                    value={newPlatform}
+                    onChange={(e) => setNewPlatform(e.target.value)}
+                  >
+                    <option value="twitter">X / Twitter</option>
+                    <option value="linkedin">LinkedIn</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="facebook">Facebook</option>
+                    <option value="youtube">YouTube</option>
+                    <option value="whatsapp">WhatsApp Channel</option>
+                  </select>
+                </div>
+
+                <div style={{ flex: 1, minWidth: 220 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--adm-text-med)', textTransform: 'uppercase', marginBottom: 4 }}>
+                    Profile / Channel URL
+                  </label>
+                  <input
+                    type="url"
+                    className="admin-input"
+                    style={{ width: '100%', padding: '8px 12px', fontSize: 13, borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)' }}
+                    placeholder={`https://${newPlatform === 'twitter' ? 'x.com' : newPlatform === 'linkedin' ? 'linkedin.com/company' : newPlatform}.com/...`}
+                    value={newUrl}
+                    onChange={(e) => setNewUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddSocialLink();
+                      }
+                    }}
+                  />
+                </div>
+
+                <div style={{ alignSelf: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={handleAddSocialLink}
+                    className="admin-btn admin-btn-secondary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 16px', fontSize: 13, fontWeight: 600 }}
+                  >
+                    <Plus size={15} />
+                    Add Channel
+                  </button>
+                </div>
+              </div>
+
+              {/* Active Channels List */}
+              {(!settings.socialLinks || settings.socialLinks.length === 0) ? (
+                <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--adm-text-med)', fontSize: 13, background: '#F9FAFB', borderRadius: 'var(--adm-radius-sm)', border: '1px dashed var(--adm-border)' }}>
+                  No social media handles added yet. Choose a platform above and enter your official profile URL.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {settings.socialLinks.map((item, idx) => {
+                    const platformLabels = {
+                      twitter: 'X / Twitter',
+                      linkedin: 'LinkedIn',
+                      instagram: 'Instagram',
+                      facebook: 'Facebook',
+                      youtube: 'YouTube',
+                      whatsapp: 'WhatsApp',
+                    };
+                    const platformColors = {
+                      twitter: '#0F172A',
+                      linkedin: '#0A66C2',
+                      instagram: '#E1306C',
+                      facebook: '#1877F2',
+                      youtube: '#FF0000',
+                      whatsapp: '#25D366',
+                    };
+
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '10px 14px',
+                          borderRadius: 'var(--adm-radius-sm)',
+                          border: '1px solid var(--adm-border)',
+                          background: item.isActive ? '#FFFFFF' : '#F8FAFC',
+                          opacity: item.isActive ? 1 : 0.65,
+                        }}
+                      >
+                        {/* Platform Badge */}
+                        <div
+                          style={{
+                            minWidth: 110,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            fontWeight: 700,
+                            fontSize: 12,
+                            color: platformColors[item.platform] || 'var(--adm-text)',
+                          }}
+                        >
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: platformColors[item.platform] || '#94A3B8' }} />
+                          {platformLabels[item.platform] || item.platform}
+                        </div>
+
+                        {/* URL Input */}
+                        <input
+                          type="url"
+                          className="admin-input"
+                          style={{ flex: 1, padding: '6px 12px', fontSize: 13, borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)' }}
+                          value={item.url}
+                          onChange={(e) => handleUpdateSocialUrl(idx, e.target.value)}
+                        />
+
+                        {/* Toggle Active */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSocialActive(idx)}
+                          style={{
+                            padding: '4px 10px',
+                            fontSize: 11,
+                            fontWeight: 600,
+                            borderRadius: 12,
+                            border: 'none',
+                            cursor: 'pointer',
+                            background: item.isActive ? '#DCFCE7' : '#F1F5F9',
+                            color: item.isActive ? '#15803D' : '#64748B',
+                          }}
+                        >
+                          {item.isActive ? 'Active' : 'Disabled'}
+                        </button>
+
+                        {/* External Link */}
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Open Link"
+                          style={{ color: 'var(--adm-text-med)', display: 'flex', alignItems: 'center', padding: 4 }}
+                        >
+                          <ExternalLink size={15} />
+                        </a>
+
+                        {/* Delete Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSocialLink(idx)}
+                          title="Delete Handle"
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#EF4444',
+                            padding: 4,
+                            display: 'flex',
+                            alignItems: 'center',
+                            borderRadius: 4,
+                          }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             {/* Maintenance Mode & Safety Card */}
             <div className="admin-card">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -421,6 +675,128 @@ export default function AdminSettingsPage() {
                     />
                   </span>
                 </label>
+              </div>
+            </div>
+
+            {/* Mobile App Version Policy & Force Update Control Card */}
+            <div className="admin-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ background: '#FEF3C7', padding: 8, borderRadius: 8, color: '#D97706' }}>
+                  <Smartphone size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--adm-text)' }}>
+                    Mobile App Version Policy &amp; Force Update Control
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--adm-text-med)' }}>
+                    Control app update enforcement on Android &amp; iOS. Devices running a version below the Minimum Supported Version are hard-locked on launch until updated.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--adm-text)', marginBottom: 6 }}>
+                    Minimum Supported Version (Hard Lock)
+                  </label>
+                  <input
+                    type="text"
+                    className="admin-input"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)', fontSize: 14, fontWeight: 700, color: '#DC2626' }}
+                    value={settings.appVersionPolicy?.minSupportedVersion || '1.0.0'}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        appVersionPolicy: { ...settings.appVersionPolicy, minSupportedVersion: e.target.value },
+                      })
+                    }
+                    placeholder="e.g. 1.0.0"
+                    required
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--adm-text-light)', marginTop: 4 }}>
+                    Any app running below this version will be blocked from opening.
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--adm-text)', marginBottom: 6 }}>
+                    Latest Available Version (Store Version)
+                  </label>
+                  <input
+                    type="text"
+                    className="admin-input"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)', fontSize: 14, fontWeight: 700, color: '#16A34A' }}
+                    value={settings.appVersionPolicy?.latestVersion || '1.0.0'}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        appVersionPolicy: { ...settings.appVersionPolicy, latestVersion: e.target.value },
+                      })
+                    }
+                    placeholder="e.g. 1.1.0"
+                    required
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--adm-text-light)', marginTop: 4 }}>
+                    Current production release version on the Google Play Store.
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--adm-text)', marginBottom: 6 }}>
+                  Update Dialog Title
+                </label>
+                <input
+                  type="text"
+                  className="admin-input"
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)', fontSize: 14 }}
+                  value={settings.appVersionPolicy?.forceUpdateTitle || 'Update Required'}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      appVersionPolicy: { ...settings.appVersionPolicy, forceUpdateTitle: e.target.value },
+                    })
+                  }
+                  placeholder="Update Required"
+                />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--adm-text)', marginBottom: 6 }}>
+                  Update Required Lockout Message
+                </label>
+                <textarea
+                  className="admin-input"
+                  rows={2}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)', fontSize: 13 }}
+                  value={settings.appVersionPolicy?.forceUpdateMessage || ''}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      appVersionPolicy: { ...settings.appVersionPolicy, forceUpdateMessage: e.target.value },
+                    })
+                  }
+                  placeholder="A critical update is required to continue using XINDIA. Please update from the Google Play Store."
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--adm-text)', marginBottom: 6 }}>
+                  Google Play Store URL
+                </label>
+                <input
+                  type="url"
+                  className="admin-input"
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)', fontSize: 13 }}
+                  value={settings.appVersionPolicy?.playStoreUrl || ''}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      appVersionPolicy: { ...settings.appVersionPolicy, playStoreUrl: e.target.value },
+                    })
+                  }
+                  placeholder="https://play.google.com/store/apps/details?id=com.xindia.marketplace"
+                />
               </div>
             </div>
 

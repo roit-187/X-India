@@ -29,7 +29,7 @@ export default function PortfolioHero({ seller, slug }) {
 
   const showroomUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/p/${slug}`
-    : `https://xindia.market/p/${slug}`;
+    : `${process.env.NEXT_PUBLIC_SITE_URL || 'https://x-india.vercel.app'}/p/${slug}`;
 
   const handleCopyLink = () => {
     if (navigator.clipboard) {

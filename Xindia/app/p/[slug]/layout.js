@@ -5,13 +5,14 @@ import { getSeller } from '@/lib/api';
 export async function generateMetadata({ params }) {
   const seller = await getSeller(params.slug);
   if (!seller) return { title: 'Seller Not Found — XINDIA' };
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://x-india.vercel.app';
   return {
     title: `${seller.name} — Verified Manufacturer Digital Showroom | XINDIA`,
     description: (seller.portfolioAbout || seller.description || `${seller.name} on XINDIA — India's Business Launchpad.`).slice(0, 160),
     openGraph: {
       title: `${seller.name} — Verified Digital Showroom`,
       description: (seller.portfolioAbout || seller.description || `${seller.name} on XINDIA`).slice(0, 160),
-      images: [seller.coverImage || seller.logo || 'https://xindia.market/og-image.jpg'],
+      images: [seller.coverImage || seller.logo || `${siteUrl}/og-image.jpg`],
     },
   };
 }

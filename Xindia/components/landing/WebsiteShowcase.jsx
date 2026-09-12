@@ -31,7 +31,7 @@ const WebsiteShowcase = () => {
               <div className="browser-dot red" />
               <div className="browser-dot yellow" />
               <div className="browser-dot green" />
-              <div className="browser-url">xindia.com/balaji-metal-industries</div>
+              <div className="browser-url">xindia.live/balaji-metal-industries</div>
             </div>
             <div className="website-preview-content">
               <div className="website-brand-preview">

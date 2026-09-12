@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Tag, Star, Settings, LogOut, UserCog, Shield, Bell, Receipt } from 'lucide-react';
+import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Tag, Star, Settings, LogOut, UserCog, Shield, Bell, Receipt, Megaphone } from 'lucide-react';
 import SearchBar from './SearchBar';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
@@ -23,6 +23,7 @@ const ALL_LINKS = [
   { href: '/admin/promos',        label: 'Promo Codes',           icon: Tag,             flag: 'plans' },
   { href: '/admin/legal',         label: 'Legal & Compliance',    icon: Shield,          flag: 'super' },
   { href: '/admin/alerts',        label: 'Critical Alerts',       icon: Bell,            flag: 'super' },
+  { href: '/admin/broadcast',     label: 'Push Broadcasts',       icon: Megaphone,       flag: 'super' },
   { href: '/admin/settings',      label: 'System & Server',       icon: Settings,        flag: 'super' },
 ];
 
