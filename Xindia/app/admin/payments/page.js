@@ -704,10 +704,87 @@ export default function AdminPaymentsPage() {
                 </div>
               </div>
 
+              {/* Purchased Service & Line Item */}
+              <div className="payments-modal-box" style={{ background: '#F8FAFC', borderLeft: '4px solid #E8581C' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+                  <div className="payments-modal-box-title" style={{ margin: 0, color: '#0F172A' }}>
+                    Purchased Service &amp; Line Item
+                  </div>
+                  <span className={`badge-role ${selectedPayment.payment?.itemType === 'LEAD_BOOST' ? 'buyer' : 'seller'}`} style={{ textTransform: 'uppercase', fontSize: 11 }}>
+                    {selectedPayment.payment?.itemType === 'SELLER_SUBSCRIPTION' ? 'Seller Plan' :
+                     selectedPayment.payment?.itemType === 'LEAD_BOOST' ? 'RFQ Lead Boost' :
+                     selectedPayment.payment?.itemType === 'CREDIT_BUNDLE' ? 'SmartCredits' : selectedPayment.payment?.itemType}
+                  </span>
+                </div>
+
+                <div style={{ fontSize: 14.5, fontWeight: 700, color: '#0F172A', marginBottom: 8 }}>
+                  {selectedPayment.payment?.metadata?.itemTitle ||
+                   selectedPayment.payment?.fulfillment?.meta?.itemTitle ||
+                   (selectedPayment.payment?.itemType === 'SELLER_SUBSCRIPTION' ? `${selectedPayment.payment?.itemId} Membership` :
+                    selectedPayment.payment?.itemType === 'LEAD_BOOST' ? `Priority RFQ Lead Boost (${selectedPayment.payment?.itemId})` :
+                    `${selectedPayment.payment?.itemId} Credit Package`)}
+                </div>
+
+                <div className="payments-detail-grid">
+                  <div>
+                    <span style={{ color: '#94A3B8' }}>Item Key:</span>{' '}
+                    <strong style={{ fontFamily: 'monospace' }}>{selectedPayment.payment?.itemId || '—'}</strong>
+                  </div>
+
+                  {selectedPayment.payment?.metadata?.billingCycle && (
+                    <div>
+                      <span style={{ color: '#94A3B8' }}>Billing Cycle:</span>{' '}
+                      <strong style={{ textTransform: 'capitalize' }}>{selectedPayment.payment?.metadata?.billingCycle}</strong>
+                    </div>
+                  )}
+
+                  {selectedPayment.payment?.fulfillmentDetails?.creditsGranted > 0 && (
+                    <div>
+                      <span style={{ color: '#94A3B8' }}>Credits Added:</span>{' '}
+                      <strong style={{ color: '#D97706' }}>+{selectedPayment.payment?.fulfillmentDetails?.creditsGranted} SmartCredits</strong>
+                    </div>
+                  )}
+
+                  {(selectedPayment.payment?.fulfillmentDetails?.planExpiresAt || selectedPayment.payment?.fulfillmentDetails?.boostExpiresAt) && (
+                    <div>
+                      <span style={{ color: '#94A3B8' }}>Service Valid Until:</span>{' '}
+                      <strong>{formatDate(selectedPayment.payment?.fulfillmentDetails?.planExpiresAt || selectedPayment.payment?.fulfillmentDetails?.boostExpiresAt)}</strong>
+                    </div>
+                  )}
+
+                  {(selectedPayment.payment?.fulfillment?.meta?.requirementId || selectedPayment.payment?.metadata?.requirementId) && (
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <span style={{ color: '#94A3B8' }}>Boosted Requirement ID:</span>{' '}
+                      <span style={{ fontFamily: 'monospace', fontSize: 12, background: '#EFF6FF', padding: '2px 6px', borderRadius: 4, color: '#1D4ED8' }}>
+                        {selectedPayment.payment?.fulfillment?.meta?.requirementId || selectedPayment.payment?.metadata?.requirementId}
+                      </span>
+                    </div>
+                  )}
+
+                  {selectedPayment.payment?.promoCode && (
+                    <div>
+                      <span style={{ color: '#94A3B8' }}>Promo Code:</span>{' '}
+                      <span className="badge-promo">{selectedPayment.payment?.promoCode}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Pricing & GST Breakdown */}
               <div className="payments-modal-box" style={{ background: '#FFFFFF' }}>
                 <div className="payments-modal-box-title">Financial Breakdown (SAC 998439)</div>
                 <div style={{ marginTop: 8 }}>
+                  <div style={{ padding: '6px 0 10px 0', borderBottom: '1px solid #E2E8F0', marginBottom: 8 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>
+                      1x {selectedPayment.payment?.metadata?.itemTitle ||
+                          (selectedPayment.payment?.itemType === 'SELLER_SUBSCRIPTION' ? `Seller Membership (${selectedPayment.payment?.itemId})` :
+                           selectedPayment.payment?.itemType === 'LEAD_BOOST' ? `Lead Boost (${selectedPayment.payment?.itemId})` :
+                           `Credits Package (${selectedPayment.payment?.itemId})`)}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: '#64748B', marginTop: 2 }}>
+                      SAC Code: {selectedPayment.payment?.tax?.sacCode || selectedPayment.payment?.sacCode || '998439'} (B2B Online Commercial Marketplace Services)
+                    </div>
+                  </div>
                   <div className="payments-breakdown-row">
                     <span>Base Amount:</span>
                     <span>{formatInr(selectedPayment.payment?.baseAmount)}</span>

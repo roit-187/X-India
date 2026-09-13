@@ -660,3 +660,54 @@
   text-align: center;
   padding: 32px;
 }
+
+/* ==========================================================================
+   Print Stylesheet for Official Tax Invoice
+   ========================================================================== */
+@media print {
+  body, html {
+    background: #FFFFFF !important;
+    color: #0F172A !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide admin portal layout elements during printing */
+  .payments-header,
+  .payments-metrics-grid,
+  .payments-tabs-nav,
+  .payments-filter-card,
+  .payments-table-card,
+  .payments-toast,
+  .payments-modal-close,
+  .payments-btn,
+  header, nav, aside {
+    display: none !important;
+  }
+
+  .payments-modal-overlay {
+    position: static !important;
+    background: #FFFFFF !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    z-index: 1 !important;
+    inset: auto !important;
+  }
+
+  .payments-modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 20px !important;
+  }
+
+  .payments-modal-box {
+    border: 1px solid #CBD5E1 !important;
+    break-inside: avoid;
+    margin-top: 14px !important;
+  }
+}
+
