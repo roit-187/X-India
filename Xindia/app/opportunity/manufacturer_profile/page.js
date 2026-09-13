@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { getSeller } from '@/lib/api';
 
 export default async function OpportunityManufacturerRedirect({ searchParams }) {
   const sellerId = searchParams?.sellerId;
@@ -6,6 +7,13 @@ export default async function OpportunityManufacturerRedirect({ searchParams }) 
 
   if (sellerId) {
     try {
+      // 1. Check public seller lookup first (supports slug, ObjectId, userId)
+      const seller = await getSeller(sellerId);
+      if (seller?.slug) {
+        redirect(`/p/${seller.slug}`);
+      }
+
+      // 2. Fallback to map discovery endpoint
       const res = await fetch(`${API_URL}/api/v1/manufacturers/${sellerId}`, {
         next: { revalidate: 300 },
       });

@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import {
   getSeller,
   getSellerProducts,
@@ -22,6 +22,11 @@ export const revalidate = 60; // ISR revalidate every 60 seconds
 export default async function SellerDigitalShowroomPage({ params }) {
   const seller = await getSeller(params.slug);
   if (!seller) notFound();
+
+  // Canonical redirection if accessed via MongoDB ObjectId instead of slug
+  if (seller.slug && params.slug !== seller.slug && /^[0-9a-fA-F]{24}$/.test(params.slug)) {
+    redirect(`/p/${seller.slug}`);
+  }
 
   // Parallel data fetching for blazing fast performance
   const [productsData, reviewsData, opportunities] = await Promise.all([

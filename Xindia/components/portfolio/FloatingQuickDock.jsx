@@ -18,9 +18,10 @@ export default function FloatingQuickDock({ seller, slug }) {
   }, []);
 
   const whatsappNum = seller.whatsappNumber || seller.buyerContactPhone || seller.businessPhone;
+  const cleanSlug = seller.slug || slug;
   const showroomUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/p/${slug}`
-    : `${process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live'}/p/${slug}`;
+    ? `${window.location.origin}/p/${cleanSlug}`
+    : `${process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live'}/p/${cleanSlug}`;
 
   const handleCopyLink = () => {
     if (navigator.clipboard) {

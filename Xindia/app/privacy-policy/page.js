@@ -112,7 +112,6 @@ export default function PrivacyPolicyPage() {
           <div className="contact-details">
             <p><strong>Platform:</strong> XIndia B2B Marketplace</p>
             <p><strong>Grievance & Support Email:</strong> <a href="mailto:Xindia369@gmail.com">Xindia369@gmail.com</a></p>
-            <p><strong>Direct Helpline / WhatsApp:</strong> <a href="tel:+918860260878">+91 8860260878</a></p>
             <p><strong>Office:</strong> Industrial Plaza, New Delhi, India</p>
             <p><strong>Support Page:</strong> <Link href="/contact">https://x-india.vercel.app/contact</Link></p>
           </div>

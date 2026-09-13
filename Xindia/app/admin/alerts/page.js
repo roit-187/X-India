@@ -6,6 +6,7 @@ import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 const ALERT_TYPES = [
   { key: '', label: 'All Types' },
+  { key: 'MEETING_REQUEST', label: 'Meeting Requests' },
   { key: 'ACCOUNT_DELETED', label: 'Account Deleted' },
   { key: 'CONSENT_WITHDRAWN', label: 'Consent Withdrawn' },
   { key: 'VERIFICATION_REQUEST', label: 'Verification Request' },
@@ -32,6 +33,7 @@ const SEVERITY_CONFIG = {
 };
 
 const TYPE_ICONS = {
+  MEETING_REQUEST:        '🤝',
   ACCOUNT_DELETED:        '🗑',
   CONSENT_WITHDRAWN:      '📋',
   VERIFICATION_REQUEST:   '🔍',

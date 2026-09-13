@@ -17,6 +17,7 @@ import {
   Check,
   Eye,
   EyeOff,
+  Award,
 } from 'lucide-react';
 import Modal from '@/components/admin/Modal';
 import Badge from '@/components/admin/Badge';
@@ -98,6 +99,7 @@ export default function AdminStaffPage() {
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState('STAFF');
+  const [newEmployeeId, setNewEmployeeId] = useState('');
   const [newCustomRole, setNewCustomRole] = useState('');
   const [newPermissions, setNewPermissions] = useState([
     'manufacturers.edit',
@@ -111,6 +113,8 @@ export default function AdminStaffPage() {
   const [editCustomRole, setEditCustomRole] = useState('');
   const [editPermissions, setEditPermissions] = useState([]);
   const [editActive, setEditActive] = useState(true);
+  const [editEmployeeId, setEditEmployeeId] = useState('');
+  const [editOnboardedScore, setEditOnboardedScore] = useState(0);
 
   // Reset password state
   const [resetPasswordVal, setResetPasswordVal] = useState('');
@@ -155,6 +159,7 @@ export default function AdminStaffPage() {
   const handleOpenCreateModal = () => {
     setNewUsername('');
     setNewEmail('');
+    setNewEmployeeId('');
     setNewPassword(generateStrongPassword());
     setNewRole('STAFF');
     setNewCustomRole('');
@@ -199,6 +204,7 @@ export default function AdminStaffPage() {
           password: newPassword,
           role: effectiveRole,
           permissions: newPermissions,
+          employeeId: newEmployeeId.trim(),
         }),
       });
       const data = await res.json();
@@ -222,6 +228,8 @@ export default function AdminStaffPage() {
     setEditCustomRole('');
     setEditPermissions(staff.permissions || []);
     setEditActive(staff.active !== false);
+    setEditEmployeeId(staff.employeeId || '');
+    setEditOnboardedScore(staff.onboardedScore || 0);
   };
 
   const handleEditSubmit = async (e) => {
@@ -238,6 +246,8 @@ export default function AdminStaffPage() {
           role: effectiveEditRole,
           permissions: editPermissions,
           active: editActive,
+          employeeId: editEmployeeId.trim(),
+          onboardedScore: Number(editOnboardedScore) || 0,
         }),
       });
       const data = await res.json();
@@ -368,13 +378,34 @@ export default function AdminStaffPage() {
             Manage staff credentials, role-based access permissions, and account statuses.
           </p>
         </div>
-        <button
-          className="admin-btn admin-btn-primary"
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', fontSize: 13 }}
-          onClick={handleOpenCreateModal}
-        >
-          <UserPlus size={16} /> + Add Staff Member
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Link
+            href="/staff/add-user"
+            className="admin-btn"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '10px 16px',
+              fontSize: 13,
+              backgroundColor: '#EFF6FF',
+              color: '#2563EB',
+              border: '1px solid #BFDBFE',
+              borderRadius: 8,
+              textDecoration: 'none',
+              fontWeight: 700,
+            }}
+          >
+            <UserPlus size={16} /> Onboard Seller (/staff/add-user)
+          </Link>
+          <button
+            className="admin-btn admin-btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', fontSize: 13 }}
+            onClick={handleOpenCreateModal}
+          >
+            <UserPlus size={16} /> + Add Staff Member
+          </button>
+        </div>
       </div>
 
       {/* Alert Notice */}
@@ -468,6 +499,8 @@ export default function AdminStaffPage() {
             <thead>
               <tr>
                 <th>Username & Email</th>
+                <th>Employee ID</th>
+                <th>Score</th>
                 <th>Role</th>
                 <th>Permissions</th>
                 <th>Status</th>
@@ -486,6 +519,16 @@ export default function AdminStaffPage() {
                     <td>
                       <div style={{ fontWeight: 700, color: '#0F172A', fontSize: 14 }}>{staff.username}</div>
                       <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>{staff.email}</div>
+                    </td>
+                    <td>
+                      <code style={{ fontSize: 12, backgroundColor: '#F1F5F9', color: '#334155', padding: '2px 6px', borderRadius: 4 }}>
+                        {staff.employeeId || '—'}
+                      </code>
+                    </td>
+                    <td>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: '#16A34A', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Award size={14} />{staff.onboardedScore || 0}
+                      </span>
                     </td>
                     <td>
                       <span style={{

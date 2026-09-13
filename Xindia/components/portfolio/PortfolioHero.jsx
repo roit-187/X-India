@@ -27,9 +27,10 @@ export default function PortfolioHero({ seller, slug }) {
   const hasIso = verifiedDocs.includes('iso') || (seller.certifications && seller.certifications.some(c => c.toLowerCase().includes('iso')));
   const hasMsme = verifiedDocs.includes('msme');
 
+  const cleanSlug = seller.slug || slug;
   const showroomUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/p/${slug}`
-    : `${process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live'}/p/${slug}`;
+    ? `${window.location.origin}/p/${cleanSlug}`
+    : `${process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live'}/p/${cleanSlug}`;
 
   const handleCopyLink = () => {
     if (navigator.clipboard) {
