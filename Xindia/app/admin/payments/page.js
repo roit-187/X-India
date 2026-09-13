@@ -85,6 +85,7 @@ export default function AdminPaymentsPage() {
   const [refundReason, setRefundReason] = useState('Customer requested refund');
   const [revokeBenefit, setRevokeBenefit] = useState(false);
   const [refunding, setRefunding] = useState(false);
+  const [syncingId, setSyncingId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
   const showToast = (msg, type = 'success') => {
@@ -181,6 +182,31 @@ export default function AdminPaymentsPage() {
       showToast(err.message || 'Error executing refund', 'error');
     } finally {
       setRefunding(false);
+    }
+  };
+
+  const handleSyncGateway = async (payment) => {
+    if (!payment?._id || syncingId) return;
+    try {
+      setSyncingId(payment._id);
+      const res = await fetch(`/api/admin/payments/${payment._id}/sync-gateway`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message || 'Payment successfully synchronized with gateway', 'success');
+        fetchPayments();
+        if (selectedPayment && selectedPayment.payment?._id === payment._id) {
+          handleOpenDetails(payment);
+        }
+      } else {
+        showToast(data.message || 'Failed to sync with gateway', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'Error syncing with gateway', 'error');
+    } finally {
+      setSyncingId(null);
     }
   };
 
@@ -538,6 +564,17 @@ export default function AdminPaymentsPage() {
                           >
                             <Eye size={16} />
                           </button>
+                          {p.status !== 'PAID' && p.status !== 'REFUNDED' && (
+                            <button
+                              onClick={() => handleSyncGateway(p)}
+                              disabled={syncingId === p._id}
+                              className="payments-icon-btn"
+                              title="Check / Sync Gateway Status"
+                              style={{ color: '#2563EB' }}
+                            >
+                              <RefreshCw size={14} className={syncingId === p._id ? 'spin-icon' : ''} />
+                            </button>
+                          )}
                           {p.status === 'PAID' && (
                             <button
                               onClick={() => {
@@ -610,14 +647,27 @@ export default function AdminPaymentsPage() {
                   )}
                 </p>
               </div>
-              <button
-                onClick={() => window.print()}
-                className="payments-btn payments-btn-outline"
-                style={{ padding: '6px 12px', fontSize: 12 }}
-              >
-                <Printer size={14} />
-                Print Invoice
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {selectedPayment.payment?.status !== 'PAID' && selectedPayment.payment?.status !== 'REFUNDED' && (
+                  <button
+                    onClick={() => handleSyncGateway(selectedPayment.payment)}
+                    disabled={syncingId === selectedPayment.payment?._id}
+                    className="payments-btn payments-btn-outline"
+                    style={{ padding: '6px 12px', fontSize: 12, color: '#2563EB', borderColor: '#BFDBFE' }}
+                  >
+                    <RefreshCw size={14} className={syncingId === selectedPayment.payment?._id ? 'spin-icon' : ''} />
+                    Sync Gateway
+                  </button>
+                )}
+                <button
+                  onClick={() => window.print()}
+                  className="payments-btn payments-btn-outline"
+                  style={{ padding: '6px 12px', fontSize: 12 }}
+                >
+                  <Printer size={14} />
+                  Print Invoice
+                </button>
+              </div>
             </div>
 
             <div style={{ marginTop: 20 }}>

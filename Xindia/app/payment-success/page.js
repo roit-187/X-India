@@ -6,16 +6,25 @@ import Link from 'next/link';
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
-  const paymentId = searchParams.get('razorpay_payment_id') || searchParams.get('payment_id') || searchParams.get('link_id') || '';
+  const paymentId = searchParams.get('razorpay_payment_id') || searchParams.get('payment_id') || '';
+  const linkId = searchParams.get('razorpay_payment_link_id') || searchParams.get('link_id') || searchParams.get('payment_link_id') || '';
+  const orderId = searchParams.get('razorpay_order_id') || searchParams.get('order_id') || '';
   const isMock = searchParams.get('mock') === 'true';
+
+  const params = new URLSearchParams();
+  if (paymentId) params.set('payment_id', paymentId);
+  if (linkId) params.set('link_id', linkId);
+  if (orderId) params.set('order_id', orderId);
+  const appDeepLink = `xindia://payment-success?${params.toString()}`;
 
   useEffect(() => {
     // Attempt to open the XIndia mobile app via custom URL scheme
     try {
-      const appDeepLink = `xindia://payment-success?payment_id=${encodeURIComponent(paymentId)}`;
-      window.location.href = appDeepLink;
+      if (appDeepLink) {
+        window.location.href = appDeepLink;
+      }
     } catch (_) {}
-  }, [paymentId]);
+  }, [appDeepLink]);
 
   return (
     <div style={{
@@ -83,7 +92,7 @@ function PaymentSuccessContent() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <a
-            href={`xindia://payment-success?payment_id=${encodeURIComponent(paymentId)}`}
+            href={appDeepLink}
             style={{
               display: 'block',
               backgroundColor: '#E8581C',
