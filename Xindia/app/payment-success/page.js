@@ -15,7 +15,7 @@ function PaymentSuccessContent() {
   if (paymentId) params.set('payment_id', paymentId);
   if (linkId) params.set('link_id', linkId);
   if (orderId) params.set('order_id', orderId);
-  const appDeepLink = `xindia://payment-success?${params.toString()}`;
+  const appDeepLink = `xindia:///payment-success?${params.toString()}`;
 
   useEffect(() => {
     // Attempt to open the XIndia mobile app via custom URL scheme
