@@ -26,6 +26,8 @@ import {
   Package,
 } from 'lucide-react';
 import YouTubePlayer from '@/components/common/YouTubePlayer';
+import { resolveImageUrl, FALLBACK_PRODUCT_IMAGE } from '@/lib/image';
+import ProductDetailModal from './ProductDetailModal';
 
 const CAPABILITY_CONFIG = {
   'Custom Logo Printing': {
@@ -79,6 +81,7 @@ const CAPABILITY_CONFIG = {
 };
 
 export default function OverviewView({ seller, topProducts, slug }) {
+  const [selectedProduct, setSelectedProduct] = React.useState(null);
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -308,14 +311,22 @@ export default function OverviewView({ seller, topProducts, slug }) {
               const hasLogo = custOpts.logoCustomization || custOpts.customLogo;
               const hasPkg = custOpts.packagingCustomization || custOpts.customPackaging;
 
+              const resolvedImg = resolveImageUrl(p.imageUrl, FALLBACK_PRODUCT_IMAGE);
               return (
-                <div key={p._id} className="portfolio-product-card">
+                <div
+                  key={p._id}
+                  className="portfolio-product-card clickable"
+                  onClick={() => setSelectedProduct(p)}
+                  role="button"
+                  tabIndex={0}
+                >
                   <div className="portfolio-product-image-frame">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={p.imageUrl || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=400&auto=format&fit=crop'}
+                      src={resolvedImg}
                       alt={p.name}
                       className="portfolio-product-image"
+                      loading="lazy"
                     />
                     {p.deliveryTime && (
                       <div className="portfolio-product-dispatch-pill">
@@ -346,6 +357,13 @@ export default function OverviewView({ seller, topProducts, slug }) {
           </div>
         </motion.div>
       )}
+
+      <ProductDetailModal
+        product={selectedProduct}
+        seller={seller}
+        isOpen={Boolean(selectedProduct)}
+        onClose={() => setSelectedProduct(null)}
+      />
     </motion.div>
   );
 }

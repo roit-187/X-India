@@ -17,8 +17,10 @@ import {
   Globe2,
   Star,
   CheckCircle2,
+  Coins,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { resolveImageUrl, FALLBACK_LOGO_IMAGE } from '@/lib/image';
 
 export default function PortfolioHero({ seller, slug }) {
   const [copied, setCopied] = useState(false);
@@ -31,6 +33,9 @@ export default function PortfolioHero({ seller, slug }) {
   const showroomUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/p/${cleanSlug}`
     : `${process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live'}/p/${cleanSlug}`;
+
+  const coverImg = resolveImageUrl(seller.coverImage);
+  const logoImg = resolveImageUrl(seller.logo, FALLBACK_LOGO_IMAGE);
 
   const handleCopyLink = () => {
     if (navigator.clipboard) {
@@ -103,9 +108,9 @@ export default function PortfolioHero({ seller, slug }) {
         <div className="portfolio-hero-mesh" />
         <div className="portfolio-grid-overlay" />
 
-        {seller.coverImage ? (
+        {coverImg ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={seller.coverImage} alt="" className="portfolio-cover" />
+          <img src={coverImg} alt="" className="portfolio-cover" />
         ) : (
           <div className="portfolio-cover-placeholder" />
         )}
@@ -120,7 +125,7 @@ export default function PortfolioHero({ seller, slug }) {
           <motion.div variants={itemVariants} className="portfolio-logo-frame">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={seller.logo || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=200&auto=format&fit=crop'}
+              src={logoImg}
               alt={seller.name}
               className="portfolio-logo"
             />
@@ -176,6 +181,18 @@ export default function PortfolioHero({ seller, slug }) {
                 <span className="portfolio-badge-pill">
                   <MapPin size={12} style={{ marginRight: 4 }} />
                   {seller.address}
+                </span>
+              )}
+              {seller.annualTurnover && (
+                <span className="portfolio-badge-pill">
+                  <Coins size={12} style={{ marginRight: 4 }} color="#D97706" />
+                  Turnover: {seller.annualTurnover}
+                </span>
+              )}
+              {seller.marketCovered && (
+                <span className="portfolio-badge-pill">
+                  <Globe2 size={12} style={{ marginRight: 4 }} color="#2563EB" />
+                  Markets: {seller.marketCovered}
                 </span>
               )}
             </motion.div>

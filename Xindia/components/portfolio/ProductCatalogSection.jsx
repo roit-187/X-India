@@ -11,11 +11,15 @@ import {
   X,
   MessageSquare,
   CheckCircle2,
+  Maximize2,
 } from 'lucide-react';
+import { resolveImageUrl, FALLBACK_PRODUCT_IMAGE } from '@/lib/image';
+import ProductDetailModal from './ProductDetailModal';
 
 export default function ProductCatalogSection({ products = [], seller }) {
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDetailProduct, setSelectedDetailProduct] = useState(null);
   const [sampleModalProduct, setSampleModalProduct] = useState(null);
   const [sampleQty, setSampleQty] = useState('1 Sample Unit');
   const [sampleNotes, setSampleNotes] = useState('');
@@ -156,19 +160,30 @@ export default function ProductCatalogSection({ products = [], seller }) {
               const custOpts = p.customizationOptions || {};
               const hasLogo = custOpts.logoCustomization || custOpts.customLogo;
               const hasPkg = custOpts.packagingCustomization || custOpts.customPackaging;
+              const resolvedImg = resolveImageUrl(p.imageUrl, FALLBACK_PRODUCT_IMAGE);
 
               return (
                 <motion.div
                   key={p._id}
-                  className="portfolio-product-card"
+                  className="portfolio-product-card clickable"
                   variants={itemVariants}
+                  onClick={() => setSelectedDetailProduct(p)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedDetailProduct(p);
+                    }
+                  }}
                 >
                   <div className="portfolio-product-image-frame">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={p.imageUrl || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=500&auto=format&fit=crop'}
+                      src={resolvedImg}
                       alt={p.name}
                       className="portfolio-product-image"
+                      loading="lazy"
                     />
 
                     {p.deliveryTime && (
@@ -178,10 +193,18 @@ export default function ProductCatalogSection({ products = [], seller }) {
                       </div>
                     )}
 
+                    <div className="portfolio-product-view-badge">
+                      <Maximize2 size={12} />
+                      <span>Tap to view details</span>
+                    </div>
+
                     <button
                       type="button"
                       className="portfolio-sample-overlay-btn"
-                      onClick={() => handleOpenSampleModal(p)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenSampleModal(p);
+                      }}
                     >
                       <Sparkles size={12} />
                       <span>Request Sample</span>
@@ -195,7 +218,8 @@ export default function ProductCatalogSection({ products = [], seller }) {
 
                     <div className="portfolio-product-price-row">
                       <div className="portfolio-product-price">
-                        {p.price} {p.unit ? <span className="portfolio-product-unit">/ {p.unit}</span> : ''}
+                        {p.priceDisplayMode === 'range' && p.priceRange ? p.priceRange : `₹${p.price}`}{' '}
+                        {p.unit ? <span className="portfolio-product-unit">/ {p.unit}</span> : ''}
                       </div>
                       <span className="portfolio-product-moq">
                         MOQ: {p.moq || '100 pcs'}
@@ -219,9 +243,12 @@ export default function ProductCatalogSection({ products = [], seller }) {
                       <button
                         type="button"
                         className="portfolio-product-quick-rfq-btn"
-                        onClick={() => handleOpenSampleModal(p)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedDetailProduct(p);
+                        }}
                       >
-                        Sample / RFQ
+                        Details & RFQ
                       </button>
                     </div>
                   </div>
@@ -308,6 +335,14 @@ export default function ProductCatalogSection({ products = [], seller }) {
           </div>
         </div>
       )}
+
+      {/* ─── Comprehensive Product Card & Carousel Modal ────────────── */}
+      <ProductDetailModal
+        product={selectedDetailProduct}
+        seller={seller}
+        isOpen={Boolean(selectedDetailProduct)}
+        onClose={() => setSelectedDetailProduct(null)}
+      />
     </section>
   );
 }

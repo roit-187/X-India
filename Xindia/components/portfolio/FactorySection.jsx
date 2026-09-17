@@ -11,13 +11,27 @@ import {
   Maximize2,
   X,
   Video,
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
+  Award,
 } from 'lucide-react';
 import YouTubePlayer from '@/components/common/YouTubePlayer';
+import { resolveImageUrl, FALLBACK_FACTORY_IMAGE } from '@/lib/image';
 
 export default function FactorySection({ seller }) {
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(null);
 
-  const photos = Array.isArray(seller.manufacturingPlants) ? seller.manufacturingPlants : [];
+  const rawPhotos = Array.isArray(seller.manufacturingPlants) && seller.manufacturingPlants.length > 0
+    ? seller.manufacturingPlants
+    : (Array.isArray(seller.factoryPhotos) && seller.factoryPhotos.length > 0
+      ? seller.factoryPhotos
+      : (Array.isArray(seller.gallery) ? seller.gallery : []));
+
+  const photos = rawPhotos
+    .map((p) => resolveImageUrl(p, FALLBACK_FACTORY_IMAGE))
+    .filter(Boolean);
+
   const factories = Array.isArray(seller.factories) ? seller.factories : [];
 
   const itemVariants = {
@@ -163,18 +177,26 @@ export default function FactorySection({ seller }) {
         {/* ─── 4. Factory Floor & Machinery Photo Gallery ────────────────────── */}
         {photos.length > 0 && (
           <div className="portfolio-gallery-section">
-            <h3 className="portfolio-card-heading" style={{ marginBottom: 14 }}>
-              Factory Floor & Inspection Gallery
-            </h3>
+            <div className="portfolio-gallery-header-row">
+              <h3 className="portfolio-card-heading" style={{ margin: 0 }}>
+                Factory Floor & Inspection Gallery ({photos.length} Photos)
+              </h3>
+              <span className="portfolio-gallery-hint">Tap any photo to view high-res</span>
+            </div>
             <div className="portfolio-gallery-grid">
               {photos.map((photo, i) => (
                 <div
                   key={i}
                   className="portfolio-gallery-item"
-                  onClick={() => setSelectedImage(photo)}
+                  onClick={() => setSelectedImageIndex(i)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') setSelectedImageIndex(i);
+                  }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photo} alt="" className="portfolio-gallery-img" />
+                  <img src={photo} alt={`Factory floor photo ${i + 1}`} className="portfolio-gallery-img" loading="lazy" />
                   <div className="portfolio-gallery-overlay">
                     <Maximize2 size={20} color="#FFFFFF" />
                   </div>
@@ -184,19 +206,59 @@ export default function FactorySection({ seller }) {
           </div>
         )}
 
-        {/* Lightbox Modal */}
-        {selectedImage && (
-          <div className="portfolio-modal-backdrop" onClick={() => setSelectedImage(null)}>
-            <div className="portfolio-lightbox-card" onClick={(e) => e.stopPropagation()}>
+        {/* Lightbox Modal with Carousel Arrows */}
+        {selectedImageIndex !== null && photos[selectedImageIndex] && (
+          <div className="product-lightbox-backdrop" onClick={() => setSelectedImageIndex(null)}>
+            <div className="product-lightbox-container" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
-                className="portfolio-lightbox-close"
-                onClick={() => setSelectedImage(null)}
+                className="product-lightbox-close"
+                onClick={() => setSelectedImageIndex(null)}
+                aria-label="Close photo"
               >
-                <X size={20} />
+                <X size={24} />
               </button>
+
+              {photos.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="product-lightbox-nav prev"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImageIndex((prev) => (prev - 1 + photos.length) % photos.length);
+                    }}
+                    aria-label="Previous photo"
+                  >
+                    <ChevronLeft size={28} />
+                  </button>
+                  <button
+                    type="button"
+                    className="product-lightbox-nav next"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImageIndex((prev) => (prev + 1) % photos.length);
+                    }}
+                    aria-label="Next photo"
+                  >
+                    <ChevronRight size={28} />
+                  </button>
+                </>
+              )}
+
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={selectedImage} alt="Factory floor high-res" className="portfolio-lightbox-img" />
+              <img
+                src={photos[selectedImageIndex]}
+                alt="Factory floor high-res"
+                className="product-lightbox-img"
+              />
+
+              {photos.length > 1 && (
+                <div className="product-lightbox-footer">
+                  <span>Factory Floor Inspection</span>
+                  <span>Photo {selectedImageIndex + 1} of {photos.length}</span>
+                </div>
+              )}
             </div>
           </div>
         )}
