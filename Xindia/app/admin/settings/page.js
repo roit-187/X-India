@@ -15,6 +15,7 @@ export default function AdminSettingsPage() {
     supportEmail: 'Xindia369@gmail.com',
     supportPhone: '+91 8860260878',
     primaryOtpProvider: 'WHATSAPP',
+    emailProvider: 'RESEND',
     isFirebasePhoneAuthEnabled: true,
     socialLinks: [],
     appVersionPolicy: {
@@ -87,6 +88,7 @@ export default function AdminSettingsPage() {
           supportEmail: data.settings.supportEmail || 'Xindia369@gmail.com',
           supportPhone: data.settings.supportPhone || '+91 8860260878',
           primaryOtpProvider: data.settings.primaryOtpProvider || 'WHATSAPP',
+          emailProvider: data.settings.emailProvider || 'RESEND',
           isFirebasePhoneAuthEnabled: data.settings.isFirebasePhoneAuthEnabled !== false,
           socialLinks: Array.isArray(data.settings.socialLinks) ? data.settings.socialLinks : [],
           appVersionPolicy: data.settings.appVersionPolicy || {
@@ -1055,6 +1057,184 @@ export default function AdminSettingsPage() {
                 <PhoneCall size={15} style={{ marginTop: 2, flexShrink: 0 }} />
                 <span>
                   <strong>2Factor Voice Call Safety Net:</strong> Automated phone call OTP is permanently enabled as an on-demand button (<em>"Try Voice Call"</em>) for all mobile users. If WhatsApp or SMS are delayed, users can always receive their code via telephone call (~₹0.20 / call).
+                </span>
+              </div>
+            </div>
+
+            {/* Transactional Email & OTP Gateway Card */}
+            <div className="admin-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ background: '#F5F3FF', padding: 8, borderRadius: 8, color: '#7C3AED' }}>
+                  <Mail size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--adm-text)' }}>
+                    Transactional Email & OTP Gateway
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--adm-text-med)' }}>
+                    Switch the active delivery provider for registration OTPs and B2B invoices. If the selected provider is unavailable, the server automatically fails over to the next candidate.
+                  </p>
+                </div>
+              </div>
+
+              {/* Email Provider Radio Selector Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16, marginBottom: 16 }}>
+                {/* Resend Option */}
+                <div
+                  onClick={() => setSettings({ ...settings, emailProvider: 'RESEND' })}
+                  style={{
+                    padding: 16,
+                    borderRadius: 'var(--adm-radius-sm)',
+                    border: settings.emailProvider === 'RESEND' ? '2px solid #111827' : '1px solid var(--adm-border)',
+                    background: settings.emailProvider === 'RESEND' ? '#F9FAFB' : '#FFFFFF',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    position: 'relative',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ background: '#F3F4F6', padding: 6, borderRadius: 6, color: '#111827' }}>
+                        <Zap size={18} />
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--adm-text)' }}>
+                        Resend
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: 10,
+                        background: '#EEF2FF',
+                        color: '#4F46E5',
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      RECOMMENDED
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--adm-text-med)', lineHeight: 1.5 }}>
+                    Instant sub-second delivery (~1-2s). 3,000 free emails/month. Zero queue throttling. Optimized specifically for transactional auth OTPs.
+                  </p>
+                  {settings.emailProvider === 'RESEND' && (
+                    <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#111827' }}>
+                      <CheckCircle2 size={13} /> ACTIVE EMAIL GATEWAY
+                    </div>
+                  )}
+                </div>
+
+                {/* Brevo Option */}
+                <div
+                  onClick={() => setSettings({ ...settings, emailProvider: 'BREVO' })}
+                  style={{
+                    padding: 16,
+                    borderRadius: 'var(--adm-radius-sm)',
+                    border: settings.emailProvider === 'BREVO' ? '2px solid #0D9488' : '1px solid var(--adm-border)',
+                    background: settings.emailProvider === 'BREVO' ? '#F0FDFA' : '#FFFFFF',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    position: 'relative',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ background: '#CCFBF1', padding: 6, borderRadius: 6, color: '#0F766E' }}>
+                        <Mail size={18} />
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--adm-text)' }}>
+                        Brevo (Sendinblue)
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: 10,
+                        background: '#CCFBF1',
+                        color: '#0F766E',
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      300 / DAY FREE
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--adm-text-med)', lineHeight: 1.5 }}>
+                    Cloud REST API via Port 443. Free plan queues on shared IP relay with ~20 min delivery pacing. Fast-track with Starter tier.
+                  </p>
+                  {settings.emailProvider === 'BREVO' && (
+                    <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#0D9488' }}>
+                      <CheckCircle2 size={13} /> ACTIVE EMAIL GATEWAY
+                    </div>
+                  )}
+                </div>
+
+                {/* AWS SES Option */}
+                <div
+                  onClick={() => setSettings({ ...settings, emailProvider: 'AWS_SES' })}
+                  style={{
+                    padding: 16,
+                    borderRadius: 'var(--adm-radius-sm)',
+                    border: settings.emailProvider === 'AWS_SES' ? '2px solid #F59E0B' : '1px solid var(--adm-border)',
+                    background: settings.emailProvider === 'AWS_SES' ? '#FFFBEB' : '#FFFFFF',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    position: 'relative',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ background: '#FEF3C7', padding: 6, borderRadius: 6, color: '#D97706' }}>
+                        <Server size={18} />
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--adm-text)' }}>
+                        Amazon SES
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: 10,
+                        background: '#FEF3C7',
+                        color: '#B45309',
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      ~$0.10 / 1K
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--adm-text-med)', lineHeight: 1.5 }}>
+                    Enterprise scale via AWS SDK v3. Sub-second global delivery. Lowest industry operating cost for high-volume apps.
+                  </p>
+                  {settings.emailProvider === 'AWS_SES' && (
+                    <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#D97706' }}>
+                      <CheckCircle2 size={13} /> ACTIVE EMAIL GATEWAY
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Automatic Failover Notice */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 8,
+                  padding: '10px 14px',
+                  borderRadius: 'var(--adm-radius-sm)',
+                  background: '#F5F3FF',
+                  border: '1px solid #DDD6FE',
+                  fontSize: 12,
+                  color: '#5B21B6',
+                }}
+              >
+                <Zap size={15} style={{ marginTop: 2, flexShrink: 0 }} />
+                <span>
+                  <strong>Zero-Downtime Smart Fallback:</strong> If the primary provider encounters an outage or quota limit, the backend automatically fails over to any other configured email service in real-time, preventing user signup blocks.
                 </span>
               </div>
             </div>
