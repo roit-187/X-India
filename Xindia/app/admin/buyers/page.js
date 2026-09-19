@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import BuyerCard from '@/components/admin/BuyerCard';
 import Modal from '@/components/admin/Modal';
+import BuyerDetailModal from '@/components/admin/BuyerDetailModal';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 export default function BuyersPage() {
@@ -18,6 +19,7 @@ export default function BuyersPage() {
   const [blockMode, setBlockMode] = useState('temporary'); // 'temporary' | 'blacklist'
   const [days, setDays] = useState(30);
   const [reason, setReason] = useState('');
+  const [inspectBuyerId, setInspectBuyerId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -147,6 +149,7 @@ export default function BuyersPage() {
               canUnblock={isSuperAdmin}
               onOpenBlockModal={handleOpenBlockModal}
               onUnblock={handleUnblock}
+              onInspect={(id) => setInspectBuyerId(id)}
             />
           ))}
           {buyers.length === 0 && (
@@ -231,6 +234,14 @@ export default function BuyersPage() {
           </div>
         </form>
       </Modal>
+
+      {/* 360-Degree Buyer Inspection Modal */}
+      <BuyerDetailModal
+        open={!!inspectBuyerId}
+        onClose={() => setInspectBuyerId(null)}
+        buyerId={inspectBuyerId}
+        onStatusChanged={load}
+      />
     </div>
   );
 }

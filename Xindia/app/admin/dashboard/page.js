@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import StatCard from '@/components/admin/StatCard';
 import Modal from '@/components/admin/Modal';
 import Badge from '@/components/admin/Badge';
@@ -63,7 +64,7 @@ export default function AdminDashboardPage() {
 
   const loadVerificationQueue = useCallback(async () => {
     try {
-      const res = await fetch(`/api/admin/verification/queue?status=${verifStatus}&page=${verifPage}&limit=10`);
+      const res = await fetch(`/api/admin/verification/queue?status=${verifStatus}&page=${verifPage}&limit=20`);
       const data = await res.json();
       if (data.success) {
         setVerificationQueue(data.requests || []);
@@ -223,9 +224,14 @@ export default function AdminDashboardPage() {
 
       {/* Verification Queue Section */}
       <div className="admin-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ margin: 0 }}>Verification Queue</h3>
-          <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <h3 style={{ margin: 0 }}>Verification Queue</h3>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, background: '#EFF6FF', color: '#1D4ED8' }}>
+              Newest 20 Requests
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {['scheduled', 'accepted', 'rejected'].map((st) => (
               <button
                 key={st}
@@ -236,6 +242,13 @@ export default function AdminDashboardPage() {
                 {st}
               </button>
             ))}
+            <Link
+              href="/admin/verifications"
+              className="admin-btn admin-btn-primary"
+              style={{ textDecoration: 'none', padding: '4px 12px', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+            >
+              Full Verification Hub ➔
+            </Link>
           </div>
         </div>
 

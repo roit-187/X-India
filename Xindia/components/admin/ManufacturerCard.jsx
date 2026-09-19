@@ -10,6 +10,7 @@ export default function ManufacturerCard({
   onToggleActive,
   onOpenBlockModal,
   onUnblock,
+  onInspect,
 }) {
   const planVariant = manufacturer.planStatus === 'active' ? 'active'
     : manufacturer.planStatus === 'grace' ? 'grace'
@@ -27,19 +28,35 @@ export default function ManufacturerCard({
   return (
     <div className="admin-card" style={isDeactivated ? { borderLeft: '4px solid #EF4444' } : {}}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <Link href={`/admin/manufacturers/${manufacturer._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-          <h3 style={{ margin: 0 }}>{manufacturer.name}</h3>
-        </Link>
-        {canManageSellers && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {manufacturer.isBlacklisted || isBlocked ? (
-              <button className="admin-btn admin-btn-secondary" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => onUnblock(manufacturer._id)}>Unblock</button>
-            ) : (
-              <button className="admin-btn admin-btn-danger" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => onOpenBlockModal(manufacturer)}>Block</button>
-            )}
-            <Toggle checked={manufacturer.isActive} onChange={(next) => onToggleActive(manufacturer._id, next)} />
-          </div>
-        )}
+        <div>
+          <h3
+            style={{ margin: 0, cursor: onInspect ? 'pointer' : 'default', color: '#2563EB' }}
+            onClick={() => onInspect && onInspect(manufacturer._id)}
+          >
+            {manufacturer.name} ↗
+          </h3>
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {onInspect && (
+            <button
+              className="admin-btn admin-btn-secondary"
+              style={{ padding: '4px 8px', fontSize: 11 }}
+              onClick={() => onInspect(manufacturer._id)}
+            >
+              Inspect 360°
+            </button>
+          )}
+          {canManageSellers && (
+            <>
+              {manufacturer.isBlacklisted || isBlocked ? (
+                <button className="admin-btn admin-btn-secondary" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => onUnblock(manufacturer._id)}>Unblock</button>
+              ) : (
+                <button className="admin-btn admin-btn-danger" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => onOpenBlockModal(manufacturer)}>Block</button>
+              )}
+              <Toggle checked={manufacturer.isActive} onChange={(next) => onToggleActive(manufacturer._id, next)} />
+            </>
+          )}
+        </div>
       </div>
 
       {/* Complete status indicators visible to both staff and admins */}

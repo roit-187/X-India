@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Tag, Star, Settings, LogOut, UserCog, Shield, Bell, Receipt, Megaphone } from 'lucide-react';
+import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Tag, Star, Settings, LogOut, UserCog, Shield, Bell, Receipt, Megaphone, ShieldCheck } from 'lucide-react';
 import SearchBar from './SearchBar';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
@@ -12,6 +12,7 @@ import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 // creditsOnly → requires canManageCredits
 const ALL_LINKS = [
   { href: '/admin/dashboard',     label: 'Dashboard',            icon: LayoutDashboard, flag: 'always' },
+  { href: '/admin/verifications', label: 'Verification Queue',   icon: ShieldCheck,     flag: 'always' },
   { href: '/admin/manufacturers', label: 'Manufacturers',         icon: Factory,         flag: 'always' },
   { href: '/admin/buyers',        label: 'Buyers',                icon: Users,           flag: 'always' },
   { href: '/admin/products',      label: 'Products',              icon: Package,         flag: 'always' },

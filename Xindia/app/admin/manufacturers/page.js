@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import ManufacturerCard from '@/components/admin/ManufacturerCard';
 import Modal from '@/components/admin/Modal';
+import SellerDetailModal from '@/components/admin/SellerDetailModal';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 export default function ManufacturersPage() {
@@ -28,6 +29,7 @@ export default function ManufacturersPage() {
   const [blockMode, setBlockMode] = useState('temporary');
   const [blockDays, setBlockDays] = useState(30);
   const [blockReason, setBlockReason] = useState('');
+  const [inspectManufacturerId, setInspectManufacturerId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -197,6 +199,7 @@ export default function ManufacturersPage() {
               onToggleActive={handleToggleActive}
               onOpenBlockModal={handleOpenBlockModal}
               onUnblock={handleUnblock}
+              onInspect={(id) => setInspectManufacturerId(id)}
             />
           ))}
           {manufacturers.length === 0 && (
@@ -255,6 +258,14 @@ export default function ManufacturersPage() {
           </Modal>
         </>
       )}
+
+      {/* 360-Degree Seller Inspection Modal */}
+      <SellerDetailModal
+        open={!!inspectManufacturerId}
+        onClose={() => setInspectManufacturerId(null)}
+        manufacturerId={inspectManufacturerId}
+        onStatusChanged={load}
+      />
     </div>
   );
 }

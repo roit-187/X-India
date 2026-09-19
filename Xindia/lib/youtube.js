@@ -2,11 +2,25 @@
  * Utility functions for parsing, validating, and formatting YouTube URLs.
  */
 
+// Whitelisted YouTube hostnames (owned and operated by YouTube / Google)
+const ALLOWED_YOUTUBE_HOSTS = new Set([
+  'youtube.com',
+  'www.youtube.com',
+  'm.youtube.com',
+  'youtu.be',
+  'youtube-nocookie.com',
+  'www.youtube-nocookie.com',
+]);
+
+const YOUTUBE_ID_REGEX = /^[a-zA-Z0-9_-]{11}$/;
+
 /**
- * Extracts YouTube Video ID from various YouTube URL formats.
+ * Extracts YouTube Video ID safely from validated YouTube URLs or raw IDs.
+ * Strictly prevents phishing links, substring domain spoofing, and pseudo-schemes (javascript:, data:).
+ *
  * Supports:
  * - https://www.youtube.com/watch?v=VIDEO_ID
- * - https://youtu.be/VIDEO_ID
+ * - https://youtu.be/VIDEO_ID (Official YouTube share link)
  * - https://www.youtube.com/shorts/VIDEO_ID
  * - https://www.youtube.com/embed/VIDEO_ID
  * - https://m.youtube.com/watch?v=VIDEO_ID
@@ -19,17 +33,50 @@ export function extractYouTubeId(url) {
   if (!url || typeof url !== 'string') return null;
 
   const trimmed = url.trim();
+  if (!trimmed) return null;
 
-  // If already an 11-character alphanumeric/dash/underscore ID (no dots or slashes)
-  if (!trimmed.includes('.') && !trimmed.includes('/') && /^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+  // 1. Raw 11-character alphanumeric/dash/underscore ID
+  if (!trimmed.includes('.') && !trimmed.includes('/') && YOUTUBE_ID_REGEX.test(trimmed)) {
     return trimmed;
   }
 
-  // Regex covering standard watch, youtu.be, shorts, embed, live, and mobile URLs
-  const regex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|shorts|live)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-  const match = trimmed.match(regex);
+  // 2. Parse via standard URL parser
+  let urlObj;
+  try {
+    urlObj = new URL(trimmed.startsWith('http://') || trimmed.startsWith('https://') ? trimmed : `https://${trimmed}`);
+  } catch {
+    return null;
+  }
 
-  return match ? match[1] : null;
+  // Enforce HTTP / HTTPS schemes only (blocks javascript:, data:, file:)
+  if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+    return null;
+  }
+
+  const host = urlObj.hostname.toLowerCase();
+  if (!ALLOWED_YOUTUBE_HOSTS.has(host)) {
+    return null;
+  }
+
+  // Handle youtu.be/<id>
+  if (host === 'youtu.be') {
+    const id = urlObj.pathname.slice(1).split('/')[0]?.split('?')[0];
+    return id && YOUTUBE_ID_REGEX.test(id) ? id : null;
+  }
+
+  // Handle youtube.com/watch?v=<id>
+  if (urlObj.pathname === '/watch') {
+    const v = urlObj.searchParams.get('v');
+    return v && YOUTUBE_ID_REGEX.test(v) ? v : null;
+  }
+
+  // Handle /embed/<id>, /shorts/<id>, /v/<id>, /live/<id>
+  const pathMatch = urlObj.pathname.match(/^\/(?:embed|shorts|v|live)\/([a-zA-Z0-9_-]{11})(?:\/|$)/);
+  if (pathMatch && YOUTUBE_ID_REGEX.test(pathMatch[1])) {
+    return pathMatch[1];
+  }
+
+  return null;
 }
 
 /**
@@ -40,6 +87,18 @@ export function extractYouTubeId(url) {
  */
 export function isValidYouTubeUrl(url) {
   return Boolean(extractYouTubeId(url));
+}
+
+/**
+ * Converts any valid YouTube link or ID into a canonical, safe YouTube watch URL.
+ * Strips all tracking query parameters, redirects, or extraneous fragments.
+ *
+ * @param {string} url
+ * @returns {string|null} - Canonical URL: "https://www.youtube.com/watch?v=VIDEO_ID" or null
+ */
+export function canonicalizeYouTubeUrl(url) {
+  const videoId = extractYouTubeId(url);
+  return videoId ? `https://www.youtube.com/watch?v=${videoId}` : null;
 }
 
 /**

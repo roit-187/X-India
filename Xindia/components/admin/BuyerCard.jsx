@@ -9,6 +9,7 @@ export default function BuyerCard({
   canUnblock = false,
   onOpenBlockModal,
   onUnblock,
+  onInspect,
 }) {
   const isBlocked = buyer.blockedUntil && new Date(buyer.blockedUntil) > new Date();
 
@@ -25,10 +26,24 @@ export default function BuyerCard({
   return (
     <div className="admin-card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <Link href={`/admin/buyers/${buyer._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-          <h3 style={{ margin: 0 }}>{buyer.firstName} {buyer.lastName}</h3>
-        </Link>
         <div>
+          <h3
+            style={{ margin: 0, cursor: onInspect ? 'pointer' : 'default', color: '#2563EB' }}
+            onClick={() => onInspect && onInspect(buyer._id)}
+          >
+            {buyer.firstName} {buyer.lastName} ↗
+          </h3>
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {onInspect && (
+            <button
+              className="admin-btn admin-btn-secondary"
+              style={{ padding: '4px 8px', fontSize: 11 }}
+              onClick={() => onInspect(buyer._id)}
+            >
+              Inspect 360°
+            </button>
+          )}
           {buyer.isBlacklisted || isBlocked ? (
             canUnblock && (
               <button className="admin-btn admin-btn-secondary" onClick={() => onUnblock(buyer._id)}>Unblock</button>
