@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 export default function ContactPage() {
   const [config, setConfig] = useState({
-    supportEmail: 'Xindia369@gmail.com',
+    supportEmail: 'support@xindia.live',
     supportPhone: '+91 8860260878',
   });
   const [submitted, setSubmitted] = useState(false);
@@ -15,13 +15,13 @@ export default function ContactPage() {
   useEffect(() => {
     async function loadConfig() {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://ascend-ds0q.onrender.com';
-        const res = await fetch(`${apiUrl}/api/v1/admin/system/config`);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.xindia.live';
+        const res = await fetch(`${apiUrl}/api/system/config`);
         if (res.ok) {
           const data = await res.json();
           if (data.config) {
             setConfig({
-              supportEmail: data.config.supportEmail || 'Xindia369@gmail.com',
+              supportEmail: data.config.supportEmail || 'support@xindia.live',
               supportPhone: data.config.supportPhone || '+91 8860260878',
             });
           }

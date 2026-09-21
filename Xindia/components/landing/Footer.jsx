@@ -96,6 +96,7 @@ const Footer = () => {
 
           <div className="footer-bottom-links">
             <Link href="/contact">Contact Us</Link>
+            <Link href="/terms">Terms & Conditions</Link>
             <Link href="/privacy-policy">Privacy Policy</Link>
           </div>
         </div>

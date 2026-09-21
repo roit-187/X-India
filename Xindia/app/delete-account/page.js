@@ -410,7 +410,7 @@ export default function DeleteAccountPage() {
           <footer className="delete-footer">
             <p>
               For questions, contact us at{' '}
-              <a href="mailto:support@x-india.com">support@x-india.com</a>
+              <a href="mailto:support@xindia.live">support@xindia.live</a>
             </p>
             <p className="delete-legal">
               © {new Date().getFullYear()} XIndia. All rights reserved.

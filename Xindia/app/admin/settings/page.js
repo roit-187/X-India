@@ -8,11 +8,11 @@ import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 export default function AdminSettingsPage() {
   const { isSuperAdmin, loaded } = useAdminPermissions();
   const [settings, setSettings] = useState({
-    serverApiUrl: 'https://ascend-ds0q.onrender.com',
-    websiteUrl: 'https://x-india.vercel.app',
+    serverApiUrl: 'https://api.xindia.live',
+    websiteUrl: 'https://xindia.live',
     isMaintenanceMode: false,
     isGstVerificationEnabled: false,
-    supportEmail: 'Xindia369@gmail.com',
+    supportEmail: 'support@xindia.live',
     supportPhone: '+91 8860260878',
     primaryOtpProvider: 'WHATSAPP',
     emailProvider: 'RESEND',
@@ -81,11 +81,11 @@ export default function AdminSettingsPage() {
       const data = await res.json();
       if (data.success && data.settings) {
         setSettings({
-          serverApiUrl: data.settings.serverApiUrl || 'https://ascend-ds0q.onrender.com',
-          websiteUrl: data.settings.websiteUrl || 'https://x-india.vercel.app',
+          serverApiUrl: data.settings.serverApiUrl || 'https://api.xindia.live',
+          websiteUrl: data.settings.websiteUrl || 'https://xindia.live',
           isMaintenanceMode: Boolean(data.settings.isMaintenanceMode),
           isGstVerificationEnabled: Boolean(data.settings.isGstVerificationEnabled),
-          supportEmail: data.settings.supportEmail || 'Xindia369@gmail.com',
+          supportEmail: data.settings.supportEmail || 'support@xindia.live',
           supportPhone: data.settings.supportPhone || '+91 8860260878',
           primaryOtpProvider: data.settings.primaryOtpProvider || 'WHATSAPP',
           emailProvider: data.settings.emailProvider || 'RESEND',
@@ -350,7 +350,7 @@ export default function AdminSettingsPage() {
                     style={{ flex: 1, padding: '10px 14px', borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)', fontSize: 14 }}
                     value={settings.websiteUrl}
                     onChange={(e) => setSettings({ ...settings, websiteUrl: e.target.value })}
-                    placeholder="https://x-india.vercel.app"
+                    placeholder="https://xindia.live"
                     required
                   />
                   <a
@@ -397,7 +397,7 @@ export default function AdminSettingsPage() {
                     style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)', fontSize: 14 }}
                     value={settings.supportEmail || ''}
                     onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
-                    placeholder="Xindia369@gmail.com"
+                    placeholder="support@xindia.live"
                     required
                   />
                   <div style={{ fontSize: 12, color: 'var(--adm-text-light)', marginTop: 4 }}>

@@ -33,7 +33,7 @@ export default function PrivacyPolicyPage() {
             This Privacy Policy governs the collection, processing, storage, transfer, and deletion of personal and commercial data by <strong>XIndia</strong> (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;the Platform&rdquo;), operating as a B2B marketplace and manufacturer launchpad connecting businesses across India.
           </p>
           <p>
-            Under the <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong> and Google Play Developer Policies, XIndia acts as the <em>Data Fiduciary</em> for personal data processed through our mobile applications (Android/iOS) and web portal (<a href="https://x-india.vercel.app">https://x-india.vercel.app</a>).
+            Under the <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong> and Google Play Developer Policies, XIndia acts as the <em>Data Fiduciary</em> for personal data processed through our mobile applications (Android/iOS) and web portal (<a href="https://xindia.live">https://xindia.live</a>).
           </p>
         </section>
 
@@ -111,9 +111,9 @@ export default function PrivacyPolicyPage() {
           </p>
           <div className="contact-details">
             <p><strong>Platform:</strong> XIndia B2B Marketplace</p>
-            <p><strong>Grievance & Support Email:</strong> <a href="mailto:Xindia369@gmail.com">Xindia369@gmail.com</a></p>
+            <p><strong>Grievance & Support Email:</strong> <a href="mailto:support@xindia.live">support@xindia.live</a></p>
             <p><strong>Office:</strong> Industrial Plaza, New Delhi, India</p>
-            <p><strong>Support Page:</strong> <Link href="/contact">https://x-india.vercel.app/contact</Link></p>
+            <p><strong>Support Page:</strong> <Link href="/contact">https://xindia.live/contact</Link></p>
           </div>
         </section>
       </main>
