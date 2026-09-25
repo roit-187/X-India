@@ -78,6 +78,28 @@ export default function ManufacturerCard({
         {manufacturer.productCount} products &middot; {manufacturer.rating?.toFixed(1) || '0.0'} ★ ({manufacturer.reviewCount || 0})
       </div>
       <div style={{ fontSize: 13, color: 'var(--adm-text-light)', marginTop: 4 }}>{manufacturer.address}</div>
+
+      {/* Issue #23: Staff Attribution Badge */}
+      <div style={{ marginTop: 8 }}>
+        {manufacturer.onboardedBy?.staffName ? (
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 10,
+            background: '#EDE9FE', color: '#7C3AED',
+          }}>
+            👤 Onboarded by: {manufacturer.onboardedBy.staffName}
+            {manufacturer.onboardedBy.employeeId && ` (${manufacturer.onboardedBy.employeeId})`}
+          </span>
+        ) : (
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 10,
+            background: '#F1F5F9', color: '#94A3B8',
+          }}>
+            🌐 Self-Registered
+          </span>
+        )}
+      </div>
     </div>
   );
 }

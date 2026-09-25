@@ -23,6 +23,13 @@ export default function ManufacturerDetailPage({ params }) {
   const [blockDays, setBlockDays] = useState(30);
   const [blockReason, setBlockReason] = useState('');
 
+  // Verification Revocation State (Issue #22)
+  const [showRevokeModal, setShowRevokeModal] = useState(false);
+  const [revokeReasonCategory, setRevokeReasonCategory] = useState('FAILED_AUDIT');
+  const [revokeReason, setRevokeReason] = useState('');
+  const [revokeProofUrl, setRevokeProofUrl] = useState('');
+  const [revokeSubmitting, setRevokeSubmitting] = useState(false);
+
   // Profile Editor Modal State
   const [showEditModal, setShowEditModal] = useState(false);
   const [editTab, setEditTab] = useState('identity'); // 'identity' | 'contact' | 'factory' | 'bank'
@@ -96,12 +103,40 @@ export default function ManufacturerDetailPage({ params }) {
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleToggleVerified = async (nextVal) => {
+    if (!nextVal) {
+      setShowRevokeModal(true);
+      return;
+    }
     await fetch(`/api/admin/manufacturers/${id}/verified`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ verified: nextVal }),
+      body: JSON.stringify({ verified: true }),
     });
     loadData();
+  };
+
+  const handleConfirmRevoke = async (e) => {
+    e.preventDefault();
+    if (!revokeReason.trim()) return;
+    setRevokeSubmitting(true);
+    try {
+      const fullReason = `${revokeReasonCategory}: ${revokeReason.trim()}`;
+      await fetch(`/api/admin/manufacturers/${id}/verified`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          verified: false,
+          reason: fullReason,
+          proofUrl: revokeProofUrl.trim() || undefined,
+        }),
+      });
+      setShowRevokeModal(false);
+      setRevokeReason('');
+      setRevokeProofUrl('');
+      loadData();
+    } finally {
+      setRevokeSubmitting(false);
+    }
   };
 
   const handleToggleActive = async (nextVal) => {
@@ -935,6 +970,55 @@ export default function ManufacturerDetailPage({ params }) {
                 <div>{stats.profileCompleteness.address ? '✅' : '❌'} Factory Address</div>
               </div>
             )}
+
+            <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0', margin: '16px 0' }} />
+
+            {/* Onboarding & Governance Card (Issue #23) */}
+            <h4 style={{ marginTop: 0, marginBottom: 12, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 6 }}>
+              🛡️ Onboarding & Governance
+            </h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13, background: '#F8FAFC', padding: 12, borderRadius: 8, border: '1px solid #E2E8F0' }}>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Registration Origin</span>
+                {m.onboardedBy?.staffId || m.onboardedBy?.staffName ? (
+                  <div style={{ marginTop: 3 }}>
+                    <span style={{ fontWeight: 700, color: '#059669', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      👤 Staff-Assisted Onboarding
+                    </span>
+                    <div style={{ color: '#0F172A', fontWeight: 600, marginTop: 2 }}>{m.onboardedBy.staffName}</div>
+                    {m.onboardedBy.employeeId && (
+                      <div style={{ color: '#64748B', fontSize: 12 }}>Employee ID: <code>{m.onboardedBy.employeeId}</code></div>
+                    )}
+                    {m.onboardedBy.onboardedAt && (
+                      <div style={{ color: '#94A3B8', fontSize: 11, marginTop: 2 }}>
+                        {new Date(m.onboardedBy.onboardedAt).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 3, fontWeight: 600, color: '#475569' }}>
+                    🌐 Direct Merchant Registration
+                    <div style={{ color: '#94A3B8', fontSize: 11, fontWeight: 400, marginTop: 2 }}>
+                      Registered: {m.createdAt ? new Date(m.createdAt).toLocaleDateString() : '—'}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: 8 }}>
+                <span style={{ color: '#64748B', display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Governance State</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                  <span>Verified Badge:</span>
+                  <strong style={{ color: m.verified ? '#16A34A' : '#64748B' }}>{m.verified ? 'Verified' : 'Unverified'}</strong>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                  <span>Re-verification:</span>
+                  <strong style={{ color: m.reverificationPending ? '#EA580C' : '#059669' }}>
+                    {m.reverificationPending ? 'Pending Audit' : 'Up to Date'}
+                  </strong>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -955,6 +1039,79 @@ export default function ManufacturerDetailPage({ params }) {
           </div>
         </Modal>
       )}
+
+      {/* Verification Revocation Modal (Issue #22) */}
+      <Modal open={showRevokeModal} onClose={() => setShowRevokeModal(false)} title="Revoke Manufacturer Verification">
+        <form onSubmit={handleConfirmRevoke}>
+          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13, color: '#991B1B' }}>
+            Revoking verification will remove the verified badge from the seller's portfolio and dispatch an administrative push notification explaining the revocation.
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6, color: '#334155' }}>
+              Revocation Reason Category (Required)
+            </label>
+            <select
+              className="admin-select"
+              value={revokeReasonCategory}
+              onChange={(e) => setRevokeReasonCategory(e.target.value)}
+              style={{ width: '100%' }}
+            >
+              <option value="FAILED_AUDIT">Failed Factory Audit</option>
+              <option value="FRAUDULENT_DOCS">Fraudulent / Invalid Documents</option>
+              <option value="BUSINESS_MOVED">Business Relocated Without Notification</option>
+              <option value="POLICY_VIOLATION">Terms of Service / Policy Violation</option>
+              <option value="OTHER">Other Administrative Reason</option>
+            </select>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6, color: '#334155' }}>
+              Explanation / Detail (Required)
+            </label>
+            <textarea
+              className="admin-input"
+              style={{ width: '100%', minHeight: 80 }}
+              placeholder="Explain why verification is being revoked (this note will be logged in audit history)..."
+              value={revokeReason}
+              onChange={(e) => setRevokeReason(e.target.value)}
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6, color: '#334155' }}>
+              Evidence / Proof URL (Optional)
+            </label>
+            <input
+              type="url"
+              className="admin-input"
+              style={{ width: '100%' }}
+              placeholder="https://... (screenshot or report link)"
+              value={revokeProofUrl}
+              onChange={(e) => setRevokeProofUrl(e.target.value)}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              className="admin-btn admin-btn-secondary"
+              onClick={() => setShowRevokeModal(false)}
+              disabled={revokeSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="admin-btn admin-btn-danger"
+              disabled={revokeSubmitting || !revokeReason.trim()}
+            >
+              {revokeSubmitting ? 'Revoking...' : 'Confirm Revoke Verification'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {isSuperAdmin && (
         <Modal open={showBlockModal} onClose={() => setShowBlockModal(false)} title="Block Seller">

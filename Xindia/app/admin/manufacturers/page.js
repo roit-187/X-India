@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import ManufacturerCard from '@/components/admin/ManufacturerCard';
 import Modal from '@/components/admin/Modal';
 import SellerDetailModal from '@/components/admin/SellerDetailModal';
@@ -8,17 +10,18 @@ import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 export default function ManufacturersPage() {
   const { isSuperAdmin } = useAdminPermissions();
+  const searchParams = useSearchParams();
   const [manufacturers, setManufacturers] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState({
-    planStatus: '',
-    search: '',
-    category: '',
-    verified: '',
-    isActive: '',
-    state: '',
-    city: '',
+    planStatus: searchParams.get('planStatus') || '',
+    search: searchParams.get('search') || '',
+    category: searchParams.get('category') || '',
+    verified: searchParams.get('verified') || '',
+    isActive: searchParams.get('isActive') || '',
+    state: searchParams.get('state') || '',
+    city: searchParams.get('city') || '',
   });
   const [loading, setLoading] = useState(true);
   const [pendingDeactivate, setPendingDeactivate] = useState(null);
@@ -129,11 +132,20 @@ export default function ManufacturersPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h1 style={{ margin: 0 }}>Manufacturers</h1>
-        {activeFilterCount > 0 && (
-          <button className="admin-btn admin-btn-secondary" onClick={clearFilters} style={{ fontSize: 13 }}>
-            Clear {activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''}
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {activeFilterCount > 0 && (
+            <button className="admin-btn admin-btn-secondary" onClick={clearFilters} style={{ fontSize: 13 }}>
+              Clear {activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''}
+            </button>
+          )}
+          <Link
+            href="/staff/add-user"
+            className="admin-btn admin-btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, textDecoration: 'none', padding: '9px 16px' }}
+          >
+            + Onboard New Seller
+          </Link>
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>

@@ -43,6 +43,9 @@ function LoginContent() {
           localStorage.setItem('admin_profile', JSON.stringify({
             id: data.admin.id,
             username: data.admin.username,
+            fullName: data.admin.fullName || data.admin.username,
+            employeeId: data.admin.employeeId || '',
+            phone: data.admin.phone || '',
             email: data.admin.email,
             role: data.admin.role,
             permissions: data.admin.permissions || [],

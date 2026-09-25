@@ -94,6 +94,12 @@ export default function AdminStaffPage() {
   const [passwordTarget, setPasswordTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
+  // Issue #23: Staff profile drawer
+  const [profileDrawer, setProfileDrawer] = useState(null); // the staff object
+  const [drawerOnboardedSellers, setDrawerOnboardedSellers] = useState([]);
+  const [drawerActivity, setDrawerActivity] = useState([]);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+
   // Form states
   const [newUsername, setNewUsername] = useState('');
   const [newEmail, setNewEmail] = useState('');
@@ -121,6 +127,27 @@ export default function AdminStaffPage() {
   const [showResetPassword, setShowResetPassword] = useState(true);
 
   const [submitting, setSubmitting] = useState(false);
+
+  // Issue #23: Load staff profile drawer data
+  const handleOpenProfileDrawer = async (staff) => {
+    if (!isSuperAdmin) return;
+    setProfileDrawer(staff);
+    setDrawerLoading(true);
+    try {
+      const [mfrRes, actRes] = await Promise.all([
+        fetch(`/api/admin/manufacturers?onboardedByStaffId=${staff._id}&limit=50`),
+        fetch(`/api/admin/audit-logs?adminId=${staff._id}&limit=20`),
+      ]);
+      const mfrData = await mfrRes.json();
+      const actData = await actRes.json();
+      setDrawerOnboardedSellers(mfrData.success ? (mfrData.manufacturers || []) : []);
+      setDrawerActivity(actData.success ? (actData.logs || []) : []);
+    } catch (e) {
+      console.error('Profile drawer load failed', e);
+    } finally {
+      setDrawerLoading(false);
+    }
+  };
 
   const loadStaff = useCallback(async () => {
     setLoading(true);
@@ -379,25 +406,6 @@ export default function AdminStaffPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Link
-            href="/staff/add-user"
-            className="admin-btn"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '10px 16px',
-              fontSize: 13,
-              backgroundColor: '#EFF6FF',
-              color: '#2563EB',
-              border: '1px solid #BFDBFE',
-              borderRadius: 8,
-              textDecoration: 'none',
-              fontWeight: 700,
-            }}
-          >
-            <UserPlus size={16} /> Onboard Seller (/staff/add-user)
-          </Link>
           <button
             className="admin-btn admin-btn-primary"
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', fontSize: 13 }}
@@ -515,7 +523,7 @@ export default function AdminStaffPage() {
                 const isSuper = staff.role === 'SUPER_ADMIN';
 
                 return (
-                  <tr key={staff._id}>
+                  <tr key={staff._id} style={{ cursor: isSuperAdmin ? 'pointer' : 'default' }} onClick={() => handleOpenProfileDrawer(staff)}>
                     <td>
                       <div style={{ fontWeight: 700, color: '#0F172A', fontSize: 14 }}>{staff.username}</div>
                       <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>{staff.email}</div>
@@ -550,7 +558,7 @@ export default function AdminStaffPage() {
                       </div>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} onClick={(e) => e.stopPropagation()}>
                         <Toggle checked={staff.active !== false} onChange={() => handleToggleActive(staff)} />
                         <span style={{ fontSize: 12, fontWeight: 600, color: staff.active ? '#059669' : '#94A3B8' }}>
                           {staff.active ? 'Active' : 'Disabled'}
@@ -563,12 +571,15 @@ export default function AdminStaffPage() {
                       </div>
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
                         <button
                           className="admin-btn admin-btn-secondary"
                           style={{ padding: '4px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                           title="Edit Role & Permissions"
-                          onClick={() => handleOpenEditModal(staff)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditModal(staff);
+                          }}
                         >
                           <Edit2 size={12} /> Edit
                         </button>
@@ -576,7 +587,10 @@ export default function AdminStaffPage() {
                           className="admin-btn admin-btn-secondary"
                           style={{ padding: '4px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                           title="Reset Password"
-                          onClick={() => handleOpenPasswordModal(staff)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenPasswordModal(staff);
+                          }}
                         >
                           <KeyRound size={12} /> Key
                         </button>
@@ -585,7 +599,10 @@ export default function AdminStaffPage() {
                             className="admin-btn admin-btn-danger"
                             style={{ padding: '4px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                             title="Delete Account"
-                            onClick={() => setDeleteTarget(staff)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteTarget(staff);
+                            }}
                           >
                             <Trash2 size={12} />
                           </button>
@@ -858,6 +875,115 @@ export default function AdminStaffPage() {
           </button>
         </div>
       </Modal>
+
+      {/* Issue #23: Staff Profile Slide-Over Drawer */}
+      {profileDrawer && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1200, display: 'flex', justifyContent: 'flex-end' }}
+          onClick={() => setProfileDrawer(null)}
+        >
+          <div
+            style={{ width: 480, maxWidth: '95vw', background: '#fff', height: '100%', overflowY: 'auto', boxShadow: '-8px 0 32px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drawer Header */}
+            <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid #E2E8F0', background: '#FAFAFA' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
+                    👤
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 16, color: '#0F172A' }}>{profileDrawer.fullName || profileDrawer.username}</div>
+                    <div style={{ fontSize: 12, color: '#64748B' }}>{profileDrawer.email}</div>
+                    <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{profileDrawer.role}</div>
+                  </div>
+                </div>
+                <button onClick={() => setProfileDrawer(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: 20 }}>✕</button>
+              </div>
+
+              {/* Key Stats */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginTop: 16 }}>
+                {[
+                  { label: 'Employee ID', value: profileDrawer.employeeId || '—', icon: '🪪' },
+                  { label: 'Exec. Score', value: `+${profileDrawer.onboardedScore || 0}`, icon: '🏆' },
+                  { label: 'Status', value: profileDrawer.active ? 'Active' : 'Disabled', icon: profileDrawer.active ? '✅' : '⛔' },
+                ].map((s) => (
+                  <div key={s.label} style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 18 }}>{s.icon}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#0F172A' }}>{s.value}</div>
+                    <div style={{ fontSize: 11, color: '#64748B' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Drawer Body */}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {drawerLoading ? (
+                <div style={{ textAlign: 'center', color: '#94A3B8', padding: 32 }}>Loading profile data...</div>
+              ) : (
+                <>
+                  {/* Onboarded Sellers */}
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', marginBottom: 10 }}>
+                      🏭 Onboarded Sellers ({drawerOnboardedSellers.length})
+                    </div>
+                    {drawerOnboardedSellers.length === 0 ? (
+                      <div style={{ fontSize: 13, color: '#94A3B8' }}>No sellers onboarded by this staff member yet.</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {drawerOnboardedSellers.map((m) => (
+                          <a
+                            key={m._id}
+                            href={`/admin/manufacturers/${m._id}`}
+                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 8, border: '1px solid #E2E8F0', textDecoration: 'none', color: 'inherit' }}
+                          >
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{m.name}</div>
+                              <div style={{ fontSize: 11, color: '#64748B' }}>
+                                {m.planStatus} · {new Date(m.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </div>
+                            </div>
+                            <span style={{ fontSize: 11, color: '#E8581C', fontWeight: 700 }}>↗</span>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Activity Feed */}
+                  <div style={{ padding: '16px 20px' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', marginBottom: 10 }}>
+                      📋 Recent Activity (last 20 actions)
+                    </div>
+                    {drawerActivity.length === 0 ? (
+                      <div style={{ fontSize: 13, color: '#94A3B8' }}>No audit records found for this staff member.</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {drawerActivity.map((log) => (
+                          <div key={log._id} style={{ display: 'flex', gap: 10, padding: '8px 0', borderBottom: '1px solid #F1F5F9' }}>
+                            <div style={{ fontSize: 20, flexShrink: 0 }}>🔹</div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: '#0F172A' }}>{log.action}</div>
+                              <div style={{ fontSize: 11, color: '#64748B' }}>
+                                {log.resource} {log.targetId ? `· ID: …${String(log.targetId).slice(-6)}` : ''}
+                              </div>
+                            </div>
+                            <div style={{ fontSize: 11, color: '#94A3B8', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                              {new Date(log.createdAt).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

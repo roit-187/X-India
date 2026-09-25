@@ -24,6 +24,12 @@ export default function AdminProductsPage() {
     isActive: '',
   });
 
+  // Inactivation Reason Modal State
+  const [inactivateTarget, setInactivateTarget] = useState(null);
+  const [inactivateReason, setInactivateReason] = useState('POLICY_VIOLATION');
+  const [inactivateNotes, setInactivateNotes] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ page: String(page), limit: '20' });
@@ -59,16 +65,73 @@ export default function AdminProductsPage() {
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
+  const REASON_LABELS = {
+    POLICY_VIOLATION: 'Policy Violation',
+    MISLEADING_PRICE: 'Misleading Price / Specs',
+    POOR_IMAGE_QUALITY: 'Poor Image Quality',
+    COPYRIGHT_ISSUE: 'Copyright / IP Infringement',
+    OUT_OF_STOCK: 'Out of Stock / Discontinued',
+    DUPLICATE_LISTING: 'Duplicate Listing',
+    OTHER: 'Other',
+  };
+
   const handleToggleVisibility = async (product) => {
     if (!hasPermission('products.moderate') || !product.manufacturerId) return;
-    const res = await fetch(`/api/admin/manufacturers/${product.manufacturerId}/products/${product._id}/visibility`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isActive: !product.isActive }),
-    });
-    const data = await res.json();
-    if (data.success) load();
-    else alert(data.message || 'Failed to toggle visibility');
+
+    // If currently active → open inactivation reason modal before hiding
+    if (product.isActive) {
+      setInactivateTarget(product);
+      setInactivateReason('POLICY_VIOLATION');
+      setInactivateNotes('');
+      return;
+    }
+
+    // If currently hidden → re-activate directly
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/admin/manufacturers/${product.manufacturerId}/products/${product._id}/visibility`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: true }),
+      });
+      const data = await res.json();
+      if (data.success) load();
+      else alert(data.message || 'Failed to re-activate product');
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const confirmInactivate = async () => {
+    if (!inactivateTarget) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(
+        `/api/admin/manufacturers/${inactivateTarget.manufacturerId}/products/${inactivateTarget._id}/visibility`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            isActive: false,
+            inactivationReason: REASON_LABELS[inactivateReason] || inactivateReason,
+            inactivationNotes: inactivateNotes.trim(),
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setInactivateTarget(null);
+        load();
+      } else {
+        alert(data.message || 'Failed to hide product');
+      }
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const formatINR = (price) => {
@@ -210,7 +273,15 @@ export default function AdminProductsPage() {
                           N/A
                         </div>
                       )}
-                      <strong style={{ fontSize: 14 }}>{p.name}</strong>
+                      <div>
+                        <strong style={{ fontSize: 14 }}>{p.name}</strong>
+                        {/* Show inactivation reason if hidden */}
+                        {!p.isActive && p.inactivationReason && (
+                          <div style={{ fontSize: 11, color: '#DC2626', marginTop: 2 }}>
+                            ⚠ {p.inactivationReason}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td>{p.category || '-'}</td>
@@ -251,6 +322,66 @@ export default function AdminProductsPage() {
         <span>Page {page} of {totalPages}</span>
         <button className="admin-btn admin-btn-secondary" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next</button>
       </div>
+
+      {/* Inactivation Reason Modal (Issue #17) */}
+      {inactivateTarget && (
+        <div className="admin-modal-overlay" onClick={() => !actionLoading && setInactivateTarget(null)}>
+          <div className="admin-modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 16 }}>⚠️</span>
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 16, color: '#0F172A' }}>Hide Product from Marketplace</h3>
+                <div style={{ fontSize: 12, color: '#64748B' }}>{inactivateTarget.name}</div>
+              </div>
+            </div>
+
+            <div style={{ backgroundColor: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 12, color: '#92400E' }}>
+              This product will be immediately removed from all public feeds, search results, and the seller&apos;s public profile. The seller will receive a push notification with your reason.
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 4 }}>
+                Inactivation Reason *
+              </label>
+              <select
+                className="admin-input"
+                style={{ width: '100%', height: 38 }}
+                value={inactivateReason}
+                onChange={(e) => setInactivateReason(e.target.value)}
+              >
+                {Object.entries(REASON_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 4 }}>
+                Additional Notes (Optional - visible to seller)
+              </label>
+              <textarea
+                className="admin-input"
+                rows={3}
+                style={{ width: '100%' }}
+                placeholder="e.g. Product images contain watermarks from another company. Please upload original photos."
+                value={inactivateNotes}
+                onChange={(e) => setInactivateNotes(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button className="admin-btn admin-btn-secondary" disabled={actionLoading} onClick={() => setInactivateTarget(null)}>
+                Cancel
+              </button>
+              <button className="admin-btn admin-btn-danger" disabled={actionLoading} onClick={confirmInactivate}>
+                {actionLoading ? 'Processing...' : 'Confirm & Hide Product'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -28,6 +28,7 @@ export default function AdminDashboardPage() {
   const [decisionTarget, setDecisionTarget] = useState(null);
   const [decisionType, setDecisionType] = useState('verified');
   const [verifierNotes, setVerifierNotes] = useState('');
+  const [loadingVerificationId, setLoadingVerificationId] = useState(null);
 
   const loadStats = useCallback(async () => {
     try {
@@ -81,32 +82,42 @@ export default function AdminDashboardPage() {
 
   const handleAcceptSubmit = async (e) => {
     e.preventDefault();
-    if (!acceptTarget) return;
-    await fetch(`/api/admin/verification/${acceptTarget}/accept`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ verifierName }),
-    });
-    setAcceptTarget(null);
-    setVerifierName('');
-    loadVerificationQueue();
+    if (!acceptTarget || loadingVerificationId) return;
+    setLoadingVerificationId(acceptTarget);
+    try {
+      await fetch(`/api/admin/verification/${acceptTarget}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verifierName }),
+      });
+      setAcceptTarget(null);
+      setVerifierName('');
+      loadVerificationQueue();
+    } finally {
+      setLoadingVerificationId(null);
+    }
   };
 
   const handleDecisionSubmit = async (e) => {
     e.preventDefault();
-    if (!decisionTarget) return;
-    await fetch(`/api/admin/verification/${decisionTarget}/decision`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        decision: decisionType,
-        verifierNotes,
-        evidencePhotos: [],
-      }),
-    });
-    setDecisionTarget(null);
-    setVerifierNotes('');
-    loadVerificationQueue();
+    if (!decisionTarget || loadingVerificationId) return;
+    setLoadingVerificationId(decisionTarget);
+    try {
+      await fetch(`/api/admin/verification/${decisionTarget}/decision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          decision: decisionType,
+          verifierNotes,
+          evidencePhotos: [],
+        }),
+      });
+      setDecisionTarget(null);
+      setVerifierNotes('');
+      loadVerificationQueue();
+    } finally {
+      setLoadingVerificationId(null);
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -137,8 +148,20 @@ export default function AdminDashboardPage() {
         <StatCard label="New Buyers" value={summary?.newBuyers ?? '-'} />
         <StatCard label="New Sellers" value={summary?.newSellers ?? '-'} />
         <StatCard label="Total Inquiries" value={summary?.totalInquiries ?? '-'} />
-        <StatCard label="Active Sellers" value={summary?.activeSellers ?? '-'} />
-        <StatCard label="Expired Sellers" value={summary?.expiredSellers ?? '-'} />
+        <StatCard
+          label="Active Sellers"
+          value={summary?.activeSellers ?? '-'}
+          subtext={summary?.verifiedSellers != null ? `● ${summary.verifiedSellers} verified` : undefined}
+          subtextColor="#16A34A"
+          subtextLink="/admin/manufacturers?verified=true"
+        />
+        <StatCard
+          label="Expired Sellers"
+          value={summary?.expiredSellers ?? '-'}
+          subtext="Review Expired Plans →"
+          subtextColor="#EA580C"
+          subtextLink="/admin/manufacturers?planStatus=expired"
+        />
         <StatCard label="Plan Revenue" value={formatCurrency(revenue?.planRevenue)} />
         <StatCard label="Credit Revenue" value={formatCurrency(revenue?.creditRevenue)} />
         <StatCard label="Open Moderation Cases" value={moderation?.count ?? '-'} />

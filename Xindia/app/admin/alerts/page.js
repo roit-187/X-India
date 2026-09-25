@@ -17,6 +17,15 @@ const ALERT_TYPES = [
   { key: 'PAYMENT_DISPUTE', label: 'Payment Dispute' },
 ];
 
+// Issue #19: Operational filter chips replacing the cluttered 10-item dropdown
+const FILTER_CHIPS = [
+  { key: '', label: 'All Alerts', icon: '📋', types: [] },
+  { key: 'COMPLAINT', label: 'Complaints', icon: '⚠️', types: ['COMPLAINT'] },
+  { key: 'FLAG', label: 'Reports', icon: '🚩', types: ['FLAG', 'SUSPICIOUS_ACTIVITY'] },
+  { key: 'MEETING_REQUEST', label: 'Visit Requests', icon: '🤝', types: ['MEETING_REQUEST'] },
+  { key: 'SYSTEM', label: 'System & Legal', icon: '⋯', types: ['ACCOUNT_DELETED', 'CONSENT_WITHDRAWN', 'VERIFICATION_REQUEST', 'DELETE_REVIEW_REQUEST', 'PAYMENT_DISPUTE'] },
+];
+
 const STATUSES = [
   { key: '', label: 'All' },
   { key: 'OPEN', label: 'Open' },
@@ -71,6 +80,26 @@ function AlertDetail({ alert, onClose, onStatusChange }) {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Issue #19: 1-click acknowledgement push
+  const [ackSent, setAckSent] = useState(false);
+  const [ackSending, setAckSending] = useState(false);
+  const handleAcknowledge = async () => {
+    setAckSending(true);
+    try {
+      const res = await fetch(`/api/admin/alerts/${alert._id}/acknowledge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (data.success) setAckSent(true);
+      else alert('Failed: ' + (data.message || 'Unknown error'));
+    } catch (e) {
+      console.error('Acknowledge error:', e);
+    } finally {
+      setAckSending(false);
     }
   };
 
@@ -158,6 +187,25 @@ function AlertDetail({ alert, onClose, onStatusChange }) {
             />
           </div>
 
+          {/* Issue #19: Quick Action Buttons */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
+            <button
+              className="admin-btn admin-btn-secondary"
+              disabled={ackSent || ackSending}
+              onClick={handleAcknowledge}
+              style={{ flex: 1, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              {ackSent ? '✅ Acknowledged' : ackSending ? 'Sending...' : '📨 1-Click Acknowledge'}
+            </button>
+            <a
+              href="/admin/support"
+              className="admin-btn admin-btn-primary"
+              style={{ flex: 1, fontSize: 13, textDecoration: 'none', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              💬 Open Support Desk
+            </a>
+          </div>
+
           <button
             className="admin-btn"
             onClick={handleSave}
@@ -185,15 +233,21 @@ export default function AdminAlertsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [selected, setSelected] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadAlerts = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     else setRefreshing(true);
     try {
       const params = new URLSearchParams({ page, limit: 25 });
-      if (typeFilter) params.set('type', typeFilter);
+      if (typeFilter) {
+        const chip = FILTER_CHIPS.find((c) => c.key === typeFilter);
+        const typesToSend = chip?.types?.length ? chip.types.join(',') : typeFilter;
+        params.set('type', typesToSend);
+      }
       if (statusFilter) params.set('status', statusFilter);
       if (severityFilter) params.set('severity', severityFilter);
+      if (searchQuery.trim()) params.set('search', searchQuery.trim());
 
       const res = await fetch(`/api/admin/alerts?${params}`);
       const data = await res.json();
@@ -207,7 +261,7 @@ export default function AdminAlertsPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [page, typeFilter, statusFilter, severityFilter]);
+  }, [page, typeFilter, statusFilter, severityFilter, searchQuery]);
 
   useEffect(() => {
     if (loaded && isSuperAdmin) loadAlerts();
@@ -255,13 +309,53 @@ export default function AdminAlertsPage() {
         </button>
       </div>
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+      {/* Issue #19: Operational Filter Chips */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+        {FILTER_CHIPS.map((chip) => {
+          const isActive = typeFilter === chip.key;
+          return (
+            <button
+              key={chip.key}
+              onClick={() => { setTypeFilter(chip.key); setPage(1); }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+                border: isActive ? '2px solid #E8581C' : '1px solid #E2E8F0',
+                background: isActive ? '#FFF7ED' : '#fff',
+                color: isActive ? '#C2410C' : '#475569',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>{chip.icon}</span>
+              {chip.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Search & Filters */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: '1 1 260px', minWidth: 220 }}>
+          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14 }}>🔍</span>
+          <input
+            className="admin-input"
+            style={{ width: '100%', paddingLeft: 32, height: 36 }}
+            placeholder="Search by Business Name, Business ID (ObjectId), or Ticket #..."
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => { setSearchQuery(''); setPage(1); }}
+              style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: 14 }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
         <select className="admin-select" style={{ minWidth: 140 }} value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
           {STATUSES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-        </select>
-        <select className="admin-select" style={{ minWidth: 160 }} value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}>
-          {ALERT_TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
         </select>
         <select className="admin-select" style={{ minWidth: 130 }} value={severityFilter} onChange={(e) => { setSeverityFilter(e.target.value); setPage(1); }}>
           <option value="">All Severity</option>
