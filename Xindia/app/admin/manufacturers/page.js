@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ManufacturerCard from '@/components/admin/ManufacturerCard';
@@ -8,7 +8,7 @@ import Modal from '@/components/admin/Modal';
 import SellerDetailModal from '@/components/admin/SellerDetailModal';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
-export default function ManufacturersPage() {
+function ManufacturersContent() {
   const { isSuperAdmin } = useAdminPermissions();
   const searchParams = useSearchParams();
   const [manufacturers, setManufacturers] = useState([]);
@@ -279,6 +279,14 @@ export default function ManufacturersPage() {
         onStatusChanged={load}
       />
     </div>
+  );
+}
+
+export default function ManufacturersPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 24, color: '#64748B' }}>Loading manufacturers...</div>}>
+      <ManufacturersContent />
+    </Suspense>
   );
 }
 
