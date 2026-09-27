@@ -4,8 +4,11 @@ import { jwtVerify } from 'jose';
 // Protected pages must never be served from the browser's back/forward cache
 // after logout — otherwise pressing "back" shows the stale authenticated page
 // instead of re-running this middleware.
-function noStore(response) {
+function noStore(response, isSecuredAdmin = false) {
   response.headers.set('Cache-Control', 'no-store, must-revalidate');
+  if (isSecuredAdmin) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  }
   return response;
 }
 
@@ -53,9 +56,9 @@ async function verifySellerToken(token) {
 export async function middleware(request) {
   // ── CSRF protection: reject cross-origin state-changing requests ──
   const method = request.method;
+  const host = request.headers.get('host') || '';
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
     const origin = request.headers.get('origin');
-    const host = request.headers.get('host');
     if (origin) {
       const originUrl = new URL(origin);
       const allowedOrigins = [host, 'localhost:3000', 'localhost:3001'];
@@ -71,43 +74,84 @@ export async function middleware(request) {
   const { pathname } = request.nextUrl;
   const adminTokenRaw = request.cookies.get('admin_token')?.value;
   const sellerTokenRaw = request.cookies.get('seller_token')?.value;
+  const isSubdomainAdmin = host.startsWith('admin.');
 
+  // If accessing via admin subdomain directly at root or login, forward to admin dashboard or admin login
+  if (isSubdomainAdmin && (pathname === '/' || pathname === '/login')) {
+    const adminPayload = await verifyAdminToken(adminTokenRaw);
+    if (adminPayload) {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    }
+    return NextResponse.redirect(new URL('/admin/login', request.url));
+  }
+
+  // ── Admin Area Routing & Security Isolation ──
   if (pathname.startsWith('/admin')) {
+    // Exempt /admin/login from the token requirement so admins can sign in
+    if (pathname === '/admin/login') {
+      const payload = await verifyAdminToken(adminTokenRaw);
+      if (payload) {
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+      }
+      return noStore(NextResponse.next(), true);
+    }
+
     const payload = await verifyAdminToken(adminTokenRaw);
     if (!payload) {
-      const res = NextResponse.redirect(new URL('/login?tab=admin', request.url));
+      const res = NextResponse.redirect(new URL('/admin/login', request.url));
       res.cookies.delete('admin_token');
-      return noStore(res);
+      return noStore(res, true);
     }
+
     // Restrict STAFF accounts from sensitive system, staff, plan, and credit administration pages
-    const ADMIN_ONLY_PATHS = ['/admin/staff', '/admin/settings', '/admin/plans', '/admin/credits', '/admin/payments', '/admin/legal', '/admin/alerts', '/admin/broadcast'];
+    const ADMIN_ONLY_PATHS = [
+      '/admin/staff',
+      '/admin/settings',
+      '/admin/plans',
+      '/admin/credits',
+      '/admin/payments',
+      '/admin/legal',
+      '/admin/alerts',
+      '/admin/broadcast',
+    ];
     if (payload.role === 'STAFF' && ADMIN_ONLY_PATHS.some((p) => pathname.startsWith(p))) {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
-    return noStore(NextResponse.next());
+    return noStore(NextResponse.next(), true);
   }
 
+  // ── Staff Area Routing & Security Isolation ──
+  if (pathname.startsWith('/staff')) {
+    const payload = await verifyAdminToken(adminTokenRaw);
+    if (!payload) {
+      const res = NextResponse.redirect(new URL('/admin/login', request.url));
+      res.cookies.delete('admin_token');
+      return noStore(res, true);
+    }
+    return noStore(NextResponse.next(), true);
+  }
+
+  // ── Seller Portal Routing ──
   if (pathname.startsWith('/seller-portal')) {
     const payload = await verifySellerToken(sellerTokenRaw);
     if (!payload) {
-      const res = NextResponse.redirect(new URL('/login?tab=seller', request.url));
+      const res = NextResponse.redirect(new URL('/login', request.url));
       res.cookies.delete('seller_token');
       return noStore(res);
     }
     return noStore(NextResponse.next());
   }
 
-  // Already logged in: sending a user back to the landing page or the login
-  // form should drop them straight into their portal instead of re-prompting.
+  // ── Already Logged In Redirection ──
   if (pathname === '/' || pathname === '/login') {
     const [adminPayload, sellerPayload] = await Promise.all([
       verifyAdminToken(adminTokenRaw),
       verifySellerToken(sellerTokenRaw),
     ]);
-    if (adminPayload) {
+    if (adminPayload && pathname === '/login') {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
-    if (sellerPayload) {
+    if (sellerPayload && pathname === '/login') {
       return NextResponse.redirect(new URL('/seller-portal/dashboard', request.url));
     }
   }
@@ -116,9 +160,6 @@ export async function middleware(request) {
 }
 
 export const config = {
-  // [Finding 2] Expanded from page-only to include /api/* so that CSRF
-  // Origin validation in the middleware function above also guards all
-  // Next.js API Route Handlers (POST/PATCH/DELETE to /api/admin/* and
-  // /api/seller/*) against cross-site request forgery.
-  matcher: ['/admin/:path*', '/seller-portal/:path*', '/api/:path*', '/', '/login'],
+  // Guard admin, staff, seller portal, Next.js API route handlers, root, and login
+  matcher: ['/admin/:path*', '/staff/:path*', '/seller-portal/:path*', '/api/:path*', '/', '/login'],
 };

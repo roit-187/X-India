@@ -53,6 +53,14 @@ export default function ManufacturerCard({
               ) : (
                 <button className="admin-btn admin-btn-danger" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => onOpenBlockModal(manufacturer)}>Block</button>
               )}
+              <Link
+                href={`/admin/spotlights?promoteType=Manufacturer&promoteId=${manufacturer._id}`}
+                className="admin-btn admin-btn-secondary"
+                style={{ padding: '4px 8px', fontSize: 12, color: '#E8581C', textDecoration: 'none', background: '#FFF7ED', borderColor: '#FFEDD5' }}
+                title="Spotlight / Banner Boost"
+              >
+                ⚡ Spotlight
+              </Link>
               <Toggle checked={manufacturer.isActive} onChange={(next) => onToggleActive(manufacturer._id, next)} />
             </>
           )}

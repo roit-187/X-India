@@ -77,6 +77,33 @@ export default function AdminPaymentsPage() {
   const [itemType, setItemType] = useState('ALL');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [datePreset, setDatePreset] = useState('ALL');
+
+  const handleDatePreset = (preset) => {
+    setDatePreset(preset);
+    const now = new Date();
+    if (preset === 'ALL') {
+      setDateFrom('');
+      setDateTo('');
+    } else if (preset === 'TODAY') {
+      const today = now.toISOString().split('T')[0];
+      setDateFrom(today);
+      setDateTo(today);
+    } else if (preset === 'YESTERDAY') {
+      const yest = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      setDateFrom(yest);
+      setDateTo(yest);
+    } else if (preset === 'LAST_7_DAYS') {
+      const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      setDateFrom(start);
+      setDateTo('');
+    } else if (preset === 'THIS_MONTH') {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+      setDateFrom(start);
+      setDateTo('');
+    }
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
 
   // Modals
   const [selectedPayment, setSelectedPayment] = useState(null);
@@ -352,75 +379,156 @@ export default function AdminPaymentsPage() {
         ))}
       </div>
 
-      {/* Filter & Search Bar */}
-      <div className="payments-filter-bar">
-        <div className="payments-search-wrap">
-          <Search size={16} className="payments-search-icon" />
+      {/* Filter & Search Bar with Interactive Chips */}
+      <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
+        {/* Prominent Search Bar */}
+        <div style={{ position: 'relative', marginBottom: 14 }}>
+          <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
           <input
             type="text"
-            placeholder="Search Order ID, Payment ID, Email, Phone, Promo..."
+            placeholder="Search Order ID, Payment ID, Customer Email, Business Name, Phone, Promo..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && fetchPayments()}
+            onChange={(e) => { setSearch(e.target.value); setPagination((prev) => ({ ...prev, page: 1 })); }}
             className="payments-search-input"
+            style={{ width: '100%', paddingLeft: 40, paddingRight: search ? 36 : 14, height: 42, fontSize: 13, borderRadius: 8 }}
           />
+          {search && (
+            <button
+              onClick={() => { setSearch(''); setPagination((prev) => ({ ...prev, page: 1 })); }}
+              style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: '#94A3B8' }}
+            >
+              <X size={15} />
+            </button>
+          )}
         </div>
 
-        <div className="payments-filter-group">
-          {/* Status Filter */}
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="payments-select"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="PAID">Paid</option>
-            <option value="CREATED">Created (In-Flight)</option>
-            <option value="FAILED">Failed</option>
-            <option value="REFUND_PENDING">Refund Pending</option>
-            <option value="REFUNDED">Refunded</option>
-            <option value="DISPUTED">Disputed</option>
-          </select>
+        {/* Row 1: Status Filter Chips */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Payment Status
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {[
+              { id: 'ALL', label: 'All Statuses' },
+              { id: 'PAID', label: '🟢 Paid' },
+              { id: 'CREATED', label: '🟡 In-Flight (Created)' },
+              { id: 'FAILED', label: '🔴 Failed' },
+              { id: 'REFUND_PENDING', label: '🟠 Refund Pending' },
+              { id: 'REFUNDED', label: '🟣 Refunded' },
+              { id: 'DISPUTED', label: '⚠️ Disputed' },
+            ].map((s) => (
+              <button
+                key={s.id}
+                onClick={() => { setStatus(s.id); setPagination((prev) => ({ ...prev, page: 1 })); }}
+                style={{
+                  border: status === s.id ? '1px solid #0F172A' : '1px solid #E2E8F0',
+                  background: status === s.id ? '#0F172A' : '#FFFFFF',
+                  color: status === s.id ? '#FFFFFF' : '#475569',
+                  fontSize: 11, fontWeight: status === s.id ? 700 : 500,
+                  padding: '5px 12px', borderRadius: 20, cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          {/* Item Type Filter */}
-          <select
-            value={itemType}
-            onChange={(e) => setItemType(e.target.value)}
-            className="payments-select"
-          >
-            <option value="ALL">All Channels</option>
-            <option value="CREDIT_BUNDLE">SmartCredits</option>
-            <option value="SELLER_SUBSCRIPTION">Seller Plans</option>
-            <option value="LEAD_BOOST">RFQ Lead Boost</option>
-          </select>
+        {/* Row 2: Channel Filter Chips */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Revenue Channel
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {[
+              { id: 'ALL', label: 'All Channels' },
+              { id: 'CREDIT_BUNDLE', label: '🪙 SmartCredits' },
+              { id: 'SELLER_SUBSCRIPTION', label: '💳 Seller Plans' },
+              { id: 'LEAD_BOOST', label: '⚡ RFQ Lead Boost' },
+            ].map((c) => (
+              <button
+                key={c.id}
+                onClick={() => { setItemType(c.id); setPagination((prev) => ({ ...prev, page: 1 })); }}
+                style={{
+                  border: itemType === c.id ? '1px solid #E8581C' : '1px solid #E2E8F0',
+                  background: itemType === c.id ? '#FFF7ED' : '#FAFAFA',
+                  color: itemType === c.id ? '#C2410C' : '#64748B',
+                  fontSize: 11, fontWeight: itemType === c.id ? 700 : 500,
+                  padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          {/* Date Range Inputs */}
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="payments-date-input"
-          />
-          <span style={{ fontSize: 12, color: '#94A3B8' }}>to</span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="payments-date-input"
-          />
+        {/* Row 3: Quick Date Preset Chips */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, borderTop: '1px solid #F1F5F9', paddingTop: 10 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#64748B', marginRight: 4 }}>Date Horizon:</span>
+            {[
+              { id: 'ALL', label: 'All Time' },
+              { id: 'TODAY', label: 'Today' },
+              { id: 'YESTERDAY', label: 'Yesterday' },
+              { id: 'LAST_7_DAYS', label: 'Last 7 Days' },
+              { id: 'THIS_MONTH', label: 'This Month' },
+              { id: 'CUSTOM', label: 'Custom Range...' },
+            ].map((d) => (
+              <button
+                key={d.id}
+                onClick={() => handleDatePreset(d.id)}
+                style={{
+                  border: datePreset === d.id ? '1px solid #2563EB' : '1px solid #E2E8F0',
+                  background: datePreset === d.id ? '#EFF6FF' : '#FFFFFF',
+                  color: datePreset === d.id ? '#1D4ED8' : '#64748B',
+                  fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 4, cursor: 'pointer',
+                }}
+              >
+                {d.label}
+              </button>
+            ))}
 
-          {(search || status !== 'ALL' || itemType !== 'ALL' || dateFrom || dateTo) && (
+            {datePreset === 'CUSTOM' && (
+              <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginLeft: 6 }}>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => { setDateFrom(e.target.value); setPagination((prev) => ({ ...prev, page: 1 })); }}
+                  className="payments-date-input"
+                  style={{ height: 28, fontSize: 11, padding: '0 6px' }}
+                />
+                <span style={{ fontSize: 11, color: '#94A3B8' }}>to</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => { setDateTo(e.target.value); setPagination((prev) => ({ ...prev, page: 1 })); }}
+                  className="payments-date-input"
+                  style={{ height: 28, fontSize: 11, padding: '0 6px' }}
+                />
+              </div>
+            )}
+          </div>
+
+          {(search || status !== 'ALL' || itemType !== 'ALL' || datePreset !== 'ALL' || dateFrom || dateTo) && (
             <button
               onClick={() => {
                 setSearch('');
                 setStatus('ALL');
                 setItemType('ALL');
+                setDatePreset('ALL');
                 setDateFrom('');
                 setDateTo('');
+                setPagination((prev) => ({ ...prev, page: 1 }));
               }}
-              className="payments-reset-btn"
+              style={{
+                border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B',
+                fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 4, cursor: 'pointer',
+              }}
             >
-              Reset
+              Reset Filters
             </button>
           )}
         </div>

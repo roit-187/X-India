@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Tag, Star, Settings, LogOut, UserCog, Shield, Bell, Receipt, Megaphone, ShieldCheck, Activity, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Tag, Star, Settings, LogOut, UserCog, Shield, Bell, Receipt, Megaphone, ShieldCheck, Activity, MessageSquare, Sparkles } from 'lucide-react';
 import SearchBar from './SearchBar';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
@@ -16,6 +16,7 @@ const ALL_LINKS = [
   { href: '/admin/manufacturers', label: 'Manufacturers',         icon: Factory,         flag: 'always' },
   { href: '/admin/buyers',        label: 'Buyers',                icon: Users,           flag: 'always' },
   { href: '/admin/products',      label: 'Products',              icon: Package,         flag: 'always' },
+  { href: '/admin/spotlights',    label: 'Spotlight & Overrides', icon: Sparkles,        flag: 'always' },
   { href: '/admin/reviews',       label: 'Reviews & Moderation',  icon: Star,            flag: 'always' },
   { href: '/admin/staff',         label: 'Staff & Team',          icon: UserCog,         flag: 'staff' },
   { href: '/admin/plans',         label: 'Plans & Pricing',       icon: CreditCard,      flag: 'plans' },
@@ -81,7 +82,7 @@ export default function AdminSidebar() {
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     localStorage.removeItem('admin_profile');
-    window.location.href = '/login?tab=admin';
+    window.location.href = '/admin/login';
   };
 
   // Role display: MASTER_ADMIN shows no role badge (invisible role).

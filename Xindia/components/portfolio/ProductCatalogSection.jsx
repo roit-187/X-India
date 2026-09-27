@@ -12,6 +12,7 @@ import {
   MessageSquare,
   CheckCircle2,
   Maximize2,
+  FileText,
 } from 'lucide-react';
 import { resolveImageUrl, FALLBACK_PRODUCT_IMAGE } from '@/lib/image';
 import ProductDetailModal from './ProductDetailModal';
@@ -24,6 +25,17 @@ export default function ProductCatalogSection({ products = [], seller }) {
   const [sampleQty, setSampleQty] = useState('1 Sample Unit');
   const [sampleNotes, setSampleNotes] = useState('');
   const [sampleSuccess, setSampleSuccess] = useState(false);
+
+  // Catalogue link (opens PDF or Image brochure in a new tab)
+  const catalogueUrl = useMemo(() => {
+    if (!seller) return null;
+    const cat = seller.catalogue;
+    const sellerId = seller._id || seller.id || seller.slug;
+    if ((cat?.pdfUrl || cat?.storageUrl) && sellerId) {
+      return resolveImageUrl(`/api/manufacturer/catalogue-pdf/${sellerId}`);
+    }
+    return null;
+  }, [seller]);
 
   // Extract unique categories
   const categories = useMemo(() => {
@@ -96,10 +108,24 @@ export default function ProductCatalogSection({ products = [], seller }) {
             </p>
           </div>
 
-          <a href="#contact" className="portfolio-rfq-badge-link">
-            <Sparkles size={13} />
-            <span>Custom Batch RFQ</span>
-          </a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {catalogueUrl && (
+              <a
+                href={catalogueUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="portfolio-catalogue-badge-link"
+                title="View Full Product Catalogue"
+              >
+                <FileText size={13} />
+                <span>View Catalogue ↗</span>
+              </a>
+            )}
+            <a href="#contact" className="portfolio-rfq-badge-link">
+              <Sparkles size={13} />
+              <span>Custom Batch RFQ</span>
+            </a>
+          </div>
         </div>
 
         {/* ─── Search & Category Filters Bar ──────────────────────────────────── */}

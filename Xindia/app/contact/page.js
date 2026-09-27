@@ -8,6 +8,7 @@ export default function ContactPage() {
   const [config, setConfig] = useState({
     supportEmail: 'support@xindia.live',
     supportPhone: '+91 8860260878',
+    registeredOfficeAddress: 'New Delhi, India',
   });
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
@@ -23,6 +24,7 @@ export default function ContactPage() {
             setConfig({
               supportEmail: data.config.supportEmail || 'support@xindia.live',
               supportPhone: data.config.supportPhone || '+91 8860260878',
+              registeredOfficeAddress: data.config.registeredOfficeAddress || 'New Delhi, India',
             });
           }
         }
@@ -97,7 +99,7 @@ export default function ContactPage() {
               <div className="channel-text">
                 <span className="channel-label">Headquarters</span>
                 <span className="channel-val static-val">XIndia B2B Industrial Technologies</span>
-                <span className="channel-sub">Industrial Plaza, Okhla Phase III, New Delhi 110020, India</span>
+                <span className="channel-sub">{config.registeredOfficeAddress || 'New Delhi, India'}</span>
               </div>
             </div>
 

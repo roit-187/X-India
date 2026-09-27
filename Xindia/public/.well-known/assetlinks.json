@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.xindia.marketplace",
+      "sha256_cert_fingerprints": [
+        "DD:A8:A6:7B:BD:24:ED:50:BD:F7:3F:BC:73:1F:DF:20:F4:05:99:16:16:EC:3D:9E:13:AC:AE:91:72:43:16:E4",
+        "FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C"
+      ]
+    }
+  }
+]

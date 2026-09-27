@@ -302,13 +302,31 @@ export default function AdminProductsPage() {
                     <Badge label={p.isActive ? 'Active' : 'Hidden'} variant={p.isActive ? 'active' : 'expired'} />
                   </td>
                   <td>
-                    {hasPermission('products.moderate') ? (
-                      <Toggle checked={p.isActive} onChange={() => handleToggleVisibility(p)} />
-                    ) : (
-                      <span style={{ fontSize: 12, color: p.isActive ? '#15803D' : '#94A3B8', fontWeight: 600 }}>
-                        {p.isActive ? 'Visible' : 'Hidden'}
-                      </span>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {hasPermission('products.moderate') ? (
+                        <Toggle checked={p.isActive} onChange={() => handleToggleVisibility(p)} />
+                      ) : (
+                        <span style={{ fontSize: 12, color: p.isActive ? '#15803D' : '#94A3B8', fontWeight: 600 }}>
+                          {p.isActive ? 'Visible' : 'Hidden'}
+                        </span>
+                      )}
+                      <Link
+                        href={`/admin/spotlights?promoteType=Product&promoteId=${p._id}`}
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: '#E8581C',
+                          textDecoration: 'none',
+                          padding: '3px 7px',
+                          borderRadius: 6,
+                          background: '#FFF7ED',
+                          border: '1px solid #FFEDD5',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        ⚡ Boost
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}

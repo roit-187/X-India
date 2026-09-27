@@ -111,8 +111,10 @@ export default function PrivacyPolicyPage() {
           </p>
           <div className="contact-details">
             <p><strong>Platform:</strong> XIndia B2B Marketplace</p>
-            <p><strong>Grievance & Support Email:</strong> <a href="mailto:support@xindia.live">support@xindia.live</a></p>
-            <p><strong>Office:</strong> Industrial Plaza, New Delhi, India</p>
+            <p><strong>Grievance Officer:</strong> Designated Grievance Redressal Officer (Compliance Division)</p>
+            <p><strong>Grievance Email:</strong> <a href="mailto:grievance@xindia.live">grievance@xindia.live</a></p>
+            <p><strong>General Support Email:</strong> <a href="mailto:support@xindia.live">support@xindia.live</a></p>
+            <p><strong>Registered Office:</strong> New Delhi, India</p>
             <p><strong>Support Page:</strong> <Link href="/contact">https://xindia.live/contact</Link></p>
           </div>
         </section>

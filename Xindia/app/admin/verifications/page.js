@@ -22,6 +22,8 @@ import {
   Check,
   X,
   FileSearch,
+  UploadCloud,
+  Trash2,
 } from 'lucide-react';
 import Badge from '@/components/admin/Badge';
 import SellerDetailModal from '@/components/admin/SellerDetailModal';
@@ -40,6 +42,8 @@ export default function VerificationQueuePage() {
   // Business Documents Verification State
   const [pendingDocs, setPendingDocs] = useState([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [docApproveTarget, setDocApproveTarget] = useState(null);
+  const [docApproveReason, setDocApproveReason] = useState('');
   const [docRejectTarget, setDocRejectTarget] = useState(null);
   const [docRejectReason, setDocRejectReason] = useState('');
 
@@ -58,7 +62,8 @@ export default function VerificationQueuePage() {
   const [declineSellerMessage, setDeclineSellerMessage] = useState('');
   const [adminInternalNotes, setAdminInternalNotes] = useState('');
   const [approvalNotes, setApprovalNotes] = useState('');
-  const [evidencePhotos, setEvidencePhotos] = useState('');
+  const [evidenceFiles, setEvidenceFiles] = useState([]); // [{ url, name, size, type }]
+  const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
 
   // Load operator profile from local storage
   useEffect(() => {
@@ -198,7 +203,7 @@ export default function VerificationQueuePage() {
   const openApproveModal = (request) => {
     setDecisionModal({ type: 'verified', item: request });
     setApprovalNotes('');
-    setEvidencePhotos('');
+    setEvidenceFiles([]);
   };
 
   const openDeclineModal = (request) => {
@@ -206,6 +211,65 @@ export default function VerificationQueuePage() {
     setDeclineReasonCategory('GST_INVALID');
     setDeclineSellerMessage('');
     setAdminInternalNotes('');
+  };
+
+  // Upload verification audit evidence documents & photos (max 20, PDFs and Images only)
+  const handleEvidenceFileUpload = async (e) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    if (evidenceFiles.length + selectedFiles.length > 20) {
+      alert(`Limit exceeded. You can only attach up to 20 evidence files in total (Currently ${evidenceFiles.length}).`);
+      e.target.value = '';
+      return;
+    }
+
+    const allowedMimes = new Set([
+      'image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/heic', 'image/heif',
+      'application/pdf',
+    ]);
+    const allowedExts = new Set(['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'pdf']);
+
+    for (const f of selectedFiles) {
+      const ext = f.name.split('.').pop()?.toLowerCase();
+      if (!allowedMimes.has(f.type) && !allowedExts.has(ext)) {
+        alert(`File "${f.name}" is not permitted. Only PDF documents and image files (JPG, PNG, WEBP, HEIC) are accepted for security.`);
+        e.target.value = '';
+        return;
+      }
+      if (f.size > 10 * 1024 * 1024) {
+        alert(`File "${f.name}" exceeds the 10MB size limit.`);
+        e.target.value = '';
+        return;
+      }
+    }
+
+    setIsUploadingEvidence(true);
+    try {
+      const formData = new FormData();
+      for (const f of selectedFiles) {
+        formData.append('files', f);
+      }
+      const res = await fetch('/api/admin/verification/upload-evidence', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.files)) {
+        setEvidenceFiles((prev) => [...prev, ...data.files].slice(0, 20));
+      } else {
+        alert(data.message || 'Failed to upload evidence files');
+      }
+    } catch (err) {
+      alert('Error uploading evidence: ' + err.message);
+    } finally {
+      setIsUploadingEvidence(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveEvidenceFile = (index) => {
+    setEvidenceFiles((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   // Submit single decision with strict audit attribution & click-lock
@@ -231,10 +295,7 @@ export default function VerificationQueuePage() {
             ? approvalNotes.trim() || 'Verified by Admin Compliance Team'
             : declineSellerMessage.trim(),
         internalNotes: adminInternalNotes.trim(),
-        evidencePhotos: evidencePhotos
-          .split('\n')
-          .map((s) => s.trim())
-          .filter(Boolean),
+        evidencePhotos: evidenceFiles.map((f) => f.url),
         adminAttribution: {
           name: adminProfile?.fullName || adminProfile?.username || 'Compliance Officer',
           employeeId: adminProfile?.employeeId || 'STAFF',
@@ -250,6 +311,7 @@ export default function VerificationQueuePage() {
       const data = await res.json();
       if (data.success) {
         setDecisionModal(null);
+        setEvidenceFiles([]);
         loadData();
       } else {
         alert(data.message || 'Decision failed');
@@ -269,6 +331,12 @@ export default function VerificationQueuePage() {
       return;
     }
 
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      alert(`Please enter a valid reason to ${action === 'approve' ? 'verify' : 'decline'} this document.`);
+      return;
+    }
+
     setActionInProgressId(`${doc.userId}-${doc.docType}`);
     try {
       const res = await fetch(
@@ -278,12 +346,16 @@ export default function VerificationQueuePage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action,
-            rejectionReason: reason,
+            reason: trimmedReason,
+            rejectionReason: trimmedReason,
+            approvalReason: trimmedReason,
           }),
         }
       );
       const data = await res.json();
       if (data.success) {
+        setDocApproveTarget(null);
+        setDocApproveReason('');
         setDocRejectTarget(null);
         setDocRejectReason('');
         loadPendingDocuments();
@@ -1114,7 +1186,10 @@ export default function VerificationQueuePage() {
                               alignItems: 'center',
                               gap: 4,
                             }}
-                            onClick={() => handleReviewDoc(doc, 'approve')}
+                            onClick={() => {
+                              setDocApproveTarget(doc);
+                              setDocApproveReason('');
+                            }}
                           >
                             {isBusy ? <RefreshCw size={10} className="spin" /> : <Check size={12} />}
                             Verify Doc
@@ -1249,19 +1324,151 @@ export default function VerificationQueuePage() {
             </div>
 
             <div style={{ marginBottom: 18 }}>
-              <label
-                style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 4 }}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>
+                  Verification Evidence Documents & Photos (Max 20)
+                </label>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    backgroundColor: evidenceFiles.length >= 20 ? '#FEE2E2' : '#F1F5F9',
+                    color: evidenceFiles.length >= 20 ? '#DC2626' : '#475569',
+                  }}
+                >
+                  {evidenceFiles.length} / 20 uploaded
+                </span>
+              </div>
+
+              {/* Upload Dropzone / File input */}
+              <div
+                style={{
+                  border: '1.5px dashed #CBD5E1',
+                  borderRadius: 10,
+                  padding: '12px 16px',
+                  backgroundColor: '#F8FAFC',
+                  textAlign: 'center',
+                  marginBottom: 8,
+                }}
               >
-                Evidence / Verification Photos (One URL per line)
-              </label>
-              <textarea
-                className="admin-input"
-                rows={2}
-                style={{ width: '100%', fontSize: 12 }}
-                placeholder="https://cloudinary.com/.../factory_gate.jpg"
-                value={evidencePhotos}
-                onChange={(e) => setEvidencePhotos(e.target.value)}
-              />
+                <input
+                  type="file"
+                  id="evidence-file-input"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,application/pdf,image/*"
+                  disabled={evidenceFiles.length >= 20 || isUploadingEvidence}
+                  style={{ display: 'none' }}
+                  onChange={handleEvidenceFileUpload}
+                />
+                <label
+                  htmlFor="evidence-file-input"
+                  style={{
+                    cursor: evidenceFiles.length >= 20 || isUploadingEvidence ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  {isUploadingEvidence ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#2563EB', fontSize: 12, fontWeight: 600 }}>
+                      <RefreshCw size={15} className="spin" />
+                      Uploading & verifying files...
+                    </div>
+                  ) : (
+                    <>
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          backgroundColor: '#EFF6FF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <UploadCloud size={16} color="#2563EB" />
+                      </div>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#1E293B' }}>
+                        {evidenceFiles.length >= 20 ? 'Maximum 20 files reached' : 'Click to Upload Verification Evidence'}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#64748B' }}>
+                        PDF documents & images only (JPG, PNG, WEBP, HEIC) • Up to 10MB each
+                      </div>
+                    </>
+                  )}
+                </label>
+              </div>
+
+              {/* List of attached evidence files */}
+              {evidenceFiles.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 150, overflowY: 'auto', paddingRight: 2 }}>
+                  {evidenceFiles.map((file, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '5px 10px',
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: 6,
+                        fontSize: 12,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 800,
+                            padding: '1px 5px',
+                            borderRadius: 4,
+                            backgroundColor: file.type?.includes('pdf') || file.url?.endsWith('.pdf') ? '#FEE2E2' : '#EFF6FF',
+                            color: file.type?.includes('pdf') || file.url?.endsWith('.pdf') ? '#DC2626' : '#2563EB',
+                          }}
+                        >
+                          {file.type?.includes('pdf') || file.url?.endsWith('.pdf') ? 'PDF' : 'IMG'}
+                        </span>
+                        <a
+                          href={file.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            color: '#0F172A',
+                            textDecoration: 'none',
+                            fontWeight: 600,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {file.name || `Document ${idx + 1}`}
+                        </a>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveEvidenceFile(idx)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: 2,
+                          color: '#94A3B8',
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                        title="Remove file"
+                      >
+                        <Trash2 size={13} color="#EF4444" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
@@ -1425,6 +1632,108 @@ export default function VerificationQueuePage() {
         </div>
       )}
 
+      {/* Document Approval Reason Modal */}
+      {docApproveTarget && (
+        <div className="admin-modal-overlay" onClick={() => setDocApproveTarget(null)}>
+          <div
+            className="admin-modal"
+            style={{ maxWidth: 480 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: '#DCFCE7',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <CheckCircle2 size={18} color="#16A34A" />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 16, color: '#0F172A' }}>
+                  Verify & Approve {docApproveTarget.label}
+                </h3>
+                <div style={{ fontSize: 12, color: '#64748B' }}>
+                  {docApproveTarget.manufacturerName}
+                </div>
+              </div>
+            </div>
+
+            {/* Auditor Attribution Banner */}
+            <div
+              style={{
+                backgroundColor: '#F1F5F9',
+                borderRadius: 8,
+                padding: '8px 12px',
+                marginBottom: 14,
+                border: '1px solid #CBD5E1',
+              }}
+            >
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+                Auditor Attribution
+              </div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0F172A', marginTop: 2 }}>
+                Approving as: {adminProfile?.fullName || adminProfile?.username || 'Compliance Officer'}{' '}
+                <span style={{ color: '#2563EB', fontWeight: 600 }}>
+                  (ID: {adminProfile?.employeeId || 'STAFF'})
+                </span>
+              </div>
+              <div style={{ fontSize: 11, color: '#64748B' }}>
+                Your staff identity and verification reason will be saved in platform audit logs.
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label
+                style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 4 }}
+              >
+                Verification Reason / Compliance Notes * (Mandatory)
+              </label>
+              <textarea
+                className="admin-input"
+                rows={3}
+                style={{ width: '100%' }}
+                placeholder="e.g. Verified official certificate against government registry / active company filing."
+                value={docApproveReason}
+                onChange={(e) => setDocApproveReason(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                className="admin-btn admin-btn-secondary"
+                disabled={actionInProgressId !== null}
+                onClick={() => setDocApproveTarget(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="admin-btn admin-btn-primary"
+                disabled={actionInProgressId !== null || !docApproveReason.trim()}
+                style={{
+                  backgroundColor: '#16A34A',
+                  borderColor: '#15803D',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+                onClick={() =>
+                  handleReviewDoc(docApproveTarget, 'approve', docApproveReason.trim())
+                }
+              >
+                {actionInProgressId !== null && <RefreshCw size={14} className="spin" />}
+                Confirm & Verify Doc
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Document Decline Reason Modal (Issue #22) */}
       {docRejectTarget && (
         <div className="admin-modal-overlay" onClick={() => setDocRejectTarget(null)}>
@@ -1457,11 +1766,35 @@ export default function VerificationQueuePage() {
               </div>
             </div>
 
+            {/* Auditor Attribution Banner */}
+            <div
+              style={{
+                backgroundColor: '#FEF2F2',
+                borderRadius: 8,
+                padding: '8px 12px',
+                marginBottom: 14,
+                border: '1px solid #FECACA',
+              }}
+            >
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#991B1B', textTransform: 'uppercase' }}>
+                Auditor Attribution
+              </div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0F172A', marginTop: 2 }}>
+                Declining as: {adminProfile?.fullName || adminProfile?.username || 'Compliance Officer'}{' '}
+                <span style={{ color: '#DC2626', fontWeight: 600 }}>
+                  (ID: {adminProfile?.employeeId || 'STAFF'})
+                </span>
+              </div>
+              <div style={{ fontSize: 11, color: '#64748B' }}>
+                Your staff identity and rejection reason will be saved in platform audit logs.
+              </div>
+            </div>
+
             <div style={{ marginBottom: 16 }}>
               <label
                 style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 4 }}
               >
-                Rejection Reason * (Sent to Seller)
+                Rejection Reason * (Sent to Seller & Logged)
               </label>
               <textarea
                 className="admin-input"

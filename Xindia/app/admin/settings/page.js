@@ -14,6 +14,9 @@ export default function AdminSettingsPage() {
     isGstVerificationEnabled: false,
     supportEmail: 'support@xindia.live',
     supportPhone: '+91 8860260878',
+    grievanceOfficerName: 'Designated Grievance Redressal Officer',
+    grievanceEmail: 'grievance@xindia.live',
+    registeredOfficeAddress: 'New Delhi, India',
     primaryOtpProvider: 'WHATSAPP',
     emailProvider: 'RESEND',
     isFirebasePhoneAuthEnabled: true,
@@ -87,6 +90,9 @@ export default function AdminSettingsPage() {
           isGstVerificationEnabled: Boolean(data.settings.isGstVerificationEnabled),
           supportEmail: data.settings.supportEmail || 'support@xindia.live',
           supportPhone: data.settings.supportPhone || '+91 8860260878',
+          grievanceOfficerName: data.settings.grievanceOfficerName || 'Designated Grievance Redressal Officer',
+          grievanceEmail: data.settings.grievanceEmail || 'grievance@xindia.live',
+          registeredOfficeAddress: data.settings.registeredOfficeAddress || 'New Delhi, India',
           primaryOtpProvider: data.settings.primaryOtpProvider || 'WHATSAPP',
           emailProvider: data.settings.emailProvider || 'RESEND',
           isFirebasePhoneAuthEnabled: data.settings.isFirebasePhoneAuthEnabled !== false,
@@ -421,6 +427,59 @@ export default function AdminSettingsPage() {
                   <div style={{ fontSize: 12, color: 'var(--adm-text-light)', marginTop: 4 }}>
                     Official helpline number and direct WhatsApp chat target.
                   </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--adm-text)', marginBottom: 6 }}>
+                    Grievance Officer Name (IT Rules 2021)
+                  </label>
+                  <input
+                    type="text"
+                    className="admin-input"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)', fontSize: 14 }}
+                    value={settings.grievanceOfficerName || ''}
+                    onChange={(e) => setSettings({ ...settings, grievanceOfficerName: e.target.value })}
+                    placeholder="e.g. Rohan Sharma / Designated Grievance Officer"
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--adm-text-light)', marginTop: 4 }}>
+                    Statutory Grievance Redressal Officer name required under IT Rules 2021 Rule 3(2).
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--adm-text)', marginBottom: 6 }}>
+                    Grievance Email Address
+                  </label>
+                  <input
+                    type="email"
+                    className="admin-input"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)', fontSize: 14 }}
+                    value={settings.grievanceEmail || ''}
+                    onChange={(e) => setSettings({ ...settings, grievanceEmail: e.target.value })}
+                    placeholder="grievance@xindia.live"
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--adm-text-light)', marginTop: 4 }}>
+                    Direct inbox dedicated to customer grievances and legal notices.
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--adm-text)', marginBottom: 6 }}>
+                  Registered Corporate Office Address
+                </label>
+                <input
+                  type="text"
+                  className="admin-input"
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)', fontSize: 14 }}
+                  value={settings.registeredOfficeAddress || ''}
+                  onChange={(e) => setSettings({ ...settings, registeredOfficeAddress: e.target.value })}
+                  placeholder="Registered address with PIN code"
+                />
+                <div style={{ fontSize: 12, color: 'var(--adm-text-light)', marginTop: 4 }}>
+                  Official legal address displayed on invoices and Consumer Protection Act disclosures.
                 </div>
               </div>
             </div>
@@ -887,9 +946,9 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
 
-              {/* Provider Radio Selector Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-                {/* WhatsApp Option */}
+              {/* Provider Radio Selector Cards — Dynamic Channel Switch */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 16 }}>
+                {/* 1. WhatsApp Option */}
                 <div
                   onClick={() => setSettings({ ...settings, primaryOtpProvider: 'WHATSAPP' })}
                   style={{
@@ -908,7 +967,7 @@ export default function AdminSettingsPage() {
                         <MessageSquare size={18} />
                       </div>
                       <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--adm-text)' }}>
-                        Meta WhatsApp Cloud
+                        Meta WhatsApp
                       </span>
                     </div>
                     <span
@@ -926,7 +985,7 @@ export default function AdminSettingsPage() {
                     </span>
                   </div>
                   <p style={{ margin: 0, fontSize: 12, color: 'var(--adm-text-med)', lineHeight: 1.5 }}>
-                    Instant WhatsApp OTP delivered via Meta Business API. Best conversion, zero DLT carrier regulation issues.
+                    Meta WhatsApp Cloud API. Instant delivery, high conversion, zero DLT carrier regulation issues.
                   </p>
                   {settings.primaryOtpProvider === 'WHATSAPP' && (
                     <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#16A34A' }}>
@@ -935,7 +994,99 @@ export default function AdminSettingsPage() {
                   )}
                 </div>
 
-                {/* Firebase Option */}
+                {/* 2. Voice Call Option */}
+                <div
+                  onClick={() => setSettings({ ...settings, primaryOtpProvider: 'VOICE' })}
+                  style={{
+                    padding: 16,
+                    borderRadius: 'var(--adm-radius-sm)',
+                    border: settings.primaryOtpProvider === 'VOICE' ? '2px solid #3B82F6' : '1px solid var(--adm-border)',
+                    background: settings.primaryOtpProvider === 'VOICE' ? '#EFF6FF' : '#FFFFFF',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    position: 'relative',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ background: '#DBEAFE', padding: 6, borderRadius: 6, color: '#1D4ED8' }}>
+                        <PhoneCall size={18} />
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--adm-text)' }}>
+                        Automated Voice Call
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: 10,
+                        background: '#DBEAFE',
+                        color: '#1D4ED8',
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      ~₹0.20 / Call
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--adm-text-med)', lineHeight: 1.5 }}>
+                    Automated voice call via 2Factor speaking OTP code twice. Zero DLT carrier regulation required.
+                  </p>
+                  {settings.primaryOtpProvider === 'VOICE' && (
+                    <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#1D4ED8' }}>
+                      <CheckCircle2 size={13} /> ACTIVE PRIMARY GATEWAY
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Telecom DLT SMS Option */}
+                <div
+                  onClick={() => setSettings({ ...settings, primaryOtpProvider: 'SMS' })}
+                  style={{
+                    padding: 16,
+                    borderRadius: 'var(--adm-radius-sm)',
+                    border: settings.primaryOtpProvider === 'SMS' ? '2px solid #10B981' : '1px solid var(--adm-border)',
+                    background: settings.primaryOtpProvider === 'SMS' ? '#ECFDF5' : '#FFFFFF',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    position: 'relative',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ background: '#D1FAE5', padding: 6, borderRadius: 6, color: '#047857' }}>
+                        <Smartphone size={18} />
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--adm-text)' }}>
+                        2Factor SMS (DLT)
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: 10,
+                        background: '#D1FAE5',
+                        color: '#047857',
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      ~₹0.18 / SMS
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--adm-text-med)', lineHeight: 1.5 }}>
+                    Direct carrier cellular SMS. Switch to this once TRAI / Telecom DLT entity and template are approved.
+                  </p>
+                  {settings.primaryOtpProvider === 'SMS' && (
+                    <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#047857' }}>
+                      <CheckCircle2 size={13} /> ACTIVE PRIMARY GATEWAY
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. Firebase SMS Option */}
                 <div
                   onClick={() => setSettings({ ...settings, primaryOtpProvider: 'FIREBASE' })}
                   style={{
@@ -954,7 +1105,7 @@ export default function AdminSettingsPage() {
                         <Flame size={18} />
                       </div>
                       <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--adm-text)' }}>
-                        Firebase Phone Auth (SMS)
+                        Firebase Phone Auth
                       </span>
                     </div>
                     <span
