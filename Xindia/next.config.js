@@ -24,6 +24,9 @@ const connectSrcDirective = [
   "https://www.googleapis.com",
 ].filter(Boolean).join(' ');
 
+const isDev = process.env.NODE_ENV !== 'production';
+const scriptSrcDirective = `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://apis.google.com`;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -52,7 +55,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com",
+              scriptSrcDirective,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://*.googleusercontent.com https://img.youtube.com https://i.ytimg.com https://*.workers.dev https://xindia-media-worker.xindia369.workers.dev https://api.xindia.live http://localhost:*",

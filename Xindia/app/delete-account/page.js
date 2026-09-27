@@ -4,8 +4,6 @@ import './delete-account.css';
 
 import { useState, useRef, useEffect } from 'react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-
 const STEPS = {
   INFO: 'info',
   PHONE: 'phone',
@@ -41,7 +39,7 @@ export default function DeleteAccountPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/auth/web-deletion/send-otp`, {
+      const res = await fetch('/api/auth/web-deletion/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: cleanDigits }),
@@ -106,7 +104,7 @@ export default function DeleteAccountPage() {
     setLoading(true);
     try {
       const cleanDigits = phone.replace(/\D/g, '').slice(-10);
-      const res = await fetch(`${API_URL}/api/auth/web-deletion/confirm`, {
+      const res = await fetch('/api/auth/web-deletion/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: cleanDigits, otp: otp.join('') }),

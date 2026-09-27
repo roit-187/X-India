@@ -151,12 +151,23 @@ export function getYouTubeThumbnailUrl(videoIdOrUrl, quality = 'hqdefault') {
  */
 export function isDirectVideoUrl(url) {
   if (!url || typeof url !== 'string') return false;
-  const lower = url.toLowerCase();
-  return (
-    lower.includes('.mp4') ||
-    lower.includes('.webm') ||
-    lower.includes('.ogg') ||
-    lower.includes('.mov') ||
-    lower.includes('res.cloudinary.com')
-  );
+  try {
+    const parsed = new URL(url.trim());
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return false;
+    }
+    const pathname = parsed.pathname.toLowerCase();
+    const hostname = parsed.hostname.toLowerCase();
+    return (
+      pathname.endsWith('.mp4') ||
+      pathname.endsWith('.webm') ||
+      pathname.endsWith('.ogg') ||
+      pathname.endsWith('.mov') ||
+      hostname.includes('cloudinary.com') ||
+      hostname.includes('workers.dev') ||
+      hostname.includes('r2.dev')
+    );
+  } catch {
+    return false;
+  }
 }

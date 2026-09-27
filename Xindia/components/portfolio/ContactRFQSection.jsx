@@ -41,9 +41,12 @@ export default function ContactRFQSection({ seller }) {
   // with a valid hostname. Blocks javascript: URIs and other dangerous schemes.
   const isSafeWebsite = formattedWebsite &&
     /^https?:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.[a-zA-Z]{2,}/.test(formattedWebsite);
-  const phone = seller.buyerContactPhone || seller.businessPhone || seller.contact?.phone;
+  const rawPhone = seller.buyerContactPhone || seller.businessPhone || seller.contact?.phone;
+  const phone = rawPhone ? String(rawPhone).replace(/[^0-9+]/g, '') : null;
   const whatsapp = seller.whatsappNumber || seller.contact?.whatsapp;
-  const email = seller.contactMail || seller.companyEmail || seller.contact?.email;
+  const rawEmail = seller.contactMail || seller.companyEmail || seller.contact?.email;
+  const isSafeEmail = rawEmail && typeof rawEmail === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail.trim());
+  const email = isSafeEmail ? rawEmail.trim() : null;
 
   const handleSendRFQ = (e) => {
     e.preventDefault();

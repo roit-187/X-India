@@ -8,6 +8,12 @@ import Toggle from '@/components/admin/Toggle';
 import Modal from '@/components/admin/Modal';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
+function safeUrl(url) {
+  if (!url || typeof url !== 'string') return '#';
+  const trimmed = url.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : '#';
+}
+
 export default function ManufacturerDetailPage({ params }) {
   const { id } = params;
   const { isSuperAdmin, hasPermission } = useAdminPermissions();
@@ -618,7 +624,7 @@ export default function ManufacturerDetailPage({ params }) {
                           {doc.documentNumber && <span>Doc No: {doc.documentNumber} | </span>}
                           {doc.documentName && <span>Name: {doc.documentName} | </span>}
                           {doc.fileUrl && (
-                            <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#2563EB', fontWeight: 600 }}>
+                            <a href={safeUrl(doc.fileUrl)} target="_blank" rel="noopener noreferrer" style={{ color: '#2563EB', fontWeight: 600 }}>
                               View File ↗
                             </a>
                           )}
@@ -665,7 +671,7 @@ export default function ManufacturerDetailPage({ params }) {
               <h3 style={{ marginTop: 0, marginBottom: 16 }}>Factory Photos ({m.manufacturingPlants.length})</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10 }}>
                 {m.manufacturingPlants.map((url, idx) => (
-                  <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
+                  <a key={idx} href={safeUrl(url)} target="_blank" rel="noopener noreferrer">
                     <img
                       src={url}
                       alt={`Factory photo ${idx + 1}`}

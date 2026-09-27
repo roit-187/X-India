@@ -6,7 +6,10 @@ import DOMPurify from 'dompurify';
 
 function sanitizeHtml(html) {
   if (!html) return '';
-  if (typeof window === 'undefined') return html;
+  if (typeof window === 'undefined') {
+    // Strip tags during SSR so raw markup/scripts cannot be injected into the initial payload
+    return html.replace(/<[^>]*>/g, '');
+  }
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'b', 'i', 'strong', 'em', 'strike',

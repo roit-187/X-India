@@ -15,11 +15,13 @@ const ALERT_TYPES = [
   { key: 'FLAG', label: 'Flag' },
   { key: 'SUSPICIOUS_ACTIVITY', label: 'Suspicious Activity' },
   { key: 'PAYMENT_DISPUTE', label: 'Payment Dispute' },
+  { key: 'CONTACT_INQUIRY', label: 'Contact Inquiries' },
 ];
 
 // Issue #19: Operational filter chips replacing the cluttered 10-item dropdown
 const FILTER_CHIPS = [
   { key: '', label: 'All Alerts', icon: '📋', types: [] },
+  { key: 'CONTACT_INQUIRY', label: 'Contact Inquiries', icon: '📬', types: ['CONTACT_INQUIRY'] },
   { key: 'COMPLAINT', label: 'Complaints', icon: '⚠️', types: ['COMPLAINT'] },
   { key: 'FLAG', label: 'Reports', icon: '🚩', types: ['FLAG', 'SUSPICIOUS_ACTIVITY'] },
   { key: 'MEETING_REQUEST', label: 'Visit Requests', icon: '🤝', types: ['MEETING_REQUEST'] },
@@ -51,6 +53,7 @@ const TYPE_ICONS = {
   FLAG:                   '🚩',
   SUSPICIOUS_ACTIVITY:    '🔐',
   PAYMENT_DISPUTE:        '💳',
+  CONTACT_INQUIRY:        '📬',
 };
 
 const STATUS_COLORS = {
@@ -138,6 +141,20 @@ function AlertDetail({ alert, onClose, onStatusChange }) {
               <User size={14} color="#64748B" />
               <span style={{ color: '#64748B' }}>User:</span>
               <span style={{ fontWeight: 600 }}>{alert.relatedUserEmail}</span>
+            </div>
+          )}
+
+          {alert.type === 'CONTACT_INQUIRY' && alert.metadata && (
+            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '14px 16px', marginBottom: 16, fontSize: 13 }}>
+              <div style={{ fontWeight: 700, marginBottom: 10, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>📬</span> Inquirer Details
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px 16px', color: '#334155' }}>
+                <div><span style={{ color: '#64748B' }}>Name:</span> <strong>{alert.metadata.name || 'N/A'}</strong></div>
+                <div><span style={{ color: '#64748B' }}>Email:</span> {alert.metadata.email ? <a href={`mailto:${encodeURIComponent(alert.metadata.email)}`} style={{ color: '#2563EB', fontWeight: 600 }}>{alert.metadata.email}</a> : 'N/A'}</div>
+                <div><span style={{ color: '#64748B' }}>Phone:</span> {alert.metadata.phone ? <a href={`tel:${String(alert.metadata.phone).replace(/[^0-9+]/g, '')}`} style={{ color: '#2563EB', fontWeight: 600 }}>{alert.metadata.phone}</a> : <span style={{ color: '#94A3B8' }}>Not provided</span>}</div>
+                <div><span style={{ color: '#64748B' }}>Subject:</span> <strong>{alert.metadata.subject || 'General'}</strong></div>
+              </div>
             </div>
           )}
 

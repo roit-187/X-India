@@ -140,6 +140,14 @@ export default function AdminSettingsPage() {
     const start = performance.now();
     try {
       const targetUrl = settings.serverApiUrl.trim().replace(/\/+$/, '');
+      const parsed = new URL(targetUrl);
+      if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && parsed.hostname === 'localhost')) {
+        throw new Error('Server address must use HTTPS protocol');
+      }
+      const host = parsed.hostname.toLowerCase();
+      if (/^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.|169\.254\.)/.test(host)) {
+        throw new Error('Access to private/internal network addresses is prohibited');
+      }
       const res = await fetch(`${targetUrl}/api/health`, { method: 'GET', mode: 'cors' });
       const duration = Math.round(performance.now() - start);
       if (res.ok) {

@@ -27,6 +27,12 @@ import {
 import Badge from './Badge';
 import YouTubePlayer from '@/components/common/YouTubePlayer';
 
+function safeUrl(url) {
+  if (!url || typeof url !== 'string') return '#';
+  const trimmed = url.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : '#';
+}
+
 export default function SellerDetailModal({
   open,
   onClose,
@@ -495,7 +501,7 @@ export default function SellerDetailModal({
                               </div>
 
                               <a
-                                href={docData.fileUrl}
+                                href={safeUrl(docData.fileUrl)}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="admin-btn admin-btn-secondary"
@@ -534,7 +540,7 @@ export default function SellerDetailModal({
                           <YouTubePlayer videoUrl={mfr.factoryVideo} title={`${mfr?.name} Factory Tour`} />
                         </div>
                         <div style={{ fontSize: 12, color: '#64748B' }}>
-                          Source URL: <a href={mfr.factoryVideo} target="_blank" rel="noreferrer" style={{ color: '#2563EB' }}>{mfr.factoryVideo}</a>
+                          Source URL: <a href={safeUrl(mfr.factoryVideo)} target="_blank" rel="noreferrer" style={{ color: '#2563EB' }}>{mfr.factoryVideo}</a>
                         </div>
                       </div>
                     ) : (

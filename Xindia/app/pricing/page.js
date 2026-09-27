@@ -6,7 +6,7 @@ export const metadata = {
     'Choose the right plan to grow your manufacturing business on XINDIA. Transparent pricing with monthly and yearly billing options.',
 };
 
-const SERVER_URL = process.env.NEXT_PUBLIC_API_URL || 'https://ascend-ds0q.onrender.com';
+const SERVER_URL = process.env.SERVER_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.xindia.live';
 
 async function fetchPlans() {
   try {

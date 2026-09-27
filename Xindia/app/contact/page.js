@@ -11,13 +11,14 @@ export default function ContactPage() {
     registeredOfficeAddress: 'New Delhi, India',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
 
   useEffect(() => {
     async function loadConfig() {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.xindia.live';
-        const res = await fetch(`${apiUrl}/api/system/config`);
+        const res = await fetch('/api/system/config');
         if (res.ok) {
           const data = await res.json();
           if (data.config) {
@@ -35,9 +36,29 @@ export default function ContactPage() {
     loadConfig();
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
+    setError('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to submit inquiry. Please try again.');
+      }
+
+      setSubmitted(true);
+    } catch (err) {
+      setError(err.message || 'Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const cleanPhone = config.supportPhone.replace(/[^\d+]/g, '');
@@ -122,13 +143,25 @@ export default function ContactPage() {
                 <div className="success-icon">✓</div>
                 <h3>Message Received!</h3>
                 <p>Thank you for reaching out. A dedicated support executive will contact you at <strong>{form.email}</strong> shortly.</p>
-                <button type="button" onClick={() => setSubmitted(false)} className="btn-secondary">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSubmitted(false);
+                    setForm({ name: '', email: '', phone: '', subject: '', message: '' });
+                  }}
+                  className="btn-secondary"
+                >
                   Send Another Message
                 </button>
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
                 <h2>Send Us a Message</h2>
+                {error && (
+                  <div style={{ padding: '10px 14px', borderRadius: 8, background: '#FEE2E2', border: '1px solid #FCA5A5', color: '#991B1B', fontSize: 13, marginBottom: 16 }}>
+                    {error}
+                  </div>
+                )}
                 <div className="form-group">
                   <label htmlFor="name">Your Name</label>
                   <input
@@ -194,8 +227,8 @@ export default function ContactPage() {
                   />
                 </div>
 
-                <button type="submit" className="submit-btn">
-                  Submit Inquiry &rarr;
+                <button type="submit" className="submit-btn" disabled={loading} style={{ opacity: loading ? 0.7 : 1 }}>
+                  {loading ? 'Submitting...' : 'Submit Inquiry →'}
                 </button>
               </form>
             )}

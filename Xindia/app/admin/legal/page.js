@@ -13,7 +13,8 @@ function sanitizeHtml(html) {
     .replace(/<iframe\b[^>]*>/gi, '')
     .replace(/<object\b[^>]*>/gi, '')
     .replace(/<embed\b[^>]*>/gi, '')
-    .replace(/<form\b[^>]*>/gi, '');
+    .replace(/<form\b[^>]*>/gi, '')
+    .replace(/<(?:base|meta|link)\b[^>]*>/gi, '');
 }
 
 // ─── Document type config ─────────────────────────────────────────────────────
@@ -102,7 +103,7 @@ function RichEditor({ value, onChange, placeholder = 'Start writing the legal do
         contentEditable
         suppressContentEditableWarning
         onInput={(e) => onChange(e.currentTarget.innerHTML)}
-        dangerouslySetInnerHTML={{ __html: value }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }}
         data-placeholder={placeholder}
         style={{
           minHeight: 340,

@@ -3,7 +3,7 @@ import { getSeller } from '@/lib/api';
 
 export default async function ManufacturerRedirectPage({ params }) {
   const { id } = params;
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const API_URL = process.env.SERVER_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.xindia.live';
 
   try {
     // 1. First check if id is actually already a slug

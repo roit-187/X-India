@@ -1,4 +1,6 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = typeof window !== 'undefined'
+  ? ''
+  : (process.env.SERVER_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.xindia.live');
 
 async function apiFetch(path, { revalidate = 3600, tags, ...init } = {}) {
   return fetch(`${API_URL}${path}`, {
