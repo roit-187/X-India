@@ -29,6 +29,16 @@ export default function DeleteAccountPage() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
+  const formatCountdown = (seconds) => {
+    if (seconds <= 0) return '';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    if (m > 0) {
+      return s > 0 ? `${m}m ${s}s` : `${m}m`;
+    }
+    return `${s}s`;
+  };
+
   const handleSendOtp = async () => {
     setError('');
     const cleanDigits = phone.replace(/\D/g, '').slice(-10);
@@ -36,6 +46,7 @@ export default function DeleteAccountPage() {
       setError('Please enter a valid 10-digit Indian mobile number.');
       return;
     }
+    if (countdown > 0) return;
 
     setLoading(true);
     try {
@@ -46,12 +57,20 @@ export default function DeleteAccountPage() {
       });
       const data = await res.json();
 
+      if (!res.ok) {
+        setError(data.message || 'Failed to send verification code.');
+        if (data.retryAfterSeconds) {
+          setCountdown(data.retryAfterSeconds);
+        }
+        return;
+      }
+
       if (data.alreadyDeleted) {
         setSuccessMessage('This account has already been deleted. No further action is needed.');
         setStep(STEPS.SUCCESS);
       } else {
         setStep(STEPS.OTP);
-        setCountdown(60);
+        setCountdown(data.cooldownSeconds || 30);
       }
     } catch {
       setError('Network error. Please check your connection and try again.');
@@ -283,9 +302,13 @@ export default function DeleteAccountPage() {
                   <button
                     className="delete-btn primary"
                     onClick={handleSendOtp}
-                    disabled={loading || phone.length < 10}
+                    disabled={loading || phone.length < 10 || countdown > 0}
                   >
-                    {loading ? 'Sending...' : 'Send Verification Code'}
+                    {loading
+                      ? 'Sending...'
+                      : (countdown > 0
+                          ? (countdown > 60 ? `Wait ${formatCountdown(countdown)}` : `Resend in ${countdown}s`)
+                          : 'Send Verification Code')}
                   </button>
                 </div>
               </section>
@@ -322,7 +345,9 @@ export default function DeleteAccountPage() {
 
                 <div className="resend-row">
                   {countdown > 0 ? (
-                    <span className="resend-timer">Resend code in {countdown}s</span>
+                    <span className="resend-timer">
+                      {countdown > 60 ? `Wait ${formatCountdown(countdown)} to resend` : `Resend code in ${countdown}s`}
+                    </span>
                   ) : (
                     <button className="resend-btn" onClick={handleSendOtp} disabled={loading}>
                       Resend Code

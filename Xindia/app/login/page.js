@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import WebConsentModal from '@/components/legal/WebConsentModal';
 
@@ -17,6 +17,25 @@ function LoginContent() {
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpMessage, setOtpMessage] = useState('');
+  const [countdown, setCountdown] = useState(0);
+
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const interval = setInterval(() => {
+      setCountdown((c) => Math.max(0, c - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [countdown]);
+
+  const formatTimer = (seconds) => {
+    if (seconds <= 0) return '';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    if (m > 0) {
+      return s > 0 ? `${m}m ${s}s` : `${m}m`;
+    }
+    return `${s}s`;
+  };
 
   const handleSellerLogin = async (e) => {
     e.preventDefault();
@@ -45,11 +64,12 @@ function LoginContent() {
   };
 
   const handleRequestOtp = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!email) {
       setSellerError('Please enter your registered email address');
       return;
     }
+    if (countdown > 0) return;
     setSellerError('');
     setLoading(true);
     try {
@@ -59,11 +79,15 @@ function LoginContent() {
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (res.ok && data.success) {
         setOtpSent(true);
         setOtpMessage(`6-digit login code sent to ${email}`);
+        setCountdown(data.cooldownSeconds || 30);
       } else {
         setSellerError(data.message || 'Failed to send OTP code');
+        if (data.retryAfterSeconds) {
+          setCountdown(data.retryAfterSeconds);
+        }
       }
     } catch (err) {
       setSellerError('Network error connecting to server');
@@ -209,10 +233,14 @@ function LoginContent() {
                 {sellerError && <p style={{ color: '#EF4444', fontSize: 13, marginBottom: 14, background: '#FEE2E2', padding: '8px 12px', borderRadius: 6 }}>{sellerError}</p>}
                 <button
                   type="submit"
-                  disabled={loading}
-                  style={{ width: '100%', padding: '13px', background: '#E8581C', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer', opacity: loading ? 0.7 : 1 }}
+                  disabled={loading || countdown > 0}
+                  style={{ width: '100%', padding: '13px', background: '#E8581C', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: (loading || countdown > 0) ? 'not-allowed' : 'pointer', opacity: (loading || countdown > 0) ? 0.7 : 1 }}
                 >
-                  {loading ? 'Sending OTP...' : 'Send Login Code'}
+                  {loading
+                    ? 'Sending OTP...'
+                    : (countdown > 0
+                        ? (countdown > 60 ? `Wait ${formatTimer(countdown)}` : `Resend in ${countdown}s`)
+                        : 'Send Login Code')}
                 </button>
               </form>
             ) : (
@@ -238,13 +266,31 @@ function LoginContent() {
                 >
                   {loading ? 'Verifying...' : 'Verify & Enter Portal'}
                 </button>
-                <div style={{ textAlign: 'center', marginTop: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, fontSize: 13 }}>
+                  {countdown > 0 ? (
+                    <span style={{ color: '#64748B', fontWeight: 500 }}>
+                      {countdown > 60 ? (
+                        <>Wait <strong style={{ color: '#E8581C' }}>{formatTimer(countdown)}</strong></>
+                      ) : (
+                        <>Resend in <strong style={{ color: '#E8581C' }}>{countdown}s</strong></>
+                      )}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleRequestOtp}
+                      disabled={loading}
+                      style={{ background: 'none', border: 'none', color: '#E8581C', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                    >
+                      Resend Code
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={() => setOtpSent(false)}
-                    style={{ background: 'none', border: 'none', color: '#64748B', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
+                    onClick={() => { setOtpSent(false); setSellerError(''); setOtpMessage(''); }}
+                    style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
                   >
-                    Change email or resend code
+                    Change email
                   </button>
                 </div>
               </form>

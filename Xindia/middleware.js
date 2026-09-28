@@ -59,11 +59,28 @@ export async function middleware(request) {
   const host = request.headers.get('host') || '';
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
     const origin = request.headers.get('origin');
-    if (origin) {
-      const originUrl = new URL(origin);
-      const allowedOrigins = [host, 'localhost:3000', 'localhost:3001'];
-      if (!allowedOrigins.some(h => originUrl.host === h)) {
-        return new NextResponse(JSON.stringify({ error: 'CSRF validation failed' }), {
+    const referer = request.headers.get('referer');
+    const source = origin || referer;
+    if (source) {
+      try {
+        const sourceUrl = new URL(source);
+        const allowedHosts = [
+          host,
+          'localhost:3000',
+          'localhost:3001',
+          'xindia.live',
+          'www.xindia.live',
+          'api.xindia.live',
+        ];
+        if (!allowedHosts.some(h => sourceUrl.host === h)) {
+          console.warn(`[CSRF BLOCKED] Host mismatch: source=${sourceUrl.host}, expected=${host}`);
+          return new NextResponse(JSON.stringify({ error: 'CSRF validation failed' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+      } catch (_) {
+        return new NextResponse(JSON.stringify({ error: 'Invalid request source' }), {
           status: 403,
           headers: { 'Content-Type': 'application/json' },
         });

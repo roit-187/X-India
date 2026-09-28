@@ -17,7 +17,8 @@ export default function AdminSettingsPage() {
     grievanceOfficerName: 'Designated Grievance Redressal Officer',
     grievanceEmail: 'grievance@xindia.live',
     registeredOfficeAddress: 'New Delhi, India',
-    primaryOtpProvider: 'WHATSAPP',
+    primaryOtpProvider: 'VOICE',
+    fallbackOtpProvider: 'SMS',
     emailProvider: 'RESEND',
     isFirebasePhoneAuthEnabled: true,
     socialLinks: [],
@@ -93,7 +94,8 @@ export default function AdminSettingsPage() {
           grievanceOfficerName: data.settings.grievanceOfficerName || 'Designated Grievance Redressal Officer',
           grievanceEmail: data.settings.grievanceEmail || 'grievance@xindia.live',
           registeredOfficeAddress: data.settings.registeredOfficeAddress || 'New Delhi, India',
-          primaryOtpProvider: data.settings.primaryOtpProvider || 'WHATSAPP',
+          primaryOtpProvider: data.settings.primaryOtpProvider || 'VOICE',
+          fallbackOtpProvider: data.settings.fallbackOtpProvider || 'SMS',
           emailProvider: data.settings.emailProvider || 'RESEND',
           isFirebasePhoneAuthEnabled: data.settings.isFirebasePhoneAuthEnabled !== false,
           socialLinks: Array.isArray(data.settings.socialLinks) ? data.settings.socialLinks : [],
@@ -949,7 +951,7 @@ export default function AdminSettingsPage() {
                     Authentication & Phone OTP Gateway
                   </h3>
                   <p style={{ margin: 0, fontSize: 13, color: 'var(--adm-text-med)' }}>
-                    Switch the active delivery provider between Meta WhatsApp and Firebase SMS anytime. Voice OTP remains active as a user fallback.
+                    Configure primary OTP gateway and dynamic fallback channel. Voice OTP is set as the active default.
                   </p>
                 </div>
               </div>
@@ -1138,6 +1140,143 @@ export default function AdminSettingsPage() {
                       <CheckCircle2 size={13} /> ACTIVE PRIMARY GATEWAY
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Fallback OTP Gateway Selector */}
+              <div style={{ marginTop: 24, marginBottom: 16, borderTop: '1px solid var(--adm-border)', paddingTop: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--adm-text)' }}>
+                    Automatic Fallback Gateway
+                  </h4>
+                  <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 10, background: '#EFF6FF', color: '#1D4ED8', letterSpacing: 0.5 }}>
+                    FAILOVER PROTECTION
+                  </span>
+                </div>
+                <p style={{ margin: '0 0 14px 0', fontSize: 12, color: 'var(--adm-text-med)' }}>
+                  If the primary delivery gateway fails, the backend automatically dispatches through this fallback channel without user interruption.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+                  {/* 1. Voice Fallback */}
+                  <div
+                    onClick={() => setSettings({ ...settings, fallbackOtpProvider: 'VOICE' })}
+                    style={{
+                      padding: 12,
+                      borderRadius: 'var(--adm-radius-sm)',
+                      border: settings.fallbackOtpProvider === 'VOICE' ? '2px solid #3B82F6' : '1px solid var(--adm-border)',
+                      background: settings.fallbackOtpProvider === 'VOICE' ? '#EFF6FF' : '#FFFFFF',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <PhoneCall size={16} color="#1D4ED8" />
+                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--adm-text)' }}>2Factor Voice</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 11, color: 'var(--adm-text-med)' }}>Automated voice call</p>
+                    {settings.fallbackOtpProvider === 'VOICE' && (
+                      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#1D4ED8' }}>
+                        <CheckCircle2 size={12} /> ACTIVE FALLBACK
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. SMS Fallback */}
+                  <div
+                    onClick={() => setSettings({ ...settings, fallbackOtpProvider: 'SMS' })}
+                    style={{
+                      padding: 12,
+                      borderRadius: 'var(--adm-radius-sm)',
+                      border: settings.fallbackOtpProvider === 'SMS' ? '2px solid #10B981' : '1px solid var(--adm-border)',
+                      background: settings.fallbackOtpProvider === 'SMS' ? '#ECFDF5' : '#FFFFFF',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <Smartphone size={16} color="#047857" />
+                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--adm-text)' }}>2Factor SMS</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 11, color: 'var(--adm-text-med)' }}>Carrier SMS dispatch</p>
+                    {settings.fallbackOtpProvider === 'SMS' && (
+                      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#047857' }}>
+                        <CheckCircle2 size={12} /> ACTIVE FALLBACK
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 3. WhatsApp Fallback */}
+                  <div
+                    onClick={() => setSettings({ ...settings, fallbackOtpProvider: 'WHATSAPP' })}
+                    style={{
+                      padding: 12,
+                      borderRadius: 'var(--adm-radius-sm)',
+                      border: settings.fallbackOtpProvider === 'WHATSAPP' ? '2px solid #25D366' : '1px solid var(--adm-border)',
+                      background: settings.fallbackOtpProvider === 'WHATSAPP' ? '#F0FDF4' : '#FFFFFF',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <MessageSquare size={16} color="#15803D" />
+                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--adm-text)' }}>WhatsApp</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 11, color: 'var(--adm-text-med)' }}>Meta Cloud API</p>
+                    {settings.fallbackOtpProvider === 'WHATSAPP' && (
+                      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#16A34A' }}>
+                        <CheckCircle2 size={12} /> ACTIVE FALLBACK
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 4. Firebase Fallback */}
+                  <div
+                    onClick={() => setSettings({ ...settings, fallbackOtpProvider: 'FIREBASE' })}
+                    style={{
+                      padding: 12,
+                      borderRadius: 'var(--adm-radius-sm)',
+                      border: settings.fallbackOtpProvider === 'FIREBASE' ? '2px solid #F5820D' : '1px solid var(--adm-border)',
+                      background: settings.fallbackOtpProvider === 'FIREBASE' ? '#FFFBEB' : '#FFFFFF',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <Flame size={16} color="#D97706" />
+                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--adm-text)' }}>Firebase Auth</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 11, color: 'var(--adm-text-med)' }}>Client SDK phone auth</p>
+                    {settings.fallbackOtpProvider === 'FIREBASE' && (
+                      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#D97706' }}>
+                        <CheckCircle2 size={12} /> ACTIVE FALLBACK
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 5. None / Disabled */}
+                  <div
+                    onClick={() => setSettings({ ...settings, fallbackOtpProvider: 'NONE' })}
+                    style={{
+                      padding: 12,
+                      borderRadius: 'var(--adm-radius-sm)',
+                      border: settings.fallbackOtpProvider === 'NONE' ? '2px solid #64748B' : '1px solid var(--adm-border)',
+                      background: settings.fallbackOtpProvider === 'NONE' ? '#F1F5F9' : '#FFFFFF',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <AlertTriangle size={16} color="#64748B" />
+                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--adm-text)' }}>None</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 11, color: 'var(--adm-text-med)' }}>Fail immediately</p>
+                    {settings.fallbackOtpProvider === 'NONE' && (
+                      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#64748B' }}>
+                        <CheckCircle2 size={12} /> NO FALLBACK
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
