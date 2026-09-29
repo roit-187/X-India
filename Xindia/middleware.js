@@ -71,6 +71,7 @@ export async function middleware(request) {
           'xindia.live',
           'www.xindia.live',
           'api.xindia.live',
+          'admin.xindia.live',
         ];
         if (!allowedHosts.some(h => sourceUrl.host === h)) {
           console.warn(`[CSRF BLOCKED] Host mismatch: source=${sourceUrl.host}, expected=${host}`);
