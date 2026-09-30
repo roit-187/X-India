@@ -104,8 +104,12 @@ function SpotlightContent() {
         params.set('targetEntityType', targetType);
       }
 
-      if (statusFilter !== 'all') params.set('status', statusFilter);
-      if (search.trim()) params.set('search', search.trim());
+      // Banners section has no status/search filters exposed in UI —
+      // skip stale values carried over from Products/Businesses tabs.
+      if (section !== 'BANNERS') {
+        if (statusFilter !== 'all') params.set('status', statusFilter);
+        if (search.trim()) params.set('search', search.trim());
+      }
 
       const res = await fetch(`/api/admin/spotlight?${params.toString()}`);
       const data = await res.json();

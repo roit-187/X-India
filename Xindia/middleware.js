@@ -122,6 +122,9 @@ export async function middleware(request) {
     }
 
     // Restrict STAFF accounts from sensitive system, staff, plan, and credit administration pages
+    // [SEC-FIX H-4] STAFF is blocked from these sensitive paths at the middleware
+    // layer. The backend also enforces this via requireSuperAdmin(), but blocking
+    // here prevents STAFF from even seeing sensitive UI data (e.g. support tickets).
     const ADMIN_ONLY_PATHS = [
       '/admin/staff',
       '/admin/settings',
@@ -131,6 +134,7 @@ export async function middleware(request) {
       '/admin/legal',
       '/admin/alerts',
       '/admin/broadcast',
+      '/admin/support',  // Support desk contains user PII — super admin only
     ];
     if (payload.role === 'STAFF' && ADMIN_ONLY_PATHS.some((p) => pathname.startsWith(p))) {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
