@@ -7,7 +7,7 @@ import Link from 'next/link';
 export default function ContactPage() {
   const [config, setConfig] = useState({
     supportEmail: 'support@xindia.live',
-    supportPhone: '+91 8860260878',
+    supportPhone: '',
     registeredOfficeAddress: 'New Delhi, India',
   });
   const [submitted, setSubmitted] = useState(false);
@@ -24,7 +24,7 @@ export default function ContactPage() {
           if (data.config) {
             setConfig({
               supportEmail: data.config.supportEmail || 'support@xindia.live',
-              supportPhone: data.config.supportPhone || '+91 8860260878',
+              supportPhone: data.config.supportPhone || '',
               registeredOfficeAddress: data.config.registeredOfficeAddress || 'New Delhi, India',
             });
           }
@@ -104,16 +104,18 @@ export default function ContactPage() {
               </div>
             </div>
 
-            <div className="channel-item">
-              <div className="channel-icon">📞</div>
-              <div className="channel-text">
-                <span className="channel-label">Helpline & WhatsApp Support</span>
-                <a href={`tel:${cleanPhone}`} className="channel-val">
-                  {config.supportPhone}
-                </a>
-                <span className="channel-sub">Monday – Saturday: 9:00 AM – 7:00 PM IST</span>
+            {config.supportPhone ? (
+              <div className="channel-item">
+                <div className="channel-icon">📞</div>
+                <div className="channel-text">
+                  <span className="channel-label">Helpline &amp; WhatsApp Support</span>
+                  <a href={`tel:${cleanPhone}`} className="channel-val">
+                    {config.supportPhone}
+                  </a>
+                  <span className="channel-sub">Monday – Saturday: 9:00 AM – 7:00 PM IST</span>
+                </div>
               </div>
-            </div>
+            ) : null}
 
             <div className="channel-item">
               <div className="channel-icon">🏢</div>
@@ -124,16 +126,18 @@ export default function ContactPage() {
               </div>
             </div>
 
-            <div className="whatsapp-cta">
-              <a
-                href={`https://wa.me/${cleanPhone.replace('+', '')}?text=Hello%20XIndia%20Support,%20I%20need%20assistance.`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="whatsapp-btn"
-              >
-                <span>💬</span> Chat on WhatsApp Direct
-              </a>
-            </div>
+            {config.supportPhone ? (
+              <div className="whatsapp-cta">
+                <a
+                  href={`https://wa.me/${cleanPhone.replace('+', '')}?text=Hello%20XIndia%20Support,%20I%20need%20assistance.`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="whatsapp-btn"
+                >
+                  <span>💬</span> Chat on WhatsApp Direct
+                </a>
+              </div>
+            ) : null}
           </div>
 
           {/* Contact Inquiry Form */}

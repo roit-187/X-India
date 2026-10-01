@@ -121,10 +121,9 @@ export default function PrivacyPolicyPage() {
             <p><strong>Platform:</strong> XIndia B2B Marketplace</p>
             <p><strong>Grievance Officer:</strong> Designated Grievance Redressal Officer (Compliance Division)</p>
             <p><strong>Grievance Email:</strong> <a href="mailto:grievance@xindia.live">grievance@xindia.live</a></p>
-            <p><strong>Helpline &amp; WhatsApp:</strong> <a href="tel:+918860260878">+91 8860260878</a></p>
             <p><strong>General Support Email:</strong> <a href="mailto:support@xindia.live">support@xindia.live</a></p>
             <p><strong>Registered Office:</strong> New Delhi, India</p>
-            <p><strong>Support Page:</strong> <Link href="/contact">https://xindia.live/contact</Link></p>
+            <p><strong>Support &amp; Grievance Portal:</strong> <Link href="/contact">https://xindia.live/contact</Link></p>
             <p style={{ marginTop: '12px', fontSize: '13px', color: '#64748B' }}>
               <em>Statutory Timeline: In accordance with Rule 3(2) of the IT Rules 2021, all grievances are acknowledged within 48 hours and redressed within 30 days of receipt.</em>
             </p>

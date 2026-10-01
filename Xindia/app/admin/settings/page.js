@@ -13,7 +13,7 @@ export default function AdminSettingsPage() {
     isMaintenanceMode: false,
     isGstVerificationEnabled: false,
     supportEmail: 'support@xindia.live',
-    supportPhone: '+91 8860260878',
+    supportPhone: '',
     grievanceOfficerName: 'Designated Grievance Redressal Officer',
     grievanceEmail: 'grievance@xindia.live',
     registeredOfficeAddress: 'New Delhi, India',
@@ -90,7 +90,7 @@ export default function AdminSettingsPage() {
           isMaintenanceMode: Boolean(data.settings.isMaintenanceMode),
           isGstVerificationEnabled: Boolean(data.settings.isGstVerificationEnabled),
           supportEmail: data.settings.supportEmail || 'support@xindia.live',
-          supportPhone: data.settings.supportPhone || '+91 8860260878',
+          supportPhone: data.settings.supportPhone || '',
           grievanceOfficerName: data.settings.grievanceOfficerName || 'Designated Grievance Redressal Officer',
           grievanceEmail: data.settings.grievanceEmail || 'grievance@xindia.live',
           registeredOfficeAddress: data.settings.registeredOfficeAddress || 'New Delhi, India',
@@ -423,7 +423,7 @@ export default function AdminSettingsPage() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--adm-text)', marginBottom: 6 }}>
-                    Helpline & WhatsApp Number
+                    Helpline &amp; WhatsApp Number (Optional)
                   </label>
                   <input
                     type="text"
@@ -431,11 +431,10 @@ export default function AdminSettingsPage() {
                     style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--adm-radius-sm)', border: '1px solid var(--adm-border)', fontSize: 14 }}
                     value={settings.supportPhone || ''}
                     onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value })}
-                    placeholder="+91 8860260878"
-                    required
+                    placeholder="e.g. +91 8860260878 (Optional)"
                   />
                   <div style={{ fontSize: 12, color: 'var(--adm-text-light)', marginTop: 4 }}>
-                    Official helpline number and direct WhatsApp chat target.
+                    Optional helpline number or WhatsApp chat link. Leave blank if email-only support is preferred.
                   </div>
                 </div>
               </div>
