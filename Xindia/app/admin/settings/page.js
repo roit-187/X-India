@@ -29,6 +29,11 @@ export default function AdminSettingsPage() {
       forceUpdateMessage: 'A critical update is required to continue using XINDIA. Please update from the Google Play Store.',
       playStoreUrl: 'https://play.google.com/store/apps/details?id=com.xindia.marketplace',
     },
+    invoicingAutomation: {
+      autoDispatchPlanInvoices: true,
+      autoDispatchCreditInvoices: true,
+      notifyAdminsOnRequest: true,
+    },
   });
 
   // State for adding a new social link
@@ -105,6 +110,11 @@ export default function AdminSettingsPage() {
             forceUpdateTitle: 'Update Required',
             forceUpdateMessage: 'A critical update is required to continue using XINDIA. Please update from the Google Play Store.',
             playStoreUrl: 'https://play.google.com/store/apps/details?id=com.xindia.marketplace',
+          },
+          invoicingAutomation: data.settings.invoicingAutomation || {
+            autoDispatchPlanInvoices: true,
+            autoDispatchCreditInvoices: true,
+            notifyAdminsOnRequest: true,
           },
         });
       }
@@ -773,6 +783,82 @@ export default function AdminSettingsPage() {
                         height: 20,
                         width: 20,
                         left: settings.isMaintenanceMode ? 24 : 3,
+                        bottom: 3,
+                        backgroundColor: '#FFFFFF',
+                        transition: '0.2s',
+                        borderRadius: '50%',
+                      }}
+                    />
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* B2B Invoicing Automation Card */}
+            <div className="admin-card">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 260 }}>
+                  <div style={{ background: settings.invoicingAutomation?.autoDispatchPlanInvoices !== false ? '#DCFCE7' : '#FEF3C7', padding: 8, borderRadius: 8, color: settings.invoicingAutomation?.autoDispatchPlanInvoices !== false ? '#15803D' : '#D97706' }}>
+                    <Zap size={20} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--adm-text)' }}>
+                        B2B Invoicing &amp; Checkout Automation
+                      </h3>
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: 12,
+                        background: settings.invoicingAutomation?.autoDispatchPlanInvoices !== false ? '#DCFCE7' : '#FEF3C7',
+                        color: settings.invoicingAutomation?.autoDispatchPlanInvoices !== false ? '#166534' : '#B45309',
+                      }}>
+                        {settings.invoicingAutomation?.autoDispatchPlanInvoices !== false ? 'AUTOMATIC (ACTIVE)' : 'MANUAL QUEUE'}
+                      </span>
+                    </div>
+                    <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--adm-text-med)' }}>
+                      When enabled, incoming B2B Proforma invoice requests from the mobile app are instantly converted to Razorpay payment links and emailed to the seller with statutory 18% GST calculation. When disabled, requests wait in the Admin Leads queue for manual quote approval.
+                    </p>
+                  </div>
+                </div>
+
+                <label style={{ position: 'relative', display: 'inline-block', width: 48, height: 26, cursor: 'pointer', flexShrink: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={settings.invoicingAutomation?.autoDispatchPlanInvoices !== false}
+                    onChange={(e) => {
+                      const updated = {
+                        ...settings,
+                        invoicingAutomation: {
+                          ...settings.invoicingAutomation,
+                          autoDispatchPlanInvoices: e.target.checked,
+                        },
+                      };
+                      setSettings(updated);
+                    }}
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                  />
+                  <span
+                    style={{
+                      position: 'absolute',
+                      cursor: 'pointer',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: settings.invoicingAutomation?.autoDispatchPlanInvoices !== false ? '#10B981' : '#CBD5E1',
+                      transition: '0.2s',
+                      borderRadius: 26,
+                    }}
+                  >
+                    <span
+                      style={{
+                        position: 'absolute',
+                        content: '',
+                        height: 20,
+                        width: 20,
+                        left: settings.invoicingAutomation?.autoDispatchPlanInvoices !== false ? 24 : 3,
                         bottom: 3,
                         backgroundColor: '#FFFFFF',
                         transition: '0.2s',
