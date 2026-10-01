@@ -384,6 +384,18 @@ export default function AdminSettingsPage() {
                   Default Vercel deployment: <code style={{ color: '#2563EB' }}>https://x-india.vercel.app</code>. When you connect your official domain (e.g. <code style={{ color: '#2563EB' }}>https://xindia.in</code>), change it here to update all generated seller QR codes and storefront links.
                 </div>
               </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--adm-border)' }}>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 20px', fontSize: 13, fontWeight: 700 }}
+                  disabled={saving}
+                >
+                  <CheckCircle2 size={15} />
+                  {saving ? 'Saving...' : 'Save Routing Settings'}
+                </button>
+              </div>
             </div>
 
             {/* Platform Support & Contact Info Card */}
@@ -394,7 +406,7 @@ export default function AdminSettingsPage() {
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--adm-text)' }}>
-                    Platform Support & Reviewer Contact Info
+                    Platform Support &amp; Reviewer Contact Info
                   </h3>
                   <p style={{ margin: 0, fontSize: 13, color: 'var(--adm-text-med)' }}>
                     Official contact channels displayed on public /contact page, invoices, and Google Play Console declarations.
@@ -490,6 +502,18 @@ export default function AdminSettingsPage() {
                 <div style={{ fontSize: 12, color: 'var(--adm-text-light)', marginTop: 4 }}>
                   Official legal address displayed on invoices and Consumer Protection Act disclosures.
                 </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--adm-border)' }}>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 20px', fontSize: 13, fontWeight: 700 }}
+                  disabled={saving}
+                >
+                  <CheckCircle2 size={15} />
+                  {saving ? 'Saving...' : 'Save Contact & Grievance Info'}
+                </button>
               </div>
             </div>
 
@@ -691,6 +715,18 @@ export default function AdminSettingsPage() {
                   })}
                 </div>
               )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--adm-border)' }}>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 20px', fontSize: 13, fontWeight: 700 }}
+                  disabled={saving}
+                >
+                  <CheckCircle2 size={15} />
+                  {saving ? 'Saving...' : 'Save Social Handles'}
+                </button>
+              </div>
             </div>
 
             {/* Maintenance Mode & Safety Card */}
@@ -868,6 +904,18 @@ export default function AdminSettingsPage() {
                   placeholder="https://play.google.com/store/apps/details?id=com.xindia.marketplace"
                 />
               </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--adm-border)' }}>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 20px', fontSize: 13, fontWeight: 700 }}
+                  disabled={saving}
+                >
+                  <CheckCircle2 size={15} />
+                  {saving ? 'Saving...' : 'Save Version Policy'}
+                </button>
+              </div>
             </div>
 
             {/* GSTIN Verification Switch Card */}
@@ -936,6 +984,18 @@ export default function AdminSettingsPage() {
                     />
                   </span>
                 </label>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--adm-border)' }}>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 20px', fontSize: 13, fontWeight: 700 }}
+                  disabled={saving}
+                >
+                  <CheckCircle2 size={15} />
+                  {saving ? 'Saving...' : 'Save GST Verification Policy'}
+                </button>
               </div>
             </div>
 
@@ -1356,6 +1416,18 @@ export default function AdminSettingsPage() {
                   <strong>2Factor Voice Call Safety Net:</strong> Automated phone call OTP is permanently enabled as an on-demand button (<em>"Try Voice Call"</em>) for all mobile users. If WhatsApp or SMS are delayed, users can always receive their code via telephone call (~₹0.20 / call).
                 </span>
               </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--adm-border)' }}>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 20px', fontSize: 13, fontWeight: 700 }}
+                  disabled={saving}
+                >
+                  <CheckCircle2 size={15} />
+                  {saving ? 'Saving...' : 'Save OTP Gateway Settings'}
+                </button>
+              </div>
             </div>
 
             {/* Transactional Email & OTP Gateway Card */}
@@ -1533,6 +1605,18 @@ export default function AdminSettingsPage() {
                 <span>
                   <strong>Zero-Downtime Smart Fallback:</strong> If the primary provider encounters an outage or quota limit, the backend automatically fails over to any other configured email service in real-time, preventing user signup blocks.
                 </span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--adm-border)' }}>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 20px', fontSize: 13, fontWeight: 700 }}
+                  disabled={saving}
+                >
+                  <CheckCircle2 size={15} />
+                  {saving ? 'Saving...' : 'Save Email Gateway Settings'}
+                </button>
               </div>
             </div>
 

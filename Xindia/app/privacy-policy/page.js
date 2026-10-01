@@ -1,12 +1,43 @@
 import './privacy.css';
 import Link from 'next/link';
+import { getLegalDocument } from '@/lib/api';
+
+export const revalidate = 60;
 
 export const metadata = {
   title: 'Privacy Policy | XIndia B2B Marketplace',
-  description: 'DPDP Act 2023 and Google Play Store compliant Privacy Policy for XIndia marketplace buyers, suppliers, and manufacturers.',
+  description: 'Digital Personal Data Protection (DPDP) Act 2023 and Google Play Store compliant Privacy Policy for XIndia marketplace buyers, suppliers, and industrial manufacturers.',
+  alternates: {
+    canonical: 'https://xindia.live/privacy-policy',
+  },
 };
 
-export default function PrivacyPolicyPage() {
+function sanitizeHtml(html) {
+  if (!html) return '';
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+    .replace(/javascript\s*:/gi, 'blocked:')
+    .replace(/<iframe\b[^>]*>/gi, '')
+    .replace(/<object\b[^>]*>/gi, '')
+    .replace(/<embed\b[^>]*>/gi, '')
+    .replace(/<form\b[^>]*>/gi, '')
+    .replace(/<(?:base|meta|link)\b[^>]*>/gi, '');
+}
+
+export default async function PrivacyPolicyPage({ searchParams }) {
+  const lang = searchParams?.lang === 'hi' ? 'hi' : 'en';
+  const doc = await getLegalDocument('BUYER_PRIVACY', lang);
+
+  const version = doc?.version || '2.1.0';
+  const effectiveDate = doc?.effectiveDate
+    ? new Date(doc.effectiveDate).toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : 'October 1, 2026';
+
   return (
     <div className="privacy-page">
       <header className="privacy-header">
@@ -22,118 +53,118 @@ export default function PrivacyPolicyPage() {
 
       <main className="privacy-container privacy-content">
         <div className="privacy-hero">
-          <span className="privacy-badge">DPDP ACT 2023 & GOOGLE PLAY STORE COMPLIANT</span>
+          <span className="privacy-badge">
+            DPDP ACT 2023 & GOOGLE PLAY STORE COMPLIANT • v{version}
+          </span>
           <h1>Privacy Policy</h1>
-          <p className="privacy-effective">Last Updated: September 10, 2026 | Effective Date: Immediate</p>
+          <p className="privacy-effective">
+            Last Updated &amp; Effective Date: {effectiveDate} | Version: {version}
+          </p>
         </div>
 
-        <section className="privacy-card">
-          <h2>1. Overview & Data Fiduciary Details</h2>
-          <p>
-            This Privacy Policy governs the collection, processing, storage, transfer, and deletion of personal and commercial data by <strong>XIndia</strong> (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;the Platform&rdquo;), operating as a B2B marketplace and manufacturer launchpad connecting businesses across India.
-          </p>
-          <p>
-            Under the <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong> and Google Play Developer Policies, XIndia acts as the <em>Data Fiduciary</em> for personal data processed through our mobile applications (Android/iOS) and web portal (<a href="https://xindia.live">https://xindia.live</a>).
-          </p>
-        </section>
+        {/* Legal Navigation Tabs */}
+        <nav className="legal-nav-tabs" aria-label="Legal documents">
+          <Link href="/privacy-policy" className="legal-nav-tab active">
+            Privacy Policy
+          </Link>
+          <Link href="/terms" className="legal-nav-tab">
+            Terms &amp; Conditions
+          </Link>
+          <Link href="/seller-agreement" className="legal-nav-tab">
+            Seller Agreement
+          </Link>
+          <Link href="/dpa" className="legal-nav-tab">
+            Data Processing Agreement
+          </Link>
+        </nav>
 
-        <section className="privacy-card">
-          <h2>2. Personal & Business Data We Collect</h2>
-          <ul>
-            <li><strong>Identity & Account Data:</strong> Full name, verified mobile phone number, business email address, company name, corporate role, and hashed passwords.</li>
-            <li><strong>KYC & Enterprise Verification:</strong> GSTIN (Goods and Services Tax Identification Number), Udyam Registration, PAN, factory address, and industrial premises verification photos.</li>
-            <li><strong>Commercial Communications:</strong> Buyer RFQ requirements, quotation messages, technical specifications, and industrial enquiries.</li>
-            <li><strong>Financial & Transaction Records:</strong> Razorpay transaction IDs, Proforma Invoice numbers (SAC 998439), payment timestamps, and billing addresses. We do not store credit card numbers or UPI PINs.</li>
-            <li><strong>Device & Diagnostic Data:</strong> Device model, OS version, Firebase Cloud Messaging (FCM) push tokens, and IP address for session security.</li>
-          </ul>
-        </section>
-
-        <section className="privacy-card">
-          <h2>3. Purpose of Processing & Legal Basis</h2>
-          <p>We process your data strictly for legitimate commercial marketplace functions:</p>
-          <ul>
-            <li>Enabling verified buyers to discover and communicate with verified industrial manufacturers.</li>
-            <li>Routing Request for Quotation (RFQ) inquiries and buyer lead notifications.</li>
-            <li>Issuing statutory B2B GST tax invoices and managing manufacturer catalog subscriptions.</li>
-            <li>Preventing commercial fraud, fake listings, and identity impersonation.</li>
-            <li>Delivering real-time critical system and transactional alerts via native FCM push notifications.</li>
-          </ul>
-        </section>
-
-        <section className="privacy-card">
-          <h2>4. Data Sharing & Third-Party Processors</h2>
-          <p>We do not sell personal data to third-party data brokers. Data is shared strictly with secure technical infrastructure providers necessary to operate the service:</p>
-          <ul>
-            <li><strong>Google Firebase:</strong> Secure authentication tokens and native FCM push notification delivery.</li>
-            <li><strong>Firebase Crashlytics & Sentry:</strong> Real-time crash reporting, diagnostics, and application stability monitoring.</li>
-            <li><strong>Google Play Billing:</strong> In-app subscription processing and digital credit purchases.</li>
-            <li><strong>Razorpay:</strong> RBI-licensed payment gateway for processing subscription invoices, UPI intent, and netbanking.</li>
-            <li><strong>Brevo (Sendinblue):</strong> Transactional email dispatch for GST Proforma Invoices and system alerts.</li>
-            <li><strong>Cloudflare R2 & AWS S3:</strong> Secure cloud storage for product catalog media and documents.</li>
-            <li>
-              <strong>YouTube API Services (Google LLC):</strong> XIndia uses YouTube API Services (including the YouTube IFrame Player) to display seller factory tours and founder videos. By viewing YouTube video content within the Platform, you acknowledge and agree to be bound by the{' '}
-              <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener noreferrer">YouTube Terms of Service</a> and the{' '}
-              <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google Privacy Policy</a>. You can manage or revoke access to your data at any time via the{' '}
-              <a href="https://security.google.com/settings/security/permissions" target="_blank" rel="noopener noreferrer">Google Security Settings page</a>.
-            </li>
-          </ul>
-        </section>
-
-        <section className="privacy-card highlight-section" id="account-deletion">
-          <h2>5. User Rights, Data Retention & Account Deletion</h2>
-          <p>
-            In accordance with <strong>Section 12 of the DPDP Act 2023</strong> and <strong>Google Play Store Data Safety Policies</strong>, all users have the right to review, correct, download, or permanently erase their personal data and account.
-          </p>
-
-          <div className="deletion-box">
-            <h3>How to Delete Your Account:</h3>
-            <ol>
-              <li><strong>In-App Self-Service:</strong> Open the XIndia mobile app &rarr; Navigate to <strong>Profile &rarr; Settings &rarr; Privacy &rarr; Delete Account</strong>. Follow the confirmation steps to initiate delisting.</li>
-              <li>
-                <strong>Public Web Deletion Portal (No Login Required):</strong> If you have uninstalled the application or cannot log in, you can verify your registered phone number via OTP and execute account deletion directly using our{' '}
-                <Link href="/delete-account" className="portal-link">
-                  Public Account Deletion Portal &rarr;
-                </Link>
-              </li>
-            </ol>
+        {/* Language selector for Section 5(3) DPDP compliance */}
+        {doc?.availableLanguages && doc.availableLanguages.length > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px', gap: '8px' }}>
+            <span style={{ fontSize: '13px', color: '#64748B', alignSelf: 'center' }}>Language:</span>
+            <Link
+              href="/privacy-policy?lang=en"
+              style={{
+                fontSize: '12px',
+                fontWeight: lang === 'en' ? 700 : 500,
+                color: lang === 'en' ? '#FF8533' : '#94A3B8',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                background: lang === 'en' ? 'rgba(255,102,0,0.1)' : 'transparent',
+                textDecoration: 'none',
+              }}
+            >
+              English
+            </Link>
+            <Link
+              href="/privacy-policy?lang=hi"
+              style={{
+                fontSize: '12px',
+                fontWeight: lang === 'hi' ? 700 : 500,
+                color: lang === 'hi' ? '#FF8533' : '#94A3B8',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                background: lang === 'hi' ? 'rgba(255,102,0,0.1)' : 'transparent',
+                textDecoration: 'none',
+              }}
+            >
+              हिन्दी (Hindi)
+            </Link>
           </div>
+        )}
 
-          <h3>Data Purged vs. Statutorily Retained:</h3>
-          <ul>
-            <li><strong>Immediately Purged (T=0 to T=15):</strong> Personal profile, bio, avatars, chat messages, active sessions, push notification tokens, and product listings are immediately taken offline and permanently purged.</li>
-            <li><strong>Statutorily Retained Records:</strong> Completed GST tax invoices and accounting ledger entries are retained in an isolated, read-only compliance vault for <strong>8 years</strong> to comply with Section 36 of the Central Goods and Services Tax (CGST) Act, 2017. Immutable DPDP consent withdrawal audit logs are retained for regulatory compliance.</li>
-          </ul>
-        </section>
-
-        <section className="privacy-card">
-          <h2>6. Data Security & Storage</h2>
-          <p>
-            All data in transit is encrypted using <strong>TLS 1.3</strong> with strict HTTPS enforcement. All database records and file storage are encrypted at rest using industry-standard <strong>AES-256</strong>. Multi-factor authentication is enforced for all administrative system access.
-          </p>
-        </section>
-
-        <section className="privacy-card">
-          <h2>7. Grievance Officer & Support Contact</h2>
-          <p>
-            For privacy inquiries, data subject access requests, or regulatory queries, contact our designated Grievance Officer:
-          </p>
-          <div className="contact-details">
-            <p><strong>Platform:</strong> XIndia B2B Marketplace</p>
-            <p><strong>Grievance Officer:</strong> Designated Grievance Redressal Officer (Compliance Division)</p>
-            <p><strong>Grievance Email:</strong> <a href="mailto:grievance@xindia.live">grievance@xindia.live</a></p>
-            <p><strong>General Support Email:</strong> <a href="mailto:support@xindia.live">support@xindia.live</a></p>
-            <p><strong>Registered Office:</strong> New Delhi, India</p>
-            <p><strong>Support &amp; Grievance Portal:</strong> <Link href="/contact">https://xindia.live/contact</Link></p>
-            <p style={{ marginTop: '12px', fontSize: '13px', color: '#64748B' }}>
-              <em>Statutory Timeline: In accordance with Rule 3(2) of the IT Rules 2021, all grievances are acknowledged within 48 hours and redressed within 30 days of receipt.</em>
+        {/* Dynamic Content from MongoDB */}
+        {doc?.content ? (
+          <article
+            className="privacy-card privacy-dynamic-content"
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(doc.content) }}
+          />
+        ) : (
+          /* Resilient Fallback Section */
+          <div className="privacy-card privacy-dynamic-content">
+            <h2>1. Overview &amp; Data Fiduciary Details</h2>
+            <p>
+              This Privacy Policy governs the collection, processing, storage, transfer, and erasure of personal data by <strong>XIndia Technologies Private Limited</strong> (“XIndia”, “we”, “us”, or “our”) when you use our web portal (https://xindia.live) and mobile applications.
             </p>
+            <p>
+              Under Section 2(i) of the <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong>, XIndia acts as the <em>Data Fiduciary</em> responsible for determining the purpose and means of processing personal data on the Platform.
+            </p>
+            <hr />
+            <h2>2. Personal &amp; Commercial Data We Collect</h2>
+            <ul>
+              <li><strong>Identity &amp; Contact Data:</strong> Legal name, verified mobile phone number (OTP verified), corporate email address, enterprise designation, and hashed authentication credentials.</li>
+              <li><strong>KYC &amp; Enterprise Verification Data:</strong> GSTIN, PAN, Udyam Registration, factory addresses, and industrial premises verification media.</li>
+              <li><strong>Commercial &amp; Transaction Data:</strong> Sourcing requirements, RFQs, quotation messages, and Razorpay/Google Play transaction IDs. We never collect or store card numbers or UPI PINs.</li>
+              <li><strong>Technical &amp; Telemetry Data:</strong> IP address, device model, OS version, approximate city location, and Firebase Cloud Messaging (FCM) tokens.</li>
+            </ul>
+            <hr />
+            <h2>3. Data Principal Rights &amp; DPBI Redressal</h2>
+            <p>
+              In accordance with Chapter III of the DPDP Act 2023, you have the right to access (Sec 11), correct and erase (Sec 12), register grievances (Sec 13), and <strong>nominate</strong> an individual in the event of death or incapacity (Sec 14).
+            </p>
+            <p>
+              Under Section 18, you also have the statutory right to file a formal complaint with the <strong>Data Protection Board of India</strong> if any grievance remains unresolved.
+            </p>
+            <hr />
+            <h2>4. Grievance Officer &amp; Support Contact</h2>
+            <div className="contact-details">
+              <p><strong>Platform:</strong> XIndia Technologies Private Limited</p>
+              <p><strong>Grievance Officer:</strong> Compliance &amp; Grievance Redressal Officer</p>
+              <p><strong>Physical Address:</strong> Connaught Place, New Delhi 110001, India</p>
+              <p><strong>Grievance Email:</strong> <a href="mailto:grievance@xindia.live">grievance@xindia.live</a></p>
+              <p><strong>Support Email:</strong> <a href="mailto:support@xindia.live">support@xindia.live</a></p>
+              <p><strong>Public Deletion Portal:</strong> <Link href="/delete-account">https://xindia.live/delete-account</Link></p>
+              <p style={{ marginTop: '12px', fontSize: '13px', color: '#64748B' }}>
+                <em>Statutory Timeline: Acknowledged within 24 hours, resolved within 15 days (Rule 3(2), IT Rules 2021 as amended).</em>
+              </p>
+            </div>
           </div>
-        </section>
+        )}
       </main>
 
       <footer className="privacy-footer">
         <div className="privacy-container">
-          <p>&copy; {new Date().getFullYear()} XINDIA. All rights reserved. Connecting verified Indian manufacturers and buyers.</p>
+          <p>&copy; {new Date().getFullYear()} XIndia Technologies Private Limited. All rights reserved. Connecting verified Indian manufacturers and buyers.</p>
         </div>
       </footer>
     </div>

@@ -1,12 +1,43 @@
 import '../privacy-policy/privacy.css';
 import Link from 'next/link';
+import { getLegalDocument } from '@/lib/api';
+
+export const revalidate = 60;
 
 export const metadata = {
   title: 'Terms & Conditions | XIndia B2B Marketplace',
-  description: 'Official Terms of Service and User Agreement for XIndia marketplace buyers, suppliers, and industrial manufacturers.',
+  description: 'Official Master Terms of Service and User Agreement for XIndia marketplace buyers, suppliers, and industrial manufacturers.',
+  alternates: {
+    canonical: 'https://xindia.live/terms',
+  },
 };
 
-export default function TermsPage() {
+function sanitizeHtml(html) {
+  if (!html) return '';
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+    .replace(/javascript\s*:/gi, 'blocked:')
+    .replace(/<iframe\b[^>]*>/gi, '')
+    .replace(/<object\b[^>]*>/gi, '')
+    .replace(/<embed\b[^>]*>/gi, '')
+    .replace(/<form\b[^>]*>/gi, '')
+    .replace(/<(?:base|meta|link)\b[^>]*>/gi, '');
+}
+
+export default async function TermsPage({ searchParams }) {
+  const lang = searchParams?.lang === 'hi' ? 'hi' : 'en';
+  const doc = await getLegalDocument('BUYER_TERMS', lang);
+
+  const version = doc?.version || '2.1.0';
+  const effectiveDate = doc?.effectiveDate
+    ? new Date(doc.effectiveDate).toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : 'October 1, 2026';
+
   return (
     <div className="privacy-page">
       <header className="privacy-header">
@@ -22,94 +53,111 @@ export default function TermsPage() {
 
       <main className="privacy-container privacy-content">
         <div className="privacy-hero">
-          <span className="privacy-badge">OFFICIAL B2B USER AGREEMENT</span>
+          <span className="privacy-badge">
+            OFFICIAL B2B USER AGREEMENT • v{version}
+          </span>
           <h1>Terms &amp; Conditions</h1>
-          <p className="privacy-effective">Last Updated: September 15, 2026 | Effective Date: Immediate</p>
+          <p className="privacy-effective">
+            Last Updated &amp; Effective Date: {effectiveDate} | Version: {version}
+          </p>
         </div>
 
-        <section className="privacy-card">
-          <h2>1. Introduction &amp; Acceptance of Terms</h2>
-          <p>
-            Welcome to <strong>XIndia</strong> (&ldquo;the Platform&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;), operated as an industrial B2B marketplace and manufacturer launchpad accessible via web (<a href="https://xindia.live">https://xindia.live</a>) and mobile applications.
-          </p>
-          <p>
-            By creating an account, browsing listings, submitting Requests for Quotations (RFQs), or listing manufacturing capabilities, you agree to be bound by these Terms &amp; Conditions, our <Link href="/privacy-policy">Privacy Policy</Link>, and applicable Indian laws including the Information Technology Act, 2000 and the Digital Personal Data Protection Act, 2023.
-          </p>
-        </section>
+        {/* Legal Navigation Tabs */}
+        <nav className="legal-nav-tabs" aria-label="Legal documents">
+          <Link href="/privacy-policy" className="legal-nav-tab">
+            Privacy Policy
+          </Link>
+          <Link href="/terms" className="legal-nav-tab active">
+            Terms &amp; Conditions
+          </Link>
+          <Link href="/seller-agreement" className="legal-nav-tab">
+            Seller Agreement
+          </Link>
+          <Link href="/dpa" className="legal-nav-tab">
+            Data Processing Agreement
+          </Link>
+        </nav>
 
-        <section className="privacy-card">
-          <h2>2. Account Registration &amp; Verification</h2>
-          <ul>
-            <li><strong>Eligibility:</strong> You must represent a legally recognized business entity, sole proprietorship, partnership, or enterprise authorized to conduct commercial transactions.</li>
-            <li><strong>KYC Verification:</strong> Sellers and manufacturers listing capabilities agree to provide valid GSTIN, Udyam registration, or statutory credentials for administrative verification. Providing fraudulent or misleading identity documents will result in immediate suspension.</li>
-            <li><strong>Account Security:</strong> You are responsible for safeguarding your login credentials and one-time passwords (OTPs). Any activity conducted through your account is deemed your legal responsibility.</li>
-          </ul>
-        </section>
-
-        <section className="privacy-card">
-          <h2>3. Marketplace Role &amp; Commercial Disclaimers</h2>
-          <p>
-            XIndia operates as a technology intermediary facilitating discovery, matchmaking, and direct communication between verified Indian manufacturers and commercial buyers:
-          </p>
-          <ul>
-            <li><strong>Intermediary Status:</strong> Unless explicitly stated in a dedicated contract, XIndia is not a party to bilateral trade agreements, supply contracts, purchase orders, or shipping arrangements concluded between buyers and sellers.</li>
-            <li><strong>Independent Due Diligence:</strong> While XIndia performs administrative and document checks on verified sellers, buyers remain responsible for inspecting sample batches, validating technical specifications, and agreeing on delivery terms (e.g. EXW, FOB).</li>
-            <li><strong>Pricing &amp; Quotations:</strong> All catalog prices, minimum order quantities (MOQs), and batch lead times displayed by sellers are indicative quotations subject to final commercial agreement.</li>
-            <li><strong>Embedded Video Content:</strong> Certain seller profiles include plant walkthroughs and founder videos delivered via YouTube API Services. Your interaction with embedded video players is subject to the <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener noreferrer">YouTube Terms of Service</a>.</li>
-          </ul>
-        </section>
-
-        <section className="privacy-card">
-          <h2>4. Subscription Plans &amp; SmartCredits</h2>
-          <ul>
-            <li><strong>Paid Subscriptions:</strong> Seller visibility plans (e.g. Pro, Growth) and SmartCredit purchases are processed securely via authorized payment gateways (Razorpay) with statutory GST tax invoices (SAC 998439).</li>
-            <li><strong>Credits &amp; Unlocks:</strong> SmartCredits utilized to unlock verified buyer leads or priority RFQ matching are non-transferable and consumed upon delivery of the contact details.</li>
-            <li><strong>Refund Policy:</strong> Subscription fees and credit purchases are non-refundable once activated or consumed, except in cases of duplicate billing or verifiable service unavailability verified by our finance team.</li>
-          </ul>
-        </section>
-
-        <section className="privacy-card">
-          <h2>5. Prohibited Activities &amp; Content Guidelines</h2>
-          <p>Users shall not:</p>
-          <ul>
-            <li>Upload counterfeit products, prohibited substances, hazardous industrial waste, or goods violating intellectual property rights.</li>
-            <li>Misrepresent factory capacity, machinery counts, certifications (e.g. ISO certificates), or commercial turnover.</li>
-            <li>Transmit spam inquiries, unsolicited automated messages, or reverse-engineer platform APIs.</li>
-            <li>Attempt to circumvent platform security controls, authentication mechanisms, or rate limits.</li>
-          </ul>
-        </section>
-
-        <section className="privacy-card">
-          <h2>6. Account Termination &amp; Data Deletion</h2>
-          <p>
-            Users may initiate account deactivation or deletion at any time directly through the mobile app settings or via our dedicated web portal (<Link href="/delete-account">https://xindia.live/delete-account</Link>). Under our DPDP-compliant policy, a 15-day cooling-off period applies during which you can cancel deletion before data is permanently purged.
-          </p>
-        </section>
-
-        <section className="privacy-card">
-          <h2>7. Dispute Resolution &amp; Governing Law</h2>
-          <p>
-            These Terms shall be governed by and construed in accordance with the laws of the Republic of India. In the event of any dispute arising out of or in connection with these Terms or use of the Platform, the competent courts in New Delhi, India shall have exclusive jurisdiction.
-          </p>
-        </section>
-
-        <section className="privacy-card">
-          <h2>8. Grievance Redressal &amp; Support</h2>
-          <p>
-            In accordance with the Information Technology Act, 2000 and the DPDP Act, 2023, if you have any questions or grievances regarding these Terms, contact our Grievance Officer:
-          </p>
-          <div className="contact-details">
-            <p><strong>Platform:</strong> XIndia B2B Marketplace</p>
-            <p><strong>Support &amp; Grievance Email:</strong> <a href="mailto:support@xindia.live">support@xindia.live</a></p>
-            <p><strong>Official Domain:</strong> <a href="https://xindia.live">https://xindia.live</a></p>
-            <p><strong>Support Portal:</strong> <Link href="/contact">https://xindia.live/contact</Link></p>
+        {/* Language selector if available */}
+        {doc?.availableLanguages && doc.availableLanguages.length > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px', gap: '8px' }}>
+            <span style={{ fontSize: '13px', color: '#64748B', alignSelf: 'center' }}>Language:</span>
+            <Link
+              href="/terms?lang=en"
+              style={{
+                fontSize: '12px',
+                fontWeight: lang === 'en' ? 700 : 500,
+                color: lang === 'en' ? '#FF8533' : '#94A3B8',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                background: lang === 'en' ? 'rgba(255,102,0,0.1)' : 'transparent',
+                textDecoration: 'none',
+              }}
+            >
+              English
+            </Link>
+            <Link
+              href="/terms?lang=hi"
+              style={{
+                fontSize: '12px',
+                fontWeight: lang === 'hi' ? 700 : 500,
+                color: lang === 'hi' ? '#FF8533' : '#94A3B8',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                background: lang === 'hi' ? 'rgba(255,102,0,0.1)' : 'transparent',
+                textDecoration: 'none',
+              }}
+            >
+              हिन्दी (Hindi)
+            </Link>
           </div>
-        </section>
+        )}
+
+        {/* Dynamic Content from MongoDB */}
+        {doc?.content ? (
+          <article
+            className="privacy-card privacy-dynamic-content"
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(doc.content) }}
+          />
+        ) : (
+          /* Resilient Fallback Section */
+          <div className="privacy-card privacy-dynamic-content">
+            <h2>1. Introduction &amp; Acceptance of Terms</h2>
+            <p>
+              Welcome to <strong>XIndia</strong>, operated by <strong>XIndia Technologies Private Limited</strong>.
+              By accessing the platform or submitting Requests for Quotations (RFQs), you enter into a binding electronic agreement under Section 10A of the Information Technology Act, 2000.
+            </p>
+            <hr />
+            <h2>2. Intermediary Status &amp; Commercial Disclaimers</h2>
+            <p>
+              XIndia operates as a technology discovery intermediary under Section 79 of the IT Act, 2000. XIndia is not a party to bilateral purchase orders, manufacturing contracts, or logistics agreements concluded between users.
+            </p>
+            <hr />
+            <h2>3. Limitation of Liability &amp; Indemnity</h2>
+            <p>
+              In no event shall XIndia’s total aggregate liability exceed the fees paid by you to XIndia in the preceding three (3) months or INR ₹5,000. Users agree to indemnify XIndia against any third-party claims arising from uploaded listings, defective deliveries, or intellectual property violations.
+            </p>
+            <hr />
+            <h2>4. Dispute Resolution &amp; Mandatory Arbitration</h2>
+            <p>
+              Any dispute arising out of or in connection with these Terms shall be referred to and finally resolved by binding arbitration under the Arbitration and Conciliation Act, 1996 by a Sole Arbitrator in New Delhi, India.
+            </p>
+            <hr />
+            <h2>5. Grievance Redressal Mechanism</h2>
+            <div className="contact-details">
+              <p><strong>Platform:</strong> XIndia Technologies Private Limited</p>
+              <p><strong>Grievance Officer:</strong> Compliance &amp; Grievance Redressal Officer</p>
+              <p><strong>Address:</strong> Connaught Place, New Delhi 110001, India</p>
+              <p><strong>Email:</strong> <a href="mailto:grievance@xindia.live">grievance@xindia.live</a></p>
+              <p><strong>Support Portal:</strong> <Link href="/contact">https://xindia.live/contact</Link></p>
+            </div>
+          </div>
+        )}
       </main>
 
       <footer className="privacy-footer">
         <div className="privacy-container">
-          <p>&copy; {new Date().getFullYear()} XINDIA. All rights reserved. Connecting verified Indian manufacturers and buyers.</p>
+          <p>&copy; {new Date().getFullYear()} XIndia Technologies Private Limited. All rights reserved. Connecting verified Indian manufacturers and buyers.</p>
         </div>
       </footer>
     </div>

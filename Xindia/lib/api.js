@@ -75,4 +75,22 @@ export async function getAllPublishedSlugs() {
   }
 }
 
+export async function getLegalDocument(type, lang = 'en') {
+  try {
+    const endpoint = typeof window !== 'undefined'
+      ? `/api/legal/documents/${type}/current?lang=${lang}`
+      : `/api/v1/legal/documents/${type}/current?lang=${lang}`;
+    const res = await apiFetch(endpoint, {
+      revalidate: 60,
+      tags: [`legal-${type}`],
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.document || null;
+  } catch (err) {
+    console.error(`[getLegalDocument] Failed to load ${type}:`, err.message);
+    return null;
+  }
+}
+
 export { API_URL };
