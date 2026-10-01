@@ -86,10 +86,18 @@ export default async function PricingPage() {
   );
 }
 
-/* We use a client component for the billing toggle + cards */
+import { Suspense } from 'react';
 import PricingClientSection from './PricingClientSection';
 
-// Re-export with client section
+// Re-export with client section inside Suspense boundary (required for useSearchParams in Next 14)
 function PricingToggleSection({ plans }) {
-  return <PricingClientSection plans={plans} />;
+  return (
+    <Suspense fallback={
+      <div style={{ padding: '40px 0', textAlign: 'center', color: '#94A3B8', fontSize: 14 }}>
+        Loading plans...
+      </div>
+    }>
+      <PricingClientSection plans={plans} />
+    </Suspense>
+  );
 }
