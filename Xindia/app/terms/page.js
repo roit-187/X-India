@@ -55,6 +55,7 @@ export default function TermsPage() {
             <li><strong>Intermediary Status:</strong> Unless explicitly stated in a dedicated contract, XIndia is not a party to bilateral trade agreements, supply contracts, purchase orders, or shipping arrangements concluded between buyers and sellers.</li>
             <li><strong>Independent Due Diligence:</strong> While XIndia performs administrative and document checks on verified sellers, buyers remain responsible for inspecting sample batches, validating technical specifications, and agreeing on delivery terms (e.g. EXW, FOB).</li>
             <li><strong>Pricing &amp; Quotations:</strong> All catalog prices, minimum order quantities (MOQs), and batch lead times displayed by sellers are indicative quotations subject to final commercial agreement.</li>
+            <li><strong>Embedded Video Content:</strong> Certain seller profiles include plant walkthroughs and founder videos delivered via YouTube API Services. Your interaction with embedded video players is subject to the <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener noreferrer">YouTube Terms of Service</a>.</li>
           </ul>
         </section>
 

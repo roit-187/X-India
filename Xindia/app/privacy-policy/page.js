@@ -64,10 +64,18 @@ export default function PrivacyPolicyPage() {
           <h2>4. Data Sharing & Third-Party Processors</h2>
           <p>We do not sell personal data to third-party data brokers. Data is shared strictly with secure technical infrastructure providers necessary to operate the service:</p>
           <ul>
-            <li><strong>Google Firebase:</strong> Secure authentication tokens and native push notification delivery.</li>
+            <li><strong>Google Firebase:</strong> Secure authentication tokens and native FCM push notification delivery.</li>
+            <li><strong>Firebase Crashlytics & Sentry:</strong> Real-time crash reporting, diagnostics, and application stability monitoring.</li>
+            <li><strong>Google Play Billing:</strong> In-app subscription processing and digital credit purchases.</li>
             <li><strong>Razorpay:</strong> RBI-licensed payment gateway for processing subscription invoices, UPI intent, and netbanking.</li>
             <li><strong>Brevo (Sendinblue):</strong> Transactional email dispatch for GST Proforma Invoices and system alerts.</li>
             <li><strong>Cloudflare R2 & AWS S3:</strong> Secure cloud storage for product catalog media and documents.</li>
+            <li>
+              <strong>YouTube API Services (Google LLC):</strong> XIndia uses YouTube API Services (including the YouTube IFrame Player) to display seller factory tours and founder videos. By viewing YouTube video content within the Platform, you acknowledge and agree to be bound by the{' '}
+              <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener noreferrer">YouTube Terms of Service</a> and the{' '}
+              <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google Privacy Policy</a>. You can manage or revoke access to your data at any time via the{' '}
+              <a href="https://security.google.com/settings/security/permissions" target="_blank" rel="noopener noreferrer">Google Security Settings page</a>.
+            </li>
           </ul>
         </section>
 
@@ -113,9 +121,13 @@ export default function PrivacyPolicyPage() {
             <p><strong>Platform:</strong> XIndia B2B Marketplace</p>
             <p><strong>Grievance Officer:</strong> Designated Grievance Redressal Officer (Compliance Division)</p>
             <p><strong>Grievance Email:</strong> <a href="mailto:grievance@xindia.live">grievance@xindia.live</a></p>
+            <p><strong>Helpline &amp; WhatsApp:</strong> <a href="tel:+918860260878">+91 8860260878</a></p>
             <p><strong>General Support Email:</strong> <a href="mailto:support@xindia.live">support@xindia.live</a></p>
             <p><strong>Registered Office:</strong> New Delhi, India</p>
             <p><strong>Support Page:</strong> <Link href="/contact">https://xindia.live/contact</Link></p>
+            <p style={{ marginTop: '12px', fontSize: '13px', color: '#64748B' }}>
+              <em>Statutory Timeline: In accordance with Rule 3(2) of the IT Rules 2021, all grievances are acknowledged within 48 hours and redressed within 30 days of receipt.</em>
+            </p>
           </div>
         </section>
       </main>
