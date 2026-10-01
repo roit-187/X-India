@@ -93,4 +93,22 @@ export async function getLegalDocument(type, lang = 'en') {
   }
 }
 
+export async function getSystemConfig() {
+  try {
+    const endpoint = typeof window !== 'undefined'
+      ? '/api/system/config'
+      : '/api/system/config';
+    const res = await apiFetch(endpoint, {
+      revalidate: 30,
+      tags: ['system-config'],
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.config || null;
+  } catch (err) {
+    console.error('[getSystemConfig] Error:', err.message);
+    return null;
+  }
+}
+
 export { API_URL };

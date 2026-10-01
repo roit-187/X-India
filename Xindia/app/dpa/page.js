@@ -1,6 +1,7 @@
 import '../privacy-policy/privacy.css';
 import Link from 'next/link';
 import { getLegalDocument } from '@/lib/api';
+import DynamicGrievanceCard from '@/components/legal/DynamicGrievanceCard';
 
 export const revalidate = 60;
 
@@ -98,6 +99,9 @@ export default async function DPAPage({ searchParams }) {
             </p>
           </div>
         )}
+
+        {/* Live Dynamic Statutory Grievance Redressal Card */}
+        <DynamicGrievanceCard />
       </main>
 
       <footer className="privacy-footer">

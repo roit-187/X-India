@@ -24,6 +24,10 @@ export async function GET() {
     config: {
       serverApiUrl: process.env.NEXT_PUBLIC_API_URL || 'https://api.xindia.live',
       websiteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live',
+      supportEmail: 'support@xindia.live',
+      grievanceOfficerName: 'Abhishek Raj',
+      grievanceEmail: 'support@xindia.live',
+      registeredOfficeAddress: 'New Delhi, India',
       isMaintenanceMode: false,
       socialLinks: [],
       appVersionPolicy: {
