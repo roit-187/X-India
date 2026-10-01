@@ -298,7 +298,7 @@ export default function AdminPaymentsPage() {
         setInvoicingAutomation(data.invoicingAutomation);
         showToast(
           newValue
-            ? '⚡ Invoicing Automation: Activated (Real-time Brevo & Razorpay dispatch)'
+            ? '⚡ Invoicing Automation: Activated (Real-time Email & Razorpay dispatch)'
             : '⏳ Invoicing Automation: Paused (Incoming requests routed to manual queue)',
           'success'
         );
@@ -1042,7 +1042,7 @@ export default function AdminPaymentsPage() {
                                   disabled={dispatchingLeadId === l._id}
                                   className="payments-btn payments-btn-primary"
                                   style={{ padding: '6px 12px', fontSize: 12 }}
-                                  title="Dispatch Razorpay link & Brevo email"
+                                  title="Dispatch Razorpay link & Invoice email"
                                 >
                                   {dispatchingLeadId === l._id ? (
                                     <RefreshCw size={13} className="spin-icon" />
@@ -1882,7 +1882,7 @@ export default function AdminPaymentsPage() {
                       style={{ width: 16, height: 16, cursor: 'pointer' }}
                     />
                     <label htmlFor="customDispatchEmail" style={{ fontSize: 12, color: '#334155', fontWeight: 600, cursor: 'pointer' }}>
-                      Dispatch payment link and Proforma Invoice directly to seller email via Brevo
+                      Dispatch payment link and Proforma Invoice directly to seller email
                     </label>
                   </div>
                 </div>
