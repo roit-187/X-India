@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Server, Globe, ShieldAlert, CheckCircle2, AlertCircle, RefreshCw, Activity, Cpu, ArrowRight, ExternalLink, AlertTriangle, Mail, Phone, MessageSquare, Smartphone, Zap, PhoneCall, Flame, Trash2, Plus, Share2 } from 'lucide-react';
+import { Server, Globe, ShieldAlert, CheckCircle2, AlertCircle, RefreshCw, Activity, Cpu, ArrowRight, ExternalLink, AlertTriangle, Mail, Phone, MessageSquare, Smartphone, Zap, PhoneCall, Flame, Trash2, Plus, Share2, Bell, Check, X } from 'lucide-react';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 export default function AdminSettingsPage() {
@@ -33,12 +33,26 @@ export default function AdminSettingsPage() {
       autoDispatchPlanInvoices: true,
       autoDispatchCreditInvoices: true,
       notifyAdminsOnRequest: true,
+      notificationEmails: [],
+    },
+    adminNotifications: {
+      emailOnDocumentUpload: false,
+      emailOnVerificationRequest: false,
+      emailOnInvoiceRequest: false,
+      emailOnComplaint: false,
+      emailOnContentReport: false,
+      pushOnCriticalAlert: false,
     },
   });
 
   // State for adding a new social link
   const [newPlatform, setNewPlatform] = useState('twitter');
   const [newUrl, setNewUrl] = useState('');
+
+  // State for notification recipients and browser push
+  const [newRecipientEmail, setNewRecipientEmail] = useState('');
+  const [pushStatus, setPushStatus] = useState('checking'); // 'unsupported' | 'denied' | 'subscribed' | 'unsubscribed' | 'subscribing'
+  const [pushMessage, setPushMessage] = useState('');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -82,6 +96,147 @@ export default function AdminSettingsPage() {
     setSettings({ ...settings, socialLinks: updated });
   };
 
+  const handleAddRecipientEmail = () => {
+    const trimmed = newRecipientEmail.trim().toLowerCase();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+    const currentList = settings.invoicingAutomation?.notificationEmails || [];
+    if (currentList.includes(trimmed)) {
+      alert('This email address is already in the recipient list.');
+      return;
+    }
+    setSettings({
+      ...settings,
+      invoicingAutomation: {
+        ...settings.invoicingAutomation,
+        notificationEmails: [...currentList, trimmed],
+      },
+    });
+    setNewRecipientEmail('');
+  };
+
+  const handleRemoveRecipientEmail = (emailToRemove) => {
+    const currentList = settings.invoicingAutomation?.notificationEmails || [];
+    setSettings({
+      ...settings,
+      invoicingAutomation: {
+        ...settings.invoicingAutomation,
+        notificationEmails: currentList.filter((e) => e !== emailToRemove),
+      },
+    });
+  };
+
+  const checkBrowserPushStatus = async () => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setPushStatus('unsupported');
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      setPushStatus('denied');
+      return;
+    }
+    try {
+      const reg = await navigator.serviceWorker.getRegistration('/sw-admin-push.js');
+      if (!reg) {
+        setPushStatus('unsubscribed');
+        return;
+      }
+      const sub = await reg.pushManager.getSubscription();
+      setPushStatus(sub ? 'subscribed' : 'unsubscribed');
+    } catch (err) {
+      console.warn('[Push Status Check]', err);
+      setPushStatus('unsubscribed');
+    }
+  };
+
+  const handleSubscribePush = async () => {
+    try {
+      setPushStatus('subscribing');
+      setPushMessage('');
+      if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+        setPushStatus('unsupported');
+        return;
+      }
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        setPushStatus('denied');
+        setPushMessage('Push permission was dismissed or blocked in browser settings.');
+        return;
+      }
+
+      const keyRes = await fetch('/api/admin/notifications/vapid-public-key');
+      const keyData = await keyRes.json();
+      if (!keyData.success || !keyData.publicKey) {
+        throw new Error('Failed to retrieve VAPID public key from server');
+      }
+
+      const reg = await navigator.serviceWorker.register('/sw-admin-push.js', { scope: '/' });
+      await navigator.serviceWorker.ready;
+
+      const padding = '='.repeat((4 - (keyData.publicKey.length % 4)) % 4);
+      const base64 = (keyData.publicKey + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      const applicationServerKey = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        applicationServerKey[i] = rawData.charCodeAt(i);
+      }
+
+      const subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey,
+      });
+
+      const subJson = subscription.toJSON();
+      const saveRes = await fetch('/api/admin/notifications/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          endpoint: subJson.endpoint,
+          keys: subJson.keys,
+          userAgent: navigator.userAgent,
+        }),
+      });
+      const saveData = await saveRes.json();
+      if (saveData.success) {
+        setPushStatus('subscribed');
+        setPushMessage('Browser push notifications successfully activated on this device.');
+      } else {
+        throw new Error(saveData.message || 'Could not save subscription');
+      }
+    } catch (err) {
+      console.error('[PUSH SUBSCRIBE ERROR]', err);
+      setPushStatus('unsubscribed');
+      setPushMessage(err.message || 'Failed to subscribe');
+    }
+  };
+
+  const handleUnsubscribePush = async () => {
+    try {
+      setPushStatus('subscribing');
+      const reg = await navigator.serviceWorker.getRegistration('/sw-admin-push.js');
+      if (reg) {
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          const endpoint = sub.endpoint;
+          await sub.unsubscribe();
+          await fetch('/api/admin/notifications/push/subscribe', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint }),
+          });
+        }
+      }
+      setPushStatus('unsubscribed');
+      setPushMessage('This browser device has been unsubscribed.');
+    } catch (err) {
+      console.error('[PUSH UNSUBSCRIBE ERROR]', err);
+      setPushStatus('subscribed');
+      setPushMessage('Failed to unsubscribe.');
+    }
+  };
+
   // Load Settings from API
   const loadSettings = async () => {
     try {
@@ -111,10 +266,22 @@ export default function AdminSettingsPage() {
             forceUpdateMessage: 'A critical update is required to continue using XINDIA. Please update from the Google Play Store.',
             playStoreUrl: 'https://play.google.com/store/apps/details?id=com.xindia.marketplace',
           },
-          invoicingAutomation: data.settings.invoicingAutomation || {
-            autoDispatchPlanInvoices: true,
-            autoDispatchCreditInvoices: true,
-            notifyAdminsOnRequest: true,
+          invoicingAutomation: {
+            autoDispatchPlanInvoices: data.settings.invoicingAutomation?.autoDispatchPlanInvoices !== false,
+            autoDispatchCreditInvoices: data.settings.invoicingAutomation?.autoDispatchCreditInvoices !== false,
+            notifyAdminsOnRequest: data.settings.invoicingAutomation?.notifyAdminsOnRequest !== false,
+            defaultInvoiceValidityHours: data.settings.invoicingAutomation?.defaultInvoiceValidityHours || 72,
+            notificationEmails: Array.isArray(data.settings.invoicingAutomation?.notificationEmails)
+              ? data.settings.invoicingAutomation.notificationEmails
+              : [],
+          },
+          adminNotifications: {
+            emailOnDocumentUpload: Boolean(data.settings.adminNotifications?.emailOnDocumentUpload),
+            emailOnVerificationRequest: Boolean(data.settings.adminNotifications?.emailOnVerificationRequest),
+            emailOnInvoiceRequest: Boolean(data.settings.adminNotifications?.emailOnInvoiceRequest),
+            emailOnComplaint: Boolean(data.settings.adminNotifications?.emailOnComplaint),
+            emailOnContentReport: Boolean(data.settings.adminNotifications?.emailOnContentReport),
+            pushOnCriticalAlert: Boolean(data.settings.adminNotifications?.pushOnCriticalAlert),
           },
         });
       }
@@ -128,6 +295,7 @@ export default function AdminSettingsPage() {
 
   useEffect(() => {
     loadSettings();
+    checkBrowserPushStatus();
   }, []);
 
   if (loaded && !isSuperAdmin) {
@@ -867,6 +1035,597 @@ export default function AdminSettingsPage() {
                     />
                   </span>
                 </label>
+              </div>
+            </div>
+
+            {/* Admin Alerts & Real-Time Notification Center */}
+            <div className="admin-card">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ background: '#F5F3FF', padding: 10, borderRadius: 10, color: '#7C3AED' }}>
+                    <Bell size={22} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--adm-text)', letterSpacing: '-0.3px' }}>
+                      Admin Alerts &amp; Real-Time Notification Center
+                    </h3>
+                    <p style={{ margin: '3px 0 0', fontSize: 13, color: 'var(--adm-text-med)' }}>
+                      Configure instant transactional email alerts and browser Web Push notifications for critical operational events.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Sub-Section 1: Website Browser Push Notifications ── */}
+              <div
+                style={{
+                  background: 'var(--adm-card-subtle, #F8FAFC)',
+                  border: '1px solid var(--adm-border)',
+                  borderRadius: 'var(--adm-radius-sm)',
+                  padding: 18,
+                  marginBottom: 20,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ background: '#EDE9FE', padding: 7, borderRadius: 8, color: '#6D28D9' }}>
+                      <Globe size={18} />
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--adm-text)' }}>
+                          Browser Web Push (Instant Desktop &amp; Mobile Alerts)
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 800,
+                            padding: '2px 8px',
+                            borderRadius: 10,
+                            background: pushStatus === 'subscribed' ? '#DCFCE7' : pushStatus === 'denied' ? '#FEE2E2' : '#F1F5F9',
+                            color: pushStatus === 'subscribed' ? '#15803D' : pushStatus === 'denied' ? '#B91C1C' : '#64748B',
+                            letterSpacing: 0.5,
+                          }}
+                        >
+                          {pushStatus === 'subscribed' ? 'DEVICE ACTIVE' : pushStatus === 'denied' ? 'PERMISSION BLOCKED' : pushStatus === 'unsupported' ? 'UNSUPPORTED' : 'NOT SUBSCRIBED'}
+                        </span>
+                      </div>
+                      <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--adm-text-med)' }}>
+                        Receive immediate native desktop &amp; mobile notifications whenever a Critical Alert is triggered — even when this tab is minimized.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Master Push Toggle */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--adm-text-med)' }}>
+                      Alert Push:
+                    </span>
+                    <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(settings.adminNotifications?.pushOnCriticalAlert)}
+                        onChange={(e) => {
+                          setSettings({
+                            ...settings,
+                            adminNotifications: {
+                              ...settings.adminNotifications,
+                              pushOnCriticalAlert: e.target.checked,
+                            },
+                          });
+                        }}
+                        style={{ opacity: 0, width: 0, height: 0 }}
+                      />
+                      <span
+                        style={{
+                          position: 'absolute',
+                          cursor: 'pointer',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          backgroundColor: settings.adminNotifications?.pushOnCriticalAlert ? '#7C3AED' : '#CBD5E1',
+                          transition: '0.2s',
+                          borderRadius: 24,
+                        }}
+                      >
+                        <span
+                          style={{
+                            position: 'absolute',
+                            height: 18,
+                            width: 18,
+                            left: settings.adminNotifications?.pushOnCriticalAlert ? 23 : 3,
+                            bottom: 3,
+                            backgroundColor: '#FFFFFF',
+                            transition: '0.2s',
+                            borderRadius: '50%',
+                          }}
+                        />
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Device Push Registration Action */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, paddingTop: 12, borderTop: '1px solid var(--adm-border)' }}>
+                  <div style={{ fontSize: 12, color: 'var(--adm-text-med)' }}>
+                    {pushMessage || (
+                      pushStatus === 'subscribed'
+                        ? 'This browser is actively registered to receive real-time push alerts from the XINDIA server.'
+                        : pushStatus === 'denied'
+                        ? 'Notifications are blocked in your browser site permissions. Please allow notifications in your browser address bar.'
+                        : 'Click to grant notification permission and register this device.'
+                    )}
+                  </div>
+                  <div>
+                    {pushStatus === 'subscribed' ? (
+                      <button
+                        type="button"
+                        onClick={handleUnsubscribePush}
+                        className="admin-btn admin-btn-secondary"
+                        style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600 }}
+                      >
+                        Unsubscribe This Browser
+                      </button>
+                    ) : pushStatus === 'denied' || pushStatus === 'unsupported' ? null : (
+                      <button
+                        type="button"
+                        onClick={handleSubscribePush}
+                        className="admin-btn admin-btn-primary"
+                        style={{ padding: '6px 14px', fontSize: 12, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                        disabled={pushStatus === 'subscribing'}
+                      >
+                        <Bell size={13} />
+                        {pushStatus === 'subscribing' ? 'Registering...' : 'Enable Push On This Browser'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Sub-Section 2: Sensitive Transactional Email Toggles ── */}
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: 'var(--adm-text)' }}>
+                  Transactional Email Alert Triggers
+                </h4>
+                <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--adm-text-med)' }}>
+                  Select which critical operational events send email dispatches to your configured admin team list.
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {/* 1. Invoice Request */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 16px',
+                      borderRadius: 'var(--adm-radius-sm)',
+                      border: '1px solid var(--adm-border)',
+                      background: settings.adminNotifications?.emailOnInvoiceRequest ? '#F0FDF4' : '#FFFFFF',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ flex: 1, paddingRight: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--adm-text)' }}>
+                          B2B Plan Invoice Requests
+                        </span>
+                        <span style={{ fontSize: 10, fontWeight: 800, padding: '1px 6px', borderRadius: 8, background: '#DCFCE7', color: '#166534' }}>
+                          SENSITIVE / REVENUE
+                        </span>
+                      </div>
+                      <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--adm-text-med)' }}>
+                        Instant notification email when any seller requests a proforma invoice or payment link for Growth / Enterprise plans.
+                      </p>
+                    </div>
+                    <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer', flexShrink: 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(settings.adminNotifications?.emailOnInvoiceRequest)}
+                        onChange={(e) => {
+                          setSettings({
+                            ...settings,
+                            adminNotifications: {
+                              ...settings.adminNotifications,
+                              emailOnInvoiceRequest: e.target.checked,
+                            },
+                          });
+                        }}
+                        style={{ opacity: 0, width: 0, height: 0 }}
+                      />
+                      <span
+                        style={{
+                          position: 'absolute',
+                          cursor: 'pointer',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          backgroundColor: settings.adminNotifications?.emailOnInvoiceRequest ? '#10B981' : '#CBD5E1',
+                          transition: '0.2s',
+                          borderRadius: 24,
+                        }}
+                      >
+                        <span
+                          style={{
+                            position: 'absolute',
+                            height: 18,
+                            width: 18,
+                            left: settings.adminNotifications?.emailOnInvoiceRequest ? 23 : 3,
+                            bottom: 3,
+                            backgroundColor: '#FFFFFF',
+                            transition: '0.2s',
+                            borderRadius: '50%',
+                          }}
+                        />
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* 2. Verification Request */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 16px',
+                      borderRadius: 'var(--adm-radius-sm)',
+                      border: '1px solid var(--adm-border)',
+                      background: settings.adminNotifications?.emailOnVerificationRequest ? '#F0FDF4' : '#FFFFFF',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ flex: 1, paddingRight: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--adm-text)' }}>
+                          Verification Queue Bookings
+                        </span>
+                        <span style={{ fontSize: 10, fontWeight: 800, padding: '1px 6px', borderRadius: 8, background: '#E0E7FF', color: '#3730A3' }}>
+                          OPERATIONS
+                        </span>
+                      </div>
+                      <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--adm-text-med)' }}>
+                        Instant notification email when a seller books an on-site factory verification inspection date and slot.
+                      </p>
+                    </div>
+                    <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer', flexShrink: 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(settings.adminNotifications?.emailOnVerificationRequest)}
+                        onChange={(e) => {
+                          setSettings({
+                            ...settings,
+                            adminNotifications: {
+                              ...settings.adminNotifications,
+                              emailOnVerificationRequest: e.target.checked,
+                            },
+                          });
+                        }}
+                        style={{ opacity: 0, width: 0, height: 0 }}
+                      />
+                      <span
+                        style={{
+                          position: 'absolute',
+                          cursor: 'pointer',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          backgroundColor: settings.adminNotifications?.emailOnVerificationRequest ? '#10B981' : '#CBD5E1',
+                          transition: '0.2s',
+                          borderRadius: 24,
+                        }}
+                      >
+                        <span
+                          style={{
+                            position: 'absolute',
+                            height: 18,
+                            width: 18,
+                            left: settings.adminNotifications?.emailOnVerificationRequest ? 23 : 3,
+                            bottom: 3,
+                            backgroundColor: '#FFFFFF',
+                            transition: '0.2s',
+                            borderRadius: '50%',
+                          }}
+                        />
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* 3. Complaints & Grievance Tickets */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 16px',
+                      borderRadius: 'var(--adm-radius-sm)',
+                      border: '1px solid var(--adm-border)',
+                      background: settings.adminNotifications?.emailOnComplaint ? '#F0FDF4' : '#FFFFFF',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ flex: 1, paddingRight: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--adm-text)' }}>
+                          Disputes, Complaints &amp; Callback Requests
+                        </span>
+                        <span style={{ fontSize: 10, fontWeight: 800, padding: '1px 6px', borderRadius: 8, background: '#FEE2E2', color: '#991B1B' }}>
+                          SUPPORT / URGENT
+                        </span>
+                      </div>
+                      <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--adm-text-med)' }}>
+                        Instant notification email when a user or seller submits a complaint or urgent support callback ticket.
+                      </p>
+                    </div>
+                    <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer', flexShrink: 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(settings.adminNotifications?.emailOnComplaint)}
+                        onChange={(e) => {
+                          setSettings({
+                            ...settings,
+                            adminNotifications: {
+                              ...settings.adminNotifications,
+                              emailOnComplaint: e.target.checked,
+                            },
+                          });
+                        }}
+                        style={{ opacity: 0, width: 0, height: 0 }}
+                      />
+                      <span
+                        style={{
+                          position: 'absolute',
+                          cursor: 'pointer',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          backgroundColor: settings.adminNotifications?.emailOnComplaint ? '#10B981' : '#CBD5E1',
+                          transition: '0.2s',
+                          borderRadius: 24,
+                        }}
+                      >
+                        <span
+                          style={{
+                            position: 'absolute',
+                            height: 18,
+                            width: 18,
+                            left: settings.adminNotifications?.emailOnComplaint ? 23 : 3,
+                            bottom: 3,
+                            backgroundColor: '#FFFFFF',
+                            transition: '0.2s',
+                            borderRadius: '50%',
+                          }}
+                        />
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* 4. Business Document Uploads */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 16px',
+                      borderRadius: 'var(--adm-radius-sm)',
+                      border: '1px solid var(--adm-border)',
+                      background: settings.adminNotifications?.emailOnDocumentUpload ? '#F0FDF4' : '#FFFFFF',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ flex: 1, paddingRight: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--adm-text)' }}>
+                          Seller Business Document Uploads
+                        </span>
+                        <span style={{ fontSize: 10, fontWeight: 800, padding: '1px 6px', borderRadius: 8, background: '#FEF3C7', color: '#92400E' }}>
+                          VERIFICATION
+                        </span>
+                      </div>
+                      <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--adm-text-med)' }}>
+                        Email admins when a seller uploads GST, PAN, or ISO business certificates into their profile.
+                      </p>
+                    </div>
+                    <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer', flexShrink: 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(settings.adminNotifications?.emailOnDocumentUpload)}
+                        onChange={(e) => {
+                          setSettings({
+                            ...settings,
+                            adminNotifications: {
+                              ...settings.adminNotifications,
+                              emailOnDocumentUpload: e.target.checked,
+                            },
+                          });
+                        }}
+                        style={{ opacity: 0, width: 0, height: 0 }}
+                      />
+                      <span
+                        style={{
+                          position: 'absolute',
+                          cursor: 'pointer',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          backgroundColor: settings.adminNotifications?.emailOnDocumentUpload ? '#10B981' : '#CBD5E1',
+                          transition: '0.2s',
+                          borderRadius: 24,
+                        }}
+                      >
+                        <span
+                          style={{
+                            position: 'absolute',
+                            height: 18,
+                            width: 18,
+                            left: settings.adminNotifications?.emailOnDocumentUpload ? 23 : 3,
+                            bottom: 3,
+                            backgroundColor: '#FFFFFF',
+                            transition: '0.2s',
+                            borderRadius: '50%',
+                          }}
+                        />
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* 5. Listing & User Reports */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 16px',
+                      borderRadius: 'var(--adm-radius-sm)',
+                      border: '1px solid var(--adm-border)',
+                      background: settings.adminNotifications?.emailOnContentReport ? '#F0FDF4' : '#FFFFFF',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ flex: 1, paddingRight: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--adm-text)' }}>
+                          Listing &amp; Content Abuse Reports
+                        </span>
+                        <span style={{ fontSize: 10, fontWeight: 800, padding: '1px 6px', borderRadius: 8, background: '#FCE7F3', color: '#9D174D' }}>
+                          MODERATION
+                        </span>
+                      </div>
+                      <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--adm-text-med)' }}>
+                        Email admins when a user reports copyright infringement, counterfeit listings, or policy violations.
+                      </p>
+                    </div>
+                    <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer', flexShrink: 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(settings.adminNotifications?.emailOnContentReport)}
+                        onChange={(e) => {
+                          setSettings({
+                            ...settings,
+                            adminNotifications: {
+                              ...settings.adminNotifications,
+                              emailOnContentReport: e.target.checked,
+                            },
+                          });
+                        }}
+                        style={{ opacity: 0, width: 0, height: 0 }}
+                      />
+                      <span
+                        style={{
+                          position: 'absolute',
+                          cursor: 'pointer',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          backgroundColor: settings.adminNotifications?.emailOnContentReport ? '#10B981' : '#CBD5E1',
+                          transition: '0.2s',
+                          borderRadius: 24,
+                        }}
+                      >
+                        <span
+                          style={{
+                            position: 'absolute',
+                            height: 18,
+                            width: 18,
+                            left: settings.adminNotifications?.emailOnContentReport ? 23 : 3,
+                            bottom: 3,
+                            backgroundColor: '#FFFFFF',
+                            transition: '0.2s',
+                            borderRadius: '50%',
+                          }}
+                        />
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Sub-Section 3: Admin Recipient Email Management ── */}
+              <div>
+                <h4 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: 'var(--adm-text)' }}>
+                  Notification Recipient Email Addresses
+                </h4>
+                <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--adm-text-med)' }}>
+                  Transactional alerts triggered above will be emailed to all verified addresses below.
+                </p>
+
+                {/* Email Chip List */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                  {(settings.invoicingAutomation?.notificationEmails || []).length === 0 ? (
+                    <div style={{ fontSize: 12, color: '#D97706', background: '#FEF3C7', padding: '6px 12px', borderRadius: 6, fontWeight: 500 }}>
+                      ⚠️ No recipient email addresses added yet. Enabled email alerts will not be delivered until at least one email is added.
+                    </div>
+                  ) : (
+                    settings.invoicingAutomation.notificationEmails.map((email) => (
+                      <div
+                        key={email}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '6px 12px',
+                          background: '#F1F5F9',
+                          border: '1px solid var(--adm-border)',
+                          borderRadius: 20,
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: 'var(--adm-text)',
+                        }}
+                      >
+                        <Mail size={13} color="#64748B" />
+                        <span>{email}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveRecipientEmail(email)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 2,
+                            display: 'flex',
+                            alignItems: 'center',
+                            color: '#94A3B8',
+                          }}
+                          title="Remove email"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Add New Recipient Input */}
+                <div style={{ display: 'flex', gap: 8, maxWidth: 440 }}>
+                  <input
+                    type="email"
+                    className="admin-input"
+                    placeholder="e.g. operations@xindia.live"
+                    value={newRecipientEmail}
+                    onChange={(e) => setNewRecipientEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddRecipientEmail();
+                      }
+                    }}
+                    style={{ flex: 1, padding: '8px 12px', fontSize: 13 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddRecipientEmail}
+                    className="admin-btn admin-btn-secondary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '8px 14px', fontSize: 13, fontWeight: 700 }}
+                  >
+                    <Plus size={14} />
+                    Add Recipient
+                  </button>
+                </div>
               </div>
             </div>
 
