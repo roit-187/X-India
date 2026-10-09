@@ -1155,6 +1155,13 @@ export default function VerificationQueuePage() {
                           >
                             <FileSearch size={14} /> Open Document ↗
                           </a>
+                        ) : doc.gstNumber ? (
+                          <div style={{ fontSize: 12 }}>
+                            <span style={{ fontWeight: 600, color: '#1E293B', fontFamily: 'monospace' }}>{doc.gstNumber}</span>
+                            {doc.tradeName || doc.legalName ? (
+                              <div style={{ color: '#64748B', fontSize: 11 }}>{doc.tradeName || doc.legalName}</div>
+                            ) : null}
+                          </div>
                         ) : (
                           <span style={{ fontSize: 12, color: '#94A3B8' }}>No link available</span>
                         )}

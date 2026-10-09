@@ -423,11 +423,29 @@ export default function SellerDetailModal({
                           fontWeight: 700,
                           padding: '3px 10px',
                           borderRadius: 12,
-                          background: seller?.gstVerified ? '#DCFCE7' : '#FEF3C7',
-                          color: seller?.gstVerified ? '#15803D' : '#B45309',
+                          background: seller?.gstVerified
+                            ? '#DCFCE7'
+                            : (seller?.gstVerificationStatus === 'pending' || (seller?.gstNumber && !seller?.gstVerified && seller?.gstVerificationStatus !== 'rejected'))
+                            ? '#FEF3C7'
+                            : seller?.gstVerificationStatus === 'rejected'
+                            ? '#FEE2E2'
+                            : '#F1F5F9',
+                          color: seller?.gstVerified
+                            ? '#15803D'
+                            : (seller?.gstVerificationStatus === 'pending' || (seller?.gstNumber && !seller?.gstVerified && seller?.gstVerificationStatus !== 'rejected'))
+                            ? '#B45309'
+                            : seller?.gstVerificationStatus === 'rejected'
+                            ? '#DC2626'
+                            : '#64748B',
                         }}
                       >
-                        {seller?.gstVerified ? 'GST ALGORITHM VERIFIED' : 'UNVERIFIED / SKIPPED'}
+                        {seller?.gstVerified
+                          ? 'GST VERIFIED'
+                          : (seller?.gstVerificationStatus === 'pending' || (seller?.gstNumber && !seller?.gstVerified && seller?.gstVerificationStatus !== 'rejected'))
+                          ? 'PENDING ADMIN APPROVAL'
+                          : seller?.gstVerificationStatus === 'rejected'
+                          ? 'DECLINED / REJECTED'
+                          : 'UNVERIFIED / NOT PROVIDED'}
                       </span>
                     </div>
 
