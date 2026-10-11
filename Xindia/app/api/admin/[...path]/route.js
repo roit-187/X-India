@@ -10,6 +10,8 @@ if (!process.env.NEXT_PUBLIC_API_URL) {
   );
 }
 
+export const dynamic = 'force-dynamic';
+
 async function proxy(request, { params }) {
   const token = cookies().get('admin_token')?.value;
   if (!token) {
@@ -56,6 +58,7 @@ async function proxy(request, { params }) {
   const init = {
     method: request.method,
     headers,
+    cache: 'no-store',
   };
 
   if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -71,7 +74,10 @@ async function proxy(request, { params }) {
   try {
     const res = await fetch(targetUrl, init);
     const data = await res.json();
-    return Response.json(data, { status: res.status });
+    return Response.json(data, {
+      status: res.status,
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+    });
   } catch (netErr) {
     console.error(`[admin proxy] Backend at ${targetUrl} unreachable or returned a non-JSON response:`, netErr.message);
     return Response.json({ success: false, message: 'Admin service unavailable. Please try again shortly.' }, { status: 502 });

@@ -180,3 +180,23 @@
   font-weight: 600;
   color: var(--adm-text-med);
 }
+
+@keyframes docPulseHighlight {
+  0% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7);
+    border-color: #8B5CF6;
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(139, 92, 246, 0.2);
+    border-color: #8B5CF6;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+    border-color: #E2E8F0;
+  }
+}
+
+.doc-pulse-highlight {
+  animation: docPulseHighlight 1.5s ease-in-out 2;
+  border-color: #8B5CF6 !important;
+}

@@ -40,8 +40,14 @@ export default function VerificationQueuePage() {
   const [sort, setSort] = useState('newest');
 
   // Business Documents Verification State
+  const [docFilterStatus, setDocFilterStatus] = useState('pending'); // 'pending' | 'verified' | 'rejected' | 'all'
+  const [sellersList, setSellersList] = useState([]);
   const [pendingDocs, setPendingDocs] = useState([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [docLoadError, setDocLoadError] = useState(null);
+  const [highlightSellerId, setHighlightSellerId] = useState(null);
+  const [flashId, setFlashId] = useState(null);
+  const [toast, setToast] = useState(null);
   const [docApproveTarget, setDocApproveTarget] = useState(null);
   const [docApproveReason, setDocApproveReason] = useState('');
   const [docRejectTarget, setDocRejectTarget] = useState(null);
@@ -64,6 +70,14 @@ export default function VerificationQueuePage() {
   const [approvalNotes, setApprovalNotes] = useState('');
   const [evidenceFiles, setEvidenceFiles] = useState([]); // [{ url, name, size, type }]
   const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
+
+  // Toast feedback helper
+  const showToast = useCallback((message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast((curr) => (curr?.message === message ? null : curr));
+    }, 4000);
+  }, []);
 
   // Load operator profile from local storage
   useEffect(() => {
@@ -104,44 +118,77 @@ export default function VerificationQueuePage() {
       }
     } catch (err) {
       console.error('Error loading verification queue:', err);
+      showToast('Network error loading verification queue', 'error');
     } finally {
       setLoading(false);
     }
-  }, [activeTab, page, search, category, sort]);
+  }, [activeTab, page, search, category, sort, showToast]);
 
-  const loadPendingDocuments = useCallback(async () => {
+  const loadDocuments = useCallback(async (statusOverride) => {
     setDocsLoading(true);
+    setDocLoadError(null);
     try {
-      const res = await fetch('/api/admin/documents/pending');
+      const targetStatus = statusOverride !== undefined ? statusOverride : docFilterStatus;
+      const res = await fetch(`/api/admin/documents?status=${targetStatus}`, {
+        cache: 'no-store',
+      });
       const data = await res.json();
       if (data.success) {
         setPendingDocs(data.documents || []);
+        setSellersList(data.sellers || []);
+      } else {
+        setDocLoadError(data.message || 'Failed to load business documents');
+        showToast(data.message || 'Failed to load business documents', 'error');
       }
     } catch (err) {
-      console.error('Error loading pending documents:', err);
+      console.error('Error loading documents:', err);
+      setDocLoadError(err.message || 'Network error loading documents');
+      showToast('Network error loading documents', 'error');
     } finally {
       setDocsLoading(false);
     }
-  }, []);
+  }, [docFilterStatus, showToast]);
+
+  // Cross-tab auto-scroll and highlight animation
+  useEffect(() => {
+    if (highlightSellerId && activeTab === 'documents' && sellersList.length > 0) {
+      const matchedSeller = sellersList.find(
+        (s) =>
+          String(s.userId) === String(highlightSellerId) ||
+          String(s.manufacturerId) === String(highlightSellerId)
+      );
+      const targetEl =
+        document.getElementById(`seller-docs-${highlightSellerId}`) ||
+        (matchedSeller && document.getElementById(`seller-docs-${matchedSeller.userId}`));
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setFlashId(String(matchedSeller?.userId || highlightSellerId));
+        const timer = setTimeout(() => {
+          setFlashId(null);
+          setHighlightSellerId(null);
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [highlightSellerId, activeTab, sellersList]);
 
   useEffect(() => {
     if (activeTab === 'documents') {
-      loadPendingDocuments();
+      loadDocuments();
     } else {
       loadData();
+      // Prefetch pending docs in background for indicator badges
+      fetch('/api/admin/documents?status=pending', { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.success && Array.isArray(d.documents)) {
+            setPendingDocs(d.documents);
+          }
+        })
+        .catch(() => {});
     }
-    // Also periodically prefetch document count
-    fetch('/api/admin/documents/pending')
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success && Array.isArray(d.documents)) {
-          setPendingDocs(d.documents);
-        }
-      })
-      .catch(() => {});
-
     setSelectedIds(new Set());
-  }, [activeTab, loadData, loadPendingDocuments]);
+  }, [activeTab, docFilterStatus, loadData, loadDocuments]);
 
   // Bulk selection helpers
   const handleToggleSelectAll = () => {
@@ -188,12 +235,18 @@ export default function VerificationQueuePage() {
       const data = await res.json();
       if (data.success) {
         setSelectedIds(new Set());
+        showToast(
+          decision === 'verified'
+            ? 'Selected sellers verified successfully.'
+            : 'Selected requests declined.',
+          'success'
+        );
         loadData();
       } else {
-        alert(data.message || 'Bulk decision failed');
+        showToast(data.message || 'Bulk decision failed', 'error');
       }
     } catch (e) {
-      alert('Error during bulk operation: ' + e.message);
+      showToast('Error during bulk operation: ' + e.message, 'error');
     } finally {
       setBulkLoading(false);
     }
@@ -278,7 +331,7 @@ export default function VerificationQueuePage() {
     const { type, item } = decisionModal;
 
     if (type === 'rejected' && !declineSellerMessage.trim()) {
-      alert('Please provide a message explaining to the seller why verification was declined.');
+      showToast('Please provide a message explaining to the seller why verification was declined.', 'error');
       return;
     }
 
@@ -312,12 +365,18 @@ export default function VerificationQueuePage() {
       if (data.success) {
         setDecisionModal(null);
         setEvidenceFiles([]);
+        showToast(
+          type === 'verified'
+            ? 'Manufacturer verified and trust badge granted!'
+            : 'Verification request declined and seller notified.',
+          'success'
+        );
         loadData();
       } else {
-        alert(data.message || 'Decision failed');
+        showToast(data.message || 'Decision failed', 'error');
       }
     } catch (e) {
-      alert('Error recording decision: ' + e.message);
+      showToast('Error recording decision: ' + e.message, 'error');
     } finally {
       setActionInProgressId(null);
     }
@@ -327,13 +386,13 @@ export default function VerificationQueuePage() {
   const handleReviewDoc = async (doc, action, reason = '') => {
     const targetMfrId = doc.manufacturerId || doc.userId;
     if (!targetMfrId) {
-      alert('Could not locate manufacturer or seller ID for this document.');
+      showToast('Could not locate manufacturer or seller ID for this document.', 'error');
       return;
     }
 
     const trimmedReason = reason.trim();
     if (!trimmedReason) {
-      alert(`Please enter a valid reason to ${action === 'approve' ? 'verify' : 'decline'} this document.`);
+      showToast(`Please enter a valid reason to ${action === 'approve' ? 'verify' : 'decline'} this document.`, 'error');
       return;
     }
 
@@ -358,23 +417,80 @@ export default function VerificationQueuePage() {
         setDocApproveReason('');
         setDocRejectTarget(null);
         setDocRejectReason('');
-        loadPendingDocuments();
+        showToast(
+          `${doc.label || 'Document'} successfully ${action === 'approve' ? 'verified' : 'declined'}!`,
+          'success'
+        );
+
+        // Optimistically update pendingDocs & sellersList
+        const nextStatus = action === 'approve' ? 'verified' : 'rejected';
+        setPendingDocs((prev) =>
+          docFilterStatus === 'pending'
+            ? prev.filter((d) => !(String(d.userId) === String(doc.userId) && d.docType === doc.docType))
+            : prev.map((d) =>
+                String(d.userId) === String(doc.userId) && d.docType === doc.docType
+                  ? { ...d, status: nextStatus, reason: trimmedReason }
+                  : d
+              )
+        );
+
+        setSellersList((prev) =>
+          prev
+            .map((s) => {
+              if (String(s.userId) !== String(doc.userId)) return s;
+              const updatedDocs = s.documents.map((d) => {
+                if (d.docType !== doc.docType) return d;
+                return {
+                  ...d,
+                  status: nextStatus,
+                  rejectionReason: action === 'reject' ? trimmedReason : '',
+                  reason: trimmedReason,
+                };
+              });
+
+              const filteredDocs =
+                docFilterStatus === 'pending'
+                  ? updatedDocs.filter((d) => d.status === 'pending')
+                  : docFilterStatus === 'verified'
+                  ? updatedDocs.filter((d) => d.status === 'verified')
+                  : docFilterStatus === 'rejected'
+                  ? updatedDocs.filter((d) => d.status === 'rejected')
+                  : updatedDocs;
+
+              return {
+                ...s,
+                documents: filteredDocs,
+                pendingCount: Math.max(
+                  0,
+                  (s.pendingCount || 0) - (doc.status === 'pending' ? 1 : 0)
+                ),
+                verifiedCount:
+                  action === 'approve' ? (s.verifiedCount || 0) + 1 : (s.verifiedCount || 0),
+                rejectedCount:
+                  action === 'reject' ? (s.rejectedCount || 0) + 1 : (s.rejectedCount || 0),
+              };
+            })
+            .filter((s) => docFilterStatus === 'all' || s.documents.length > 0)
+        );
+
+        // Background sync to ensure consistent server state
+        loadDocuments();
       } else {
-        alert(data.message || 'Failed to update document status');
+        showToast(data.message || 'Failed to update document status', 'error');
       }
     } catch (e) {
-      alert('Error updating document: ' + e.message);
+      showToast('Error updating document: ' + e.message, 'error');
     } finally {
       setActionInProgressId(null);
     }
   };
 
-  const handleBatchApproveDocs = async (manufacturerId) => {
+  const handleBatchApproveDocs = async (targetId) => {
     if (!confirm('Approve all uploaded business documents for this seller?')) return;
-    setActionInProgressId(`batch-${manufacturerId}`);
+    setActionInProgressId(`batch-${targetId}`);
     try {
       const res = await fetch(
-        `/api/admin/manufacturers/${manufacturerId}/documents/batch-approve`,
+        `/api/admin/manufacturers/${targetId}/documents/batch-approve`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -382,13 +498,13 @@ export default function VerificationQueuePage() {
       );
       const data = await res.json();
       if (data.success) {
-        alert(`Successfully verified ${data.approvedCount || 'all'} documents!`);
-        loadPendingDocuments();
+        showToast(`Successfully verified ${data.approvedCount || 'all'} documents!`, 'success');
+        loadDocuments();
       } else {
-        alert(data.message || 'Batch approval failed');
+        showToast(data.message || 'Batch approval failed', 'error');
       }
     } catch (e) {
-      alert('Error during batch approval: ' + e.message);
+      showToast('Error during batch approval: ' + e.message, 'error');
     } finally {
       setActionInProgressId(null);
     }
@@ -465,7 +581,7 @@ export default function VerificationQueuePage() {
 
           <button
             className="admin-btn admin-btn-secondary"
-            onClick={() => (activeTab === 'documents' ? loadPendingDocuments() : loadData())}
+            onClick={() => (activeTab === 'documents' ? loadDocuments() : loadData())}
             disabled={loading || docsLoading}
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
@@ -782,7 +898,7 @@ export default function VerificationQueuePage() {
                         />
                       </td>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                           <strong
                             style={{ color: '#2563EB', cursor: 'pointer', fontSize: 14 }}
                             onClick={() => handleInspect(r)}
@@ -812,6 +928,68 @@ export default function VerificationQueuePage() {
                         <div style={{ fontSize: 11, color: '#94A3B8' }}>
                           {r.requestedLocation?.address || mfr?.address || user?.location || '-'}
                         </div>
+
+                        {/* Indication if seller has uploaded documents with cross-tab link */}
+                        {(() => {
+                          const userDocs = user?.businessDocuments;
+                          let docCount = 0;
+                          let pendingCount = 0;
+                          if (userDocs && typeof userDocs === 'object') {
+                            Object.values(userDocs).forEach((entry) => {
+                              if (entry && entry.status && entry.status !== 'not_uploaded') {
+                                docCount++;
+                                if (entry.status === 'pending') pendingCount++;
+                              }
+                            });
+                          }
+                          // Also check against pendingDocs loaded in memory
+                          const inMemPending = pendingDocs.filter(
+                            (d) =>
+                              (user?._id && String(d.userId) === String(user._id)) ||
+                              (mfr?._id && String(d.manufacturerId) === String(mfr._id))
+                          ).length;
+                          const effectivePending = Math.max(pendingCount, inMemPending);
+                          if (docCount === 0 && effectivePending === 0) return null;
+
+                          return (
+                            <div style={{ marginTop: 6 }}>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const targetId = user?._id || mfr?._id;
+                                  if (targetId) {
+                                    setHighlightSellerId(String(targetId));
+                                  }
+                                  setDocFilterStatus(effectivePending > 0 ? 'pending' : 'all');
+                                  setActiveTab('documents');
+                                }}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  padding: '2px 8px',
+                                  borderRadius: 999,
+                                  backgroundColor: effectivePending > 0 ? '#F5F3FF' : '#F1F5F9',
+                                  color: effectivePending > 0 ? '#7C3AED' : '#475569',
+                                  border: effectivePending > 0 ? '1px solid #DDD6FE' : '1px solid #CBD5E1',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                }}
+                                title="Click to view and review business certificates for this seller"
+                              >
+                                <FileText size={12} color={effectivePending > 0 ? '#7C3AED' : '#64748B'} />
+                                <span>
+                                  {effectivePending > 0
+                                    ? `📄 ${effectivePending} Pending Doc${effectivePending > 1 ? 's' : ''} ↗`
+                                    : `📄 ${docCount} Docs Uploaded ↗`}
+                                </span>
+                              </button>
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       <td>
@@ -1034,214 +1212,563 @@ export default function VerificationQueuePage() {
         </div>
       )}
 
-      {/* Main Table: Business Documents Queue (Issue #22) */}
+      {/* Main Section: Business Documents Queue by Company */}
       {activeTab === 'documents' && (
-        <div className="admin-card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div
-            style={{
-              padding: '14px 16px',
-              borderBottom: '1px solid #E2E8F0',
-              backgroundColor: '#F8FAFC',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <div>
-              <strong style={{ fontSize: 14, color: '#0F172A' }}>
-                Pending Business Certificates & Documents
-              </strong>
-              <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
-                Approve or reject individual compliance documents without revoking the entire business profile.
-              </div>
-            </div>
-            <span
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Header Card & Filter Bar */}
+          <div className="admin-card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div
               style={{
-                fontSize: 12,
-                fontWeight: 700,
-                color: '#8B5CF6',
-                background: '#F5F3FF',
-                padding: '4px 10px',
-                borderRadius: 12,
-                border: '1px solid #DDD6FE',
+                padding: '16px 20px',
+                borderBottom: '1px solid #E2E8F0',
+                backgroundColor: '#F8FAFC',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 12,
               }}
             >
-              {pendingDocs.length} Pending Documents
-            </span>
+              <div>
+                <strong style={{ fontSize: 16, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <FileCheck size={20} color="#8B5CF6" /> Business Certificates & Compliance Documents
+                </strong>
+                <div style={{ fontSize: 12.5, color: '#64748B', marginTop: 4 }}>
+                  Verify GSTIN, MSME, ISO, pollution licenses, and legal compliance filings grouped by company.
+                </div>
+              </div>
+              <button
+                className="admin-btn admin-btn-secondary"
+                onClick={() => loadDocuments()}
+                disabled={docsLoading}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}
+              >
+                <RefreshCw size={13} className={docsLoading ? 'spin' : ''} /> Refresh Documents
+              </button>
+            </div>
+
+            {/* Document Queue Status Filters */}
+            <div
+              style={{
+                padding: '12px 16px',
+                backgroundColor: '#FFFFFF',
+                display: 'flex',
+                gap: 8,
+                alignItems: 'center',
+                flexWrap: 'wrap',
+              }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#475569', marginRight: 6 }}>
+                Filter Status:
+              </span>
+              {[
+                { key: 'pending', label: 'Pending Review', icon: Clock, color: '#D97706', bg: '#FEF3C7' },
+                { key: 'verified', label: 'Verified Certificates', icon: CheckCircle2, color: '#16A34A', bg: '#DCFCE7' },
+                { key: 'rejected', label: 'Declined Archive', icon: XCircle, color: '#DC2626', bg: '#FEE2E2' },
+                { key: 'all', label: 'All Documents', icon: FileText, color: '#64748B', bg: '#F1F5F9' },
+              ].map((tab) => {
+                const isActive = docFilterStatus === tab.key;
+                const TabIcon = tab.icon;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setDocFilterStatus(tab.key)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '6px 14px',
+                      borderRadius: 999,
+                      fontSize: 12.5,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      border: isActive ? `2px solid ${tab.color}` : '1px solid #CBD5E1',
+                      backgroundColor: isActive ? tab.bg : '#FFFFFF',
+                      color: isActive ? tab.color : '#475569',
+                    }}
+                  >
+                    <TabIcon size={14} color={isActive ? tab.color : '#64748B'} />
+                    {tab.label}
+                    {tab.key === 'pending' && pendingDocs.length > 0 && (
+                      <span
+                        style={{
+                          marginLeft: 4,
+                          fontSize: 11,
+                          padding: '1px 6px',
+                          borderRadius: 10,
+                          backgroundColor: isActive ? '#FFFFFF' : '#FEF3C7',
+                          color: '#B45309',
+                          fontWeight: 800,
+                        }}
+                      >
+                        {pendingDocs.length}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <table className="admin-table" style={{ margin: 0 }}>
-            <thead>
-              <tr>
-                <th>Manufacturer / Seller</th>
-                <th>Document Type</th>
-                <th>File Preview</th>
-                <th>Uploaded</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {docsLoading && (
-                <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8' }}>
-                    Loading pending documents...
-                  </td>
-                </tr>
-              )}
+          {/* Error Banner */}
+          {docLoadError && (
+            <div
+              style={{
+                padding: '14px 18px',
+                backgroundColor: '#FEF2F2',
+                border: '1px solid #FECACA',
+                borderRadius: 10,
+                color: '#991B1B',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <AlertTriangle size={18} color="#DC2626" />
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{docLoadError}</span>
+              </div>
+              <button
+                className="admin-btn admin-btn-secondary"
+                onClick={() => loadDocuments()}
+                style={{ fontSize: 12, padding: '4px 12px' }}
+              >
+                Retry
+              </button>
+            </div>
+          )}
 
-              {!docsLoading && pendingDocs.length === 0 && (
-                <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: '50px 0', color: '#94A3B8' }}>
-                    🎉 No pending business documents! All uploaded certificates have been reviewed.
-                  </td>
-                </tr>
-              )}
+          {/* Loading Indicator */}
+          {docsLoading && (
+            <div
+              className="admin-card"
+              style={{ textAlign: 'center', padding: '50px 0', color: '#94A3B8' }}
+            >
+              <RefreshCw size={24} className="spin" style={{ margin: '0 auto 12px auto' }} />
+              <div>Loading documents for review...</div>
+            </div>
+          )}
 
-              {!docsLoading &&
-                pendingDocs.map((doc, idx) => {
-                  const isBusy =
-                    actionInProgressId === `${doc.userId}-${doc.docType}` ||
-                    actionInProgressId === `batch-${doc.manufacturerId}`;
+          {/* Empty State */}
+          {!docsLoading && sellersList.length === 0 && (
+            <div
+              className="admin-card"
+              style={{ textAlign: 'center', padding: '60px 20px', color: '#64748B' }}
+            >
+              <div
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: '50%',
+                  backgroundColor: '#F1F5F9',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px auto',
+                }}
+              >
+                <FileSearch size={28} color="#94A3B8" />
+              </div>
+              <h3 style={{ margin: '0 0 6px 0', fontSize: 16, color: '#0F172A' }}>
+                {docFilterStatus === 'pending'
+                  ? '🎉 No Pending Business Documents!'
+                  : docFilterStatus === 'verified'
+                  ? 'No Verified Documents'
+                  : docFilterStatus === 'rejected'
+                  ? 'No Declined Documents'
+                  : 'No Business Documents Found'}
+              </h3>
+              <p style={{ margin: 0, fontSize: 13, color: '#94A3B8' }}>
+                {docFilterStatus === 'pending'
+                  ? 'All uploaded compliance certificates have been reviewed.'
+                  : 'There are currently no document submissions matching this status filter.'}
+              </p>
+            </div>
+          )}
 
-                  return (
-                    <tr key={`${doc.userId}-${doc.docType}-${idx}`}>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {/* Company-Centric Document Cards */}
+          {!docsLoading &&
+            sellersList.map((seller) => {
+              const isHighlighted =
+                flashId === String(seller.userId) ||
+                flashId === String(seller.manufacturerId) ||
+                (highlightSellerId && (String(seller.userId) === String(highlightSellerId) || String(seller.manufacturerId) === String(highlightSellerId)));
+
+              return (
+                <div
+                  key={String(seller.userId || seller.manufacturerId)}
+                  id={`seller-docs-${seller.userId}`}
+                  className={`admin-card ${isHighlighted ? 'doc-pulse-highlight' : ''}`}
+                  style={{
+                    padding: 0,
+                    overflow: 'hidden',
+                    border: isHighlighted ? '2px solid #8B5CF6' : '1px solid #E2E8F0',
+                    transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
+                  }}
+                >
+                  {/* Company Card Header */}
+                  <div
+                    style={{
+                      padding: '14px 18px',
+                      backgroundColor: '#F8FAFC',
+                      borderBottom: '1px solid #E2E8F0',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 12,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 8,
+                          backgroundColor: '#EFF6FF',
+                          color: '#2563EB',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Building2 size={22} />
+                      </div>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <strong
-                            style={{ color: '#2563EB', cursor: 'pointer', fontSize: 14 }}
+                            style={{
+                              fontSize: 15,
+                              color: '#0F172A',
+                              cursor: 'pointer',
+                            }}
                             onClick={() => {
-                              if (doc.manufacturerId) setInspectManufacturerId(doc.manufacturerId);
-                              else if (doc.userId) setInspectManufacturerId(doc.userId);
+                              if (seller.manufacturerId) setInspectManufacturerId(seller.manufacturerId);
+                              else if (seller.userId) setInspectManufacturerId(seller.userId);
                             }}
                           >
-                            {doc.manufacturerName} ↗
+                            {seller.companyName} ↗
                           </strong>
-                        </div>
-                        <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
-                          {doc.sellerEmail}
-                        </div>
-                      </td>
-
-                      <td>
-                        <span
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 700,
-                            padding: '3px 8px',
-                            borderRadius: 6,
-                            backgroundColor: '#EDE9FE',
-                            color: '#6D28D9',
-                          }}
-                        >
-                          {doc.label}
-                        </span>
-                      </td>
-
-                      <td>
-                        {doc.fileUrl ? (
-                          <a
-                            href={doc.fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              fontSize: 12,
-                              color: '#2563EB',
-                              textDecoration: 'none',
-                              fontWeight: 600,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 4,
-                            }}
-                          >
-                            <FileSearch size={14} /> Open Document ↗
-                          </a>
-                        ) : doc.gstNumber ? (
-                          <div style={{ fontSize: 12 }}>
-                            <span style={{ fontWeight: 600, color: '#1E293B', fontFamily: 'monospace' }}>{doc.gstNumber}</span>
-                            {doc.tradeName || doc.legalName ? (
-                              <div style={{ color: '#64748B', fontSize: 11 }}>{doc.tradeName || doc.legalName}</div>
-                            ) : null}
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: 12, color: '#94A3B8' }}>No link available</span>
-                        )}
-                      </td>
-
-                      <td>
-                        <span style={{ fontSize: 12, color: '#64748B' }}>
-                          {doc.uploadedAt
-                            ? new Date(doc.uploadedAt).toLocaleDateString('en-IN', {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric',
-                              })
-                            : '-'}
-                        </span>
-                      </td>
-
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: 6 }}>
-                          <button
-                            className="admin-btn admin-btn-primary"
-                            disabled={isBusy}
-                            style={{
-                              backgroundColor: '#16A34A',
-                              borderColor: '#15803D',
-                              padding: '4px 8px',
-                              fontSize: 11,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 4,
-                            }}
-                            onClick={() => {
-                              setDocApproveTarget(doc);
-                              setDocApproveReason('');
-                            }}
-                          >
-                            {isBusy ? <RefreshCw size={10} className="spin" /> : <Check size={12} />}
-                            Verify Doc
-                          </button>
-
-                          <button
-                            className="admin-btn admin-btn-danger"
-                            disabled={isBusy}
-                            style={{
-                              padding: '4px 8px',
-                              fontSize: 11,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 4,
-                            }}
-                            onClick={() => {
-                              setDocRejectTarget(doc);
-                              setDocRejectReason('');
-                            }}
-                          >
-                            <X size={12} /> Decline
-                          </button>
-
-                          {doc.manufacturerId && (
-                            <button
-                              className="admin-btn admin-btn-secondary"
-                              disabled={isBusy}
+                          {seller.pendingCount > 0 && (
+                            <span
                               style={{
-                                padding: '4px 8px',
                                 fontSize: 11,
-                                color: '#4F46E5',
-                                borderColor: '#C7D2FE',
+                                fontWeight: 700,
+                                padding: '2px 8px',
+                                borderRadius: 999,
+                                backgroundColor: '#FEF3C7',
+                                color: '#B45309',
+                                border: '1px solid #FDE68A',
                               }}
-                              onClick={() => handleBatchApproveDocs(doc.manufacturerId)}
                             >
-                              Verify All Docs
-                            </button>
+                              {seller.pendingCount} Pending
+                            </span>
+                          )}
+                          {seller.verifiedCount > 0 && (
+                            <span
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                padding: '2px 8px',
+                                borderRadius: 999,
+                                backgroundColor: '#DCFCE7',
+                                color: '#15803D',
+                                border: '1px solid #BBF7D0',
+                              }}
+                            >
+                              {seller.verifiedCount} Verified
+                            </span>
+                          )}
+                          {seller.rejectedCount > 0 && (
+                            <span
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                padding: '2px 8px',
+                                borderRadius: 999,
+                                backgroundColor: '#FEE2E2',
+                                color: '#B91C1C',
+                                border: '1px solid #FECACA',
+                              }}
+                            >
+                              {seller.rejectedCount} Declined
+                            </span>
                           )}
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-            </tbody>
-          </table>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: '#64748B',
+                            marginTop: 2,
+                            display: 'flex',
+                            gap: 14,
+                            flexWrap: 'wrap',
+                          }}
+                        >
+                          <span>Email: {seller.sellerEmail || '-'}</span>
+                          {seller.gstNumber && (
+                            <span>
+                              GSTIN: <strong style={{ fontFamily: 'monospace' }}>{seller.gstNumber}</strong>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <button
+                        className="admin-btn admin-btn-secondary"
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: 12,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                        }}
+                        onClick={() => {
+                          if (seller.manufacturerId) setInspectManufacturerId(seller.manufacturerId);
+                          else if (seller.userId) setInspectManufacturerId(seller.userId);
+                        }}
+                      >
+                        <Eye size={13} /> View 360° Profile
+                      </button>
+                      {seller.pendingCount > 0 && (
+                        <button
+                          className="admin-btn admin-btn-primary"
+                          disabled={actionInProgressId === `batch-${seller.manufacturerId || seller.userId}`}
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: 12,
+                            backgroundColor: '#16A34A',
+                            borderColor: '#15803D',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                          }}
+                          onClick={() => handleBatchApproveDocs(seller.manufacturerId || seller.userId)}
+                        >
+                          {actionInProgressId === `batch-${seller.manufacturerId || seller.userId}` ? (
+                            <RefreshCw size={12} className="spin" />
+                          ) : (
+                            <CheckCircle2 size={13} />
+                          )}
+                          Approve All {seller.pendingCount} Pending Docs
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Documents Table for this company */}
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="admin-table" style={{ margin: 0 }}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: '22%' }}>Document Type</th>
+                          <th style={{ width: '22%' }}>Preview / Identifier</th>
+                          <th style={{ width: '15%' }}>Status</th>
+                          <th style={{ width: '20%' }}>Audit Notes / Reason</th>
+                          <th style={{ width: '11%' }}>Uploaded</th>
+                          <th style={{ width: '10%', textAlign: 'right' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {seller.documents.map((doc, docIdx) => {
+                          const isBusy = actionInProgressId === `${doc.userId}-${doc.docType}`;
+                          const docStatus = doc.status || 'pending';
+
+                          return (
+                            <tr key={`${doc.docType}-${docIdx}`}>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <FileCheck size={16} color="#8B5CF6" />
+                                  <strong style={{ fontSize: 13, color: '#0F172A' }}>{doc.label}</strong>
+                                </div>
+                              </td>
+                              <td>
+                                {doc.fileUrl ? (
+                                  <a
+                                    href={doc.fileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{
+                                      fontSize: 12,
+                                      color: '#2563EB',
+                                      textDecoration: 'none',
+                                      fontWeight: 600,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                    }}
+                                  >
+                                    <FileSearch size={14} /> Open Document ↗
+                                  </a>
+                                ) : doc.gstNumber ? (
+                                  <div style={{ fontSize: 12 }}>
+                                    <span
+                                      style={{
+                                        fontWeight: 600,
+                                        color: '#1E293B',
+                                        fontFamily: 'monospace',
+                                      }}
+                                    >
+                                      {doc.gstNumber}
+                                    </span>
+                                    {doc.tradeName || doc.legalName ? (
+                                      <div style={{ color: '#64748B', fontSize: 11 }}>
+                                        {doc.tradeName || doc.legalName}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ) : (
+                                  <span style={{ fontSize: 12, color: '#94A3B8' }}>No link available</span>
+                                )}
+                              </td>
+                              <td>
+                                {docStatus === 'verified' ? (
+                                  <span
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                      fontSize: 11,
+                                      fontWeight: 700,
+                                      padding: '2px 8px',
+                                      borderRadius: 999,
+                                      backgroundColor: '#DCFCE7',
+                                      color: '#15803D',
+                                    }}
+                                  >
+                                    <Check size={11} /> Verified
+                                  </span>
+                                ) : docStatus === 'rejected' ? (
+                                  <span
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                      fontSize: 11,
+                                      fontWeight: 700,
+                                      padding: '2px 8px',
+                                      borderRadius: 999,
+                                      backgroundColor: '#FEE2E2',
+                                      color: '#DC2626',
+                                    }}
+                                  >
+                                    <X size={11} /> Declined
+                                  </span>
+                                ) : (
+                                  <span
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                      fontSize: 11,
+                                      fontWeight: 700,
+                                      padding: '2px 8px',
+                                      borderRadius: 999,
+                                      backgroundColor: '#FEF3C7',
+                                      color: '#B45309',
+                                    }}
+                                  >
+                                    <Clock size={11} /> Pending Review
+                                  </span>
+                                )}
+                              </td>
+                              <td>
+                                {doc.rejectionReason || doc.reason ? (
+                                  <div
+                                    style={{
+                                      fontSize: 12,
+                                      color: docStatus === 'rejected' ? '#DC2626' : '#15803D',
+                                      fontStyle: 'italic',
+                                      maxWidth: 220,
+                                    }}
+                                  >
+                                    &ldquo;{doc.rejectionReason || doc.reason}&rdquo;
+                                  </div>
+                                ) : (
+                                  <span style={{ fontSize: 12, color: '#94A3B8' }}>-</span>
+                                )}
+                                {doc.verifierName && (
+                                  <div style={{ fontSize: 10, color: '#64748B', marginTop: 2 }}>
+                                    By: {doc.verifierName}
+                                  </div>
+                                )}
+                              </td>
+                              <td>
+                                <span style={{ fontSize: 12, color: '#64748B' }}>
+                                  {doc.uploadedAt
+                                    ? new Date(doc.uploadedAt).toLocaleDateString('en-IN', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: 'numeric',
+                                      })
+                                    : '-'}
+                                </span>
+                              </td>
+                              <td style={{ textAlign: 'right' }}>
+                                <div style={{ display: 'inline-flex', gap: 6 }}>
+                                  {docStatus !== 'verified' && (
+                                    <button
+                                      className="admin-btn admin-btn-primary"
+                                      disabled={isBusy}
+                                      style={{
+                                        backgroundColor: '#16A34A',
+                                        borderColor: '#15803D',
+                                        padding: '4px 8px',
+                                        fontSize: 11,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                      }}
+                                      onClick={() => {
+                                        setDocApproveTarget({
+                                          ...doc,
+                                          manufacturerName: seller.companyName,
+                                        });
+                                        setDocApproveReason('');
+                                      }}
+                                    >
+                                      {isBusy ? <RefreshCw size={10} className="spin" /> : <Check size={12} />}
+                                      Verify
+                                    </button>
+                                  )}
+                                  {docStatus !== 'rejected' && (
+                                    <button
+                                      className="admin-btn admin-btn-danger"
+                                      disabled={isBusy}
+                                      style={{
+                                        padding: '4px 8px',
+                                        fontSize: 11,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                      }}
+                                      onClick={() => {
+                                        setDocRejectTarget({
+                                          ...doc,
+                                          manufacturerName: seller.companyName,
+                                        });
+                                        setDocRejectReason('');
+                                      }}
+                                    >
+                                      <X size={12} /> Decline
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
         </div>
       )}
 
@@ -1251,7 +1778,7 @@ export default function VerificationQueuePage() {
         onClose={() => setInspectManufacturerId(null)}
         manufacturerId={inspectManufacturerId}
         onStatusChanged={() => {
-          if (activeTab === 'documents') loadPendingDocuments();
+          if (activeTab === 'documents') loadDocuments();
           else loadData();
         }}
       />
@@ -1834,6 +2361,57 @@ export default function VerificationQueuePage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Global Toast Notification Banner */}
+      {toast && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            zIndex: 9999,
+            backgroundColor:
+              toast.type === 'error'
+                ? '#DC2626'
+                : toast.type === 'success'
+                ? '#16A34A'
+                : '#2563EB',
+            color: '#FFFFFF',
+            padding: '12px 18px',
+            borderRadius: 8,
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          {toast.type === 'error' ? (
+            <XCircle size={18} color="#FFFFFF" />
+          ) : toast.type === 'success' ? (
+            <CheckCircle2 size={18} color="#FFFFFF" />
+          ) : (
+            <AlertTriangle size={18} color="#FFFFFF" />
+          )}
+          <span>{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#FFFFFF',
+              cursor: 'pointer',
+              padding: 0,
+              marginLeft: 8,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
     </div>

@@ -37,7 +37,7 @@ export default function AdminLoginPage() {
             })
           );
         }
-        router.push('/admin/dashboard');
+        window.location.href = '/admin/dashboard';
       } else {
         setError(data.message || 'Authentication failed. Please verify credentials.');
       }
