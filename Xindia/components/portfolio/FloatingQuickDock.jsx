@@ -17,7 +17,12 @@ export default function FloatingQuickDock({ seller, slug }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const whatsappNum = seller.whatsappNumber || seller.buyerContactPhone || seller.businessPhone;
+  const rawWhatsapp = seller.whatsappNumber || seller.buyerContactPhone || seller.businessPhone;
+  const cleanWa = rawWhatsapp ? String(rawWhatsapp).replace(/\D/g, '') : '';
+  const standardWa = cleanWa.length === 12 && cleanWa.startsWith('91')
+    ? cleanWa.slice(2)
+    : (cleanWa.length === 11 && cleanWa.startsWith('0') ? cleanWa.slice(1) : cleanWa);
+  const whatsappNum = standardWa.length === 10 ? `91${standardWa}` : cleanWa;
   const cleanSlug = seller.slug || slug;
   const showroomUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/p/${cleanSlug}`

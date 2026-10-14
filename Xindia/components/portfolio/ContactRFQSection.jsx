@@ -42,8 +42,25 @@ export default function ContactRFQSection({ seller }) {
   const isSafeWebsite = formattedWebsite &&
     /^https?:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.[a-zA-Z]{2,}/.test(formattedWebsite);
   const rawPhone = seller.buyerContactPhone || seller.businessPhone || seller.contact?.phone;
-  const phone = rawPhone ? String(rawPhone).replace(/[^0-9+]/g, '') : null;
-  const whatsapp = seller.whatsappNumber || seller.contact?.whatsapp;
+  const cleanDigits = rawPhone ? String(rawPhone).replace(/\D/g, '') : '';
+  const standardDigits = cleanDigits.length === 12 && cleanDigits.startsWith('91')
+    ? cleanDigits.slice(2)
+    : (cleanDigits.length === 11 && cleanDigits.startsWith('0') ? cleanDigits.slice(1) : cleanDigits);
+  const displayPhone = standardDigits.length === 10
+    ? `+91 ${standardDigits.slice(0, 5)} ${standardDigits.slice(5)}`
+    : (rawPhone ? String(rawPhone).trim() : null);
+  const dialPhone = standardDigits.length === 10 ? `+91${standardDigits}` : (cleanDigits ? `+${cleanDigits}` : null);
+
+  const rawWhatsapp = seller.whatsappNumber || seller.contact?.whatsapp;
+  const cleanWa = rawWhatsapp ? String(rawWhatsapp).replace(/\D/g, '') : '';
+  const standardWa = cleanWa.length === 12 && cleanWa.startsWith('91')
+    ? cleanWa.slice(2)
+    : (cleanWa.length === 11 && cleanWa.startsWith('0') ? cleanWa.slice(1) : cleanWa);
+  const displayWhatsapp = standardWa.length === 10
+    ? `+91 ${standardWa.slice(0, 5)} ${standardWa.slice(5)}`
+    : (rawWhatsapp ? String(rawWhatsapp).trim() : null);
+  const dialWhatsapp = standardWa.length === 10 ? `91${standardWa}` : cleanWa;
+
   const rawEmail = seller.contactMail || seller.companyEmail || seller.contact?.email;
   const isSafeEmail = rawEmail && typeof rawEmail === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail.trim());
   const email = isSafeEmail ? rawEmail.trim() : null;
@@ -52,7 +69,7 @@ export default function ContactRFQSection({ seller }) {
     e.preventDefault();
     if (!buyerName.trim() || !productReq.trim()) return;
 
-    const whatsappTarget = whatsapp || phone;
+    const targetWhatsapp = dialWhatsapp || (standardDigits.length === 10 ? `91${standardDigits}` : cleanDigits);
     const msg = encodeURIComponent(
       `🔔 *NEW FACTORY RFQ FROM XINDIA SHOWROOM*\n\n` +
       `• *Buyer Name:* ${buyerName.trim()}\n` +
@@ -65,8 +82,8 @@ export default function ContactRFQSection({ seller }) {
       `Please provide formal quotation and commercial catalog.`
     );
 
-    if (whatsappTarget) {
-      window.open(`https://wa.me/${whatsappTarget.replace(/[^0-9]/g, '')}?text=${msg}`, '_blank');
+    if (targetWhatsapp) {
+      window.open(`https://wa.me/${targetWhatsapp}?text=${msg}`, '_blank');
     }
 
     setSubmitted(true);
@@ -260,22 +277,22 @@ export default function ContactRFQSection({ seller }) {
             )}
 
             <div className="portfolio-channels-list">
-              {phone && (
-                <a href={`tel:${phone}`} className="portfolio-channel-card">
+              {displayPhone && dialPhone && (
+                <a href={`tel:${dialPhone}`} className="portfolio-channel-card">
                   <div className="portfolio-channel-icon" style={{ background: '#EFF6FF', color: '#3B82F6' }}>
                     <PhoneCall size={18} />
                   </div>
                   <div>
                     <div className="portfolio-channel-label">Direct Buyer Desk</div>
-                    <div className="portfolio-channel-val portfolio-mono">{phone}</div>
+                    <div className="portfolio-channel-val portfolio-mono">{displayPhone}</div>
                   </div>
                   <span className="portfolio-channel-btn-text">Call Desk</span>
                 </a>
               )}
 
-              {whatsapp && (
+              {displayWhatsapp && dialWhatsapp && (
                 <a
-                  href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
+                  href={`https://wa.me/${dialWhatsapp}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="portfolio-channel-card whatsapp"
@@ -285,7 +302,7 @@ export default function ContactRFQSection({ seller }) {
                   </div>
                   <div>
                     <div className="portfolio-channel-label">Official WhatsApp Channel</div>
-                    <div className="portfolio-channel-val portfolio-mono">{whatsapp}</div>
+                    <div className="portfolio-channel-val portfolio-mono">{displayWhatsapp}</div>
                   </div>
                   <span className="portfolio-channel-btn-text">Chat Now</span>
                 </a>

@@ -69,6 +69,8 @@ export default function AdminSidebar() {
     loaded,
   } = useAdminPermissions();
 
+  if (pathname === '/admin/login') return null;
+
   // Resolve which links to show based on delegated capabilities.
   const links = ALL_LINKS.filter(({ flag }) => {
     if (flag === 'always')   return true;
