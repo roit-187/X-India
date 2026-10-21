@@ -15,6 +15,7 @@ import {
   User,
   Sparkles,
   CheckCircle2,
+  AlertCircle,
   Lock,
 } from 'lucide-react';
 
@@ -33,7 +34,11 @@ export default function ContactRFQSection({ seller }) {
   const [productReq, setProductReq] = useState('');
   const [orderQty, setOrderQty] = useState('');
   const [timeline, setTimeline] = useState('Within 1-2 Weeks');
-  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [confirmation, setConfirmation] = useState(null);
+  const [honeypot, setHoneypot] = useState('');
+  const [fanOut, setFanOut] = useState(false);
 
   const websiteUrl = seller.contact?.website || (seller.website ? seller.website : null);
   const formattedWebsite = websiteUrl && !websiteUrl.startsWith('http') ? `https://${websiteUrl}` : websiteUrl;
@@ -65,16 +70,32 @@ export default function ContactRFQSection({ seller }) {
   const isSafeEmail = rawEmail && typeof rawEmail === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail.trim());
   const email = isSafeEmail ? rawEmail.trim() : null;
 
-  const handleSendRFQ = (e) => {
+  const handleSendRFQ = async (e) => {
     e.preventDefault();
-    if (!buyerName.trim() || !productReq.trim()) return;
+    setErrorMessage('');
+    if (!buyerName.trim() || !productReq.trim()) {
+      setErrorMessage('Please fill in your name and product requirement.');
+      return;
+    }
+
+    const cleanInputPhone = buyerPhone.replace(/\D/g, '');
+    const validDigits = cleanInputPhone.length === 12 && cleanInputPhone.startsWith('91')
+      ? cleanInputPhone.slice(2)
+      : (cleanInputPhone.length === 11 && cleanInputPhone.startsWith('0') ? cleanInputPhone.slice(1) : cleanInputPhone);
+
+    if (validDigits.length !== 10) {
+      setErrorMessage('Please enter a valid 10-digit mobile number so the factory can reach you.');
+      return;
+    }
+
+    setSubmitting(true);
 
     const targetWhatsapp = dialWhatsapp || (standardDigits.length === 10 ? `91${standardDigits}` : cleanDigits);
     const msg = encodeURIComponent(
       `🔔 *NEW FACTORY RFQ FROM XINDIA SHOWROOM*\n\n` +
       `• *Buyer Name:* ${buyerName.trim()}\n` +
       `• *Company / Brand:* ${buyerCompany.trim() || 'N/A'}\n` +
-      `• *Contact Phone:* ${buyerPhone.trim() || 'N/A'}\n` +
+      `• *Contact Phone:* +91 ${validDigits}\n` +
       `• *Email:* ${buyerEmail.trim() || 'N/A'}\n` +
       `• *Product / Requirement:* ${productReq.trim()}\n` +
       `• *Target Quantity:* ${orderQty.trim() || 'Standard MOQ'}\n` +
@@ -82,20 +103,49 @@ export default function ContactRFQSection({ seller }) {
       `Please provide formal quotation and commercial catalog.`
     );
 
-    if (targetWhatsapp) {
-      window.open(`https://wa.me/${targetWhatsapp}?text=${msg}`, '_blank');
-    }
+    try {
+      const res = await fetch('/api/public/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          buyerName: buyerName.trim(),
+          buyerPhone: `+91${validDigits}`,
+          buyerEmail: buyerEmail.trim() || undefined,
+          buyerCompany: buyerCompany.trim() || undefined,
+          productRequirement: productReq.trim(),
+          orderQty: orderQty.trim() || undefined,
+          timeline,
+          slug: seller.slug,
+          company_fax: honeypot || undefined,
+          fanOut,
+        }),
+      });
 
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to submit inquiry to manufacturer.');
+      }
+
+      setConfirmation({
+        referenceNumber: data.referenceNumber,
+        targetWhatsapp,
+        whatsappMsg: msg,
+        fanOut,
+      });
+
+      setFanOut(false);
+
       setBuyerName('');
       setBuyerCompany('');
       setBuyerPhone('');
       setBuyerEmail('');
       setProductReq('');
       setOrderQty('');
-    }, 4000);
+    } catch (err) {
+      setErrorMessage(err.message || 'Network error submitting RFQ. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const itemVariants = {
@@ -144,121 +194,218 @@ export default function ContactRFQSection({ seller }) {
               </div>
             </div>
 
-            <form onSubmit={handleSendRFQ} className="portfolio-rfq-form">
-              <div className="portfolio-rfq-row-2">
+            {confirmation ? (
+              <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 18, padding: 28, textAlign: 'center' }}>
+                <div style={{ display: 'inline-flex', padding: 12, background: '#DCFCE7', borderRadius: '50%', color: '#16A34A', marginBottom: 14 }}>
+                  <CheckCircle2 size={36} />
+                </div>
+                <h4 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 800, color: '#14532D' }}>
+                  RFQ Dispatched to Manufacturer Desk!
+                </h4>
+                <p style={{ margin: '0 0 16px', fontSize: 14, color: '#166534', lineHeight: 1.5 }}>
+                  Your requirement has been securely registered and forwarded to {seller.name}&apos;s commercial desk.
+                  {confirmation.fanOut && ' We have also matched this request with up to 3 other verified factories in this category for competitive quotes.'} The factory team will follow up directly on your phone/WhatsApp.
+                </p>
+                <div style={{ display: 'inline-block', background: '#fff', border: '1px solid #86EFAC', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 800, color: '#15803D', marginBottom: 18 }}>
+                  Reference: {confirmation.referenceNumber}
+                </div>
+                {confirmation.targetWhatsapp && (
+                  <div style={{ marginTop: 6, marginBottom: 14 }}>
+                    <a
+                      href={`https://wa.me/${confirmation.targetWhatsapp}?text=${confirmation.whatsappMsg}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="portfolio-rfq-submit-btn"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        textDecoration: 'none',
+                        background: '#25D366',
+                        color: '#fff',
+                        padding: '13px 24px',
+                        borderRadius: 12,
+                        fontWeight: 800,
+                        fontSize: 14,
+                        boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)',
+                      }}
+                    >
+                      <MessageSquare size={16} />
+                      <span>Chat Directly on WhatsApp (Optional)</span>
+                    </a>
+                  </div>
+                )}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmation(null)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#4B5563',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      marginTop: 8,
+                    }}
+                  >
+                    Submit Another Inquiry
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSendRFQ} className="portfolio-rfq-form">
+                {/* Honeypot field for bot protection */}
+                <input
+                  type="text"
+                  name="company_fax"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  style={{ display: 'none' }}
+                  tabIndex="-1"
+                  autoComplete="off"
+                />
+
+                {errorMessage && (
+                  <div className="portfolio-form-alert error" style={{ marginBottom: 14 }}>
+                    <AlertCircle size={16} /> {errorMessage}
+                  </div>
+                )}
+
+                <div className="portfolio-rfq-row-2">
+                  <div className="portfolio-form-group">
+                    <label className="portfolio-form-label">
+                      <User size={12} style={{ display: 'inline', marginRight: 4 }} />
+                      Your Name <span className="portfolio-required">*</span>
+                    </label>
+                    <input
+                      className="portfolio-form-input"
+                      value={buyerName}
+                      onChange={(e) => setBuyerName(e.target.value)}
+                      placeholder="e.g. Rahul Sharma"
+                      required
+                    />
+                  </div>
+
+                  <div className="portfolio-form-group">
+                    <label className="portfolio-form-label">
+                      <Building2 size={12} style={{ display: 'inline', marginRight: 4 }} />
+                      Company / Brand
+                    </label>
+                    <input
+                      className="portfolio-form-input"
+                      value={buyerCompany}
+                      onChange={(e) => setBuyerCompany(e.target.value)}
+                      placeholder="e.g. Apex Lifestyle Brands"
+                    />
+                  </div>
+                </div>
+
+                <div className="portfolio-rfq-row-2">
+                  <div className="portfolio-form-group">
+                    <label className="portfolio-form-label">
+                      <PhoneCall size={12} style={{ display: 'inline', marginRight: 4 }} />
+                      WhatsApp / Phone <span className="portfolio-required">*</span>
+                    </label>
+                    <input
+                      className="portfolio-form-input"
+                      value={buyerPhone}
+                      onChange={(e) => setBuyerPhone(e.target.value)}
+                      placeholder="10-digit mobile number"
+                      required
+                    />
+                  </div>
+
+                  <div className="portfolio-form-group">
+                    <label className="portfolio-form-label">
+                      <Mail size={12} style={{ display: 'inline', marginRight: 4 }} />
+                      Email Address
+                    </label>
+                    <input
+                      className="portfolio-form-input"
+                      type="email"
+                      value={buyerEmail}
+                      onChange={(e) => setBuyerEmail(e.target.value)}
+                      placeholder="buyer@company.com"
+                    />
+                  </div>
+                </div>
+
                 <div className="portfolio-form-group">
                   <label className="portfolio-form-label">
-                    <User size={12} style={{ display: 'inline', marginRight: 4 }} />
-                    Your Name <span className="portfolio-required">*</span>
+                    Product Requirement / Specifications <span className="portfolio-required">*</span>
                   </label>
-                  <input
-                    className="portfolio-form-input"
-                    value={buyerName}
-                    onChange={(e) => setBuyerName(e.target.value)}
-                    placeholder="e.g. Rahul Sharma"
+                  <textarea
+                    className="portfolio-form-textarea"
+                    rows={3}
+                    value={productReq}
+                    onChange={(e) => setProductReq(e.target.value)}
+                    placeholder="Describe your target product, custom dimensions, color preferences, material grades, or logo branding..."
                     required
                   />
                 </div>
 
-                <div className="portfolio-form-group">
-                  <label className="portfolio-form-label">
-                    <Building2 size={12} style={{ display: 'inline', marginRight: 4 }} />
-                    Company / Brand
-                  </label>
-                  <input
-                    className="portfolio-form-input"
-                    value={buyerCompany}
-                    onChange={(e) => setBuyerCompany(e.target.value)}
-                    placeholder="e.g. Apex Lifestyle Brands"
-                  />
-                </div>
-              </div>
+                <div className="portfolio-rfq-row-2">
+                  <div className="portfolio-form-group">
+                    <label className="portfolio-form-label">Target Quantity / Units</label>
+                    <input
+                      className="portfolio-form-input"
+                      value={orderQty}
+                      onChange={(e) => setOrderQty(e.target.value)}
+                      placeholder="e.g. 500 pcs, 1000 units"
+                    />
+                  </div>
 
-              <div className="portfolio-rfq-row-2">
-                <div className="portfolio-form-group">
-                  <label className="portfolio-form-label">
-                    <PhoneCall size={12} style={{ display: 'inline', marginRight: 4 }} />
-                    WhatsApp / Phone
-                  </label>
-                  <input
-                    className="portfolio-form-input"
-                    value={buyerPhone}
-                    onChange={(e) => setBuyerPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                  />
+                  <div className="portfolio-form-group">
+                    <label className="portfolio-form-label">Required Delivery Timeline</label>
+                    <select
+                      className="portfolio-form-input"
+                      value={timeline}
+                      onChange={(e) => setTimeline(e.target.value)}
+                    >
+                      <option value="Urgent (Within 7 Days)">Urgent (Within 7 Days)</option>
+                      <option value="Within 1-2 Weeks">Within 1-2 Weeks</option>
+                      <option value="Within 1 Month">Within 1 Month</option>
+                      <option value="Long Term Annual Contract">Long Term Annual Contract</option>
+                    </select>
+                  </div>
                 </div>
 
-                <div className="portfolio-form-group">
-                  <label className="portfolio-form-label">
-                    <Mail size={12} style={{ display: 'inline', marginRight: 4 }} />
-                    Email Address
-                  </label>
+                <label
+                  className="portfolio-rfq-fanout-label"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 8,
+                    cursor: 'pointer',
+                    margin: '8px 0 16px',
+                    fontSize: 13,
+                    color: '#334155',
+                    lineHeight: 1.4,
+                  }}
+                >
                   <input
-                    className="portfolio-form-input"
-                    type="email"
-                    value={buyerEmail}
-                    onChange={(e) => setBuyerEmail(e.target.value)}
-                    placeholder="buyer@company.com"
+                    type="checkbox"
+                    checked={fanOut}
+                    onChange={(e) => setFanOut(e.target.checked)}
+                    style={{ marginTop: 2, accentColor: '#059669', cursor: 'pointer' }}
                   />
-                </div>
-              </div>
-
-              <div className="portfolio-form-group">
-                <label className="portfolio-form-label">
-                  Product Requirement / Specifications <span className="portfolio-required">*</span>
+                  <span>Also receive competitive quotes from up to 3 other verified factories in this category</span>
                 </label>
-                <textarea
-                  className="portfolio-form-textarea"
-                  rows={3}
-                  value={productReq}
-                  onChange={(e) => setProductReq(e.target.value)}
-                  placeholder="Describe your target product, custom dimensions, color preferences, material grades, or logo branding..."
-                  required
-                />
-              </div>
 
-              <div className="portfolio-rfq-row-2">
-                <div className="portfolio-form-group">
-                  <label className="portfolio-form-label">Target Quantity / Units</label>
-                  <input
-                    className="portfolio-form-input"
-                    value={orderQty}
-                    onChange={(e) => setOrderQty(e.target.value)}
-                    placeholder="e.g. 500 pcs, 1000 units"
-                  />
-                </div>
-
-                <div className="portfolio-form-group">
-                  <label className="portfolio-form-label">Required Delivery Timeline</label>
-                  <select
-                    className="portfolio-form-input"
-                    value={timeline}
-                    onChange={(e) => setTimeline(e.target.value)}
-                  >
-                    <option value="Urgent (Within 7 Days)">Urgent (Within 7 Days)</option>
-                    <option value="Within 1-2 Weeks">Within 1-2 Weeks</option>
-                    <option value="Within 1 Month">Within 1 Month</option>
-                    <option value="Long Term Annual Contract">Long Term Annual Contract</option>
-                  </select>
-                </div>
-              </div>
-
-              {submitted ? (
-                <div className="portfolio-form-alert success">
-                  <CheckCircle2 size={16} /> Opening WhatsApp to dispatch your RFQ to {seller.name}...
-                </div>
-              ) : (
-                <button type="submit" className="portfolio-rfq-submit-btn">
+                <button type="submit" disabled={submitting} className="portfolio-rfq-submit-btn">
                   <Send size={15} />
-                  <span>Send Instant RFQ via WhatsApp</span>
+                  <span>{submitting ? 'Dispatching to Factory Desk...' : 'Send Formal RFQ to Factory'}</span>
                 </button>
-              )}
 
-              <div className="portfolio-rfq-guarantee">
-                <Lock size={12} color="#10B981" />
-                <span>Zero spam guarantee. Direct connection with verified factory commercial desk.</span>
-              </div>
-            </form>
+                <div className="portfolio-rfq-guarantee">
+                  <Lock size={12} color="#10B981" />
+                  <span>Zero spam guarantee. Direct connection with verified factory commercial desk.</span>
+                </div>
+              </form>
+            )}
           </div>
 
           {/* Right Column: Executive Contact Desk & Credentials */}

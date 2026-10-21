@@ -7,10 +7,12 @@ import Toggle from './Toggle';
 export default function ManufacturerCard({
   manufacturer,
   canManageSellers = false,
+  canEdit = false,
   onToggleActive,
   onOpenBlockModal,
   onUnblock,
   onInspect,
+  onQuickEdit,
 }) {
   const planVariant = manufacturer.planStatus === 'active' ? 'active'
     : manufacturer.planStatus === 'grace' ? 'grace'
@@ -37,6 +39,16 @@ export default function ManufacturerCard({
           </h3>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {onQuickEdit && canEdit && (
+            <button
+              className="admin-btn admin-btn-secondary"
+              style={{ padding: '4px 8px', fontSize: 11 }}
+              onClick={() => onQuickEdit(manufacturer)}
+              title="Quick edit contact & profile details"
+            >
+              Edit
+            </button>
+          )}
           {onInspect && (
             <button
               className="admin-btn admin-btn-secondary"

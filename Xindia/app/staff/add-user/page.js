@@ -364,23 +364,104 @@ export default function StaffAddUserPage() {
     }
   };
 
-  // YouTube Embed Formatter
+  // YouTube Embed Formatter (handles standard, shorts, and mobile URLs)
   const getYouTubeEmbedUrl = (url) => {
     if (!url) return '';
     try {
-      const parsed = new URL(url);
+      const str = url.trim();
+      const shortsMatch = str.match(/(?:youtube\.com|youtu\.be)\/shorts\/([a-zA-Z0-9_-]+)/);
+      if (shortsMatch && shortsMatch[1]) {
+        return `https://www.youtube.com/embed/${shortsMatch[1]}`;
+      }
+      const parsed = new URL(str);
       if (parsed.hostname.includes('youtube.com')) {
         const v = parsed.searchParams.get('v');
         if (v) return `https://www.youtube.com/embed/${v}`;
       } else if (parsed.hostname.includes('youtu.be')) {
-        const v = parsed.pathname.replace('/', '');
+        const v = parsed.pathname.replace(/^\//, '').split(/[?#]/)[0];
         if (v) return `https://www.youtube.com/embed/${v}`;
       }
     } catch (_) {}
     return url;
   };
 
+  // Reset form fields after successful onboarding
+  const resetForm = () => {
+    setGstInput('');
+    setGstLoading(false);
+    setGstVerifiedData(null);
+    setGstError('');
+    setFirstName('');
+    setLastName('');
+    setPhone('');
+    setEmail('');
+    setCompanyName('');
+    setCompanyOwner('');
+    setFullAddress('');
+    setCity('');
+    setState('');
+    setPincode('');
+    setLatitude('');
+    setLongitude('');
+    setGpsLoading(false);
+    setGpsStatus('');
+    setBusinessType('Manufacturer');
+    setLegalStatus('Private Limited');
+    setYearOfEstablishment('');
+    setAboutFactory('');
+    setFactorySize('');
+    setMachinesCount('');
+    setEmployeesCount('');
+    setMonthlyCapacity('');
+    setExportPercentage('');
+    setPrimaryProductsStr('');
+    setCapabilitiesStr('');
+    setBusinessPhone('');
+    setAlternatePhone('');
+    setBuyerContactPhone('');
+    setWhatsappNumber('');
+    setCompanyEmail('');
+    setLogoUrl('');
+    setCoverImageUrl('');
+    setFactoryPhotos([]);
+    setVideoMode('youtube');
+    setYoutubeUrl('');
+    setUploadedVideoUrl('');
+    setSelectedCategoryIds([]);
+    setCategorySearch('');
+    setGstDocUrl('');
+    setKycDocs([]);
+    setKycDocTitle('');
+    setVerificationAction('RAISE_REQUEST');
+    setActiveStep(1);
+  };
+
   // Navigation Steps Validation
+  const handleTabClick = (stepId) => {
+    if (stepId > 1) {
+      if (!employeeId.trim()) {
+        setStatusMsg({ type: 'error', text: 'Please enter your Employee ID first.' });
+        setActiveStep(1);
+        return;
+      }
+      const clean = phone.replace(/\D/g, '').slice(-10);
+      if (!firstName.trim() || clean.length < 10 || !companyName.trim()) {
+        setStatusMsg({ type: 'error', text: 'Please complete Step 1 (Seller details & Company name) first.' });
+        setActiveStep(1);
+        return;
+      }
+    }
+    if (stepId > 2) {
+      if (!city.trim() || !state.trim()) {
+        setStatusMsg({ type: 'error', text: 'Please complete Step 2 (City & State) first.' });
+        setActiveStep(2);
+        return;
+      }
+    }
+    setStatusMsg(null);
+    setActiveStep(stepId);
+  };
+
   const handleNext = () => {
     if (activeStep === 1) {
       if (!employeeId.trim()) {
@@ -418,6 +499,30 @@ export default function StaffAddUserPage() {
   // Form Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Comprehensive required-field checks across steps before submitting
+    if (!employeeId.trim()) {
+      setStatusMsg({ type: 'error', text: 'Please enter your Employee ID to receive onboarding score credit.' });
+      setActiveStep(1);
+      return;
+    }
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    if (!firstName.trim() || cleanPhone.length < 10) {
+      setStatusMsg({ type: 'error', text: 'Seller First Name and a valid 10-digit mobile phone are required.' });
+      setActiveStep(1);
+      return;
+    }
+    if (!companyName.trim()) {
+      setStatusMsg({ type: 'error', text: 'Company Name is required. Use GST auto-fill or enter manually.' });
+      setActiveStep(1);
+      return;
+    }
+    if (!city.trim() || !state.trim()) {
+      setStatusMsg({ type: 'error', text: 'City and State are required for geographical directory indexing.' });
+      setActiveStep(2);
+      return;
+    }
+
     setLoading(true);
     setStatusMsg(null);
     setResultData(null);
@@ -455,7 +560,7 @@ export default function StaffAddUserPage() {
           employeeId: employeeId.trim(),
           firstName: firstName.trim(),
           lastName: lastName.trim(),
-          phone: phone.trim(),
+          phone: cleanPhone,
           email: email.trim(),
           companyName: companyName.trim(),
           companyOwner: companyOwner.trim() || `${firstName.trim()} ${lastName.trim()}`.trim(),
@@ -479,10 +584,10 @@ export default function StaffAddUserPage() {
           capabilities,
           gstNumber: gstInput.trim().toUpperCase(),
           gstDocumentUrl: gstDocUrl,
-          businessPhone: businessPhone.trim() || phone.trim(),
-          alternatePhone: alternatePhone.trim(),
-          buyerContactPhone: buyerContactPhone.trim() || phone.trim(),
-          whatsappNumber: whatsappNumber.trim() || phone.trim(),
+          businessPhone: businessPhone.replace(/\D/g, '').slice(-10) || cleanPhone,
+          alternatePhone: alternatePhone.replace(/\D/g, '').slice(-10),
+          buyerContactPhone: buyerContactPhone.replace(/\D/g, '').slice(-10) || cleanPhone,
+          whatsappNumber: whatsappNumber.replace(/\D/g, '').slice(-10) || cleanPhone,
           companyEmail: companyEmail.trim() || email.trim(),
           logo: logoUrl,
           coverImage: coverImageUrl,
@@ -500,7 +605,7 @@ export default function StaffAddUserPage() {
           ...data,
           verificationAction,
         });
-        setActiveStep(1);
+        resetForm();
       } else {
         setStatusMsg({ type: 'error', text: data.message || 'Failed to onboard seller.' });
       }
@@ -617,6 +722,28 @@ export default function StaffAddUserPage() {
                   <Award size={14} /> +1 Score credited to {resultData.staff.employeeId || resultData.staff.username} (Total Score: {resultData.staff.onboardedScore})
                 </div>
               )}
+              <div style={{ marginTop: 14 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResultData(null);
+                    setStatusMsg(null);
+                    resetForm();
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    background: '#16A34A',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                  }}
+                >
+                  + Onboard Another Seller
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -656,7 +783,7 @@ export default function StaffAddUserPage() {
               <button
                 key={s.id}
                 type="button"
-                onClick={() => setActiveStep(s.id)}
+                onClick={() => handleTabClick(s.id)}
                 style={{
                   flex: 1,
                   padding: '14px 12px',

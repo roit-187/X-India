@@ -6,10 +6,11 @@ import Link from 'next/link';
 import ManufacturerCard from '@/components/admin/ManufacturerCard';
 import Modal from '@/components/admin/Modal';
 import SellerDetailModal from '@/components/admin/SellerDetailModal';
+import QuickEditManufacturerModal from '@/components/admin/QuickEditManufacturerModal';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 function ManufacturersContent() {
-  const { isSuperAdmin } = useAdminPermissions();
+  const { isSuperAdmin, canEditManufacturers } = useAdminPermissions();
   const searchParams = useSearchParams();
   const [manufacturers, setManufacturers] = useState([]);
   const [page, setPage] = useState(1);
@@ -33,6 +34,7 @@ function ManufacturersContent() {
   const [blockDays, setBlockDays] = useState(30);
   const [blockReason, setBlockReason] = useState('');
   const [inspectManufacturerId, setInspectManufacturerId] = useState(null);
+  const [quickEditTarget, setQuickEditTarget] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -128,6 +130,13 @@ function ManufacturersContent() {
     }
   };
 
+  const handleQuickEditSuccess = (updatedMfr) => {
+    if (!updatedMfr?._id) return;
+    setManufacturers((prev) =>
+      prev.map((m) => (m._id === updatedMfr._id ? { ...m, ...updatedMfr } : m))
+    );
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -208,10 +217,12 @@ function ManufacturersContent() {
               key={m._id}
               manufacturer={m}
               canManageSellers={isSuperAdmin}
+              canEdit={canEditManufacturers}
               onToggleActive={handleToggleActive}
               onOpenBlockModal={handleOpenBlockModal}
               onUnblock={handleUnblock}
               onInspect={(id) => setInspectManufacturerId(id)}
+              onQuickEdit={(mfr) => setQuickEditTarget(mfr)}
             />
           ))}
           {manufacturers.length === 0 && (
@@ -277,6 +288,14 @@ function ManufacturersContent() {
         onClose={() => setInspectManufacturerId(null)}
         manufacturerId={inspectManufacturerId}
         onStatusChanged={load}
+      />
+
+      {/* Scoped Quick-Edit Modal */}
+      <QuickEditManufacturerModal
+        open={!!quickEditTarget}
+        onClose={() => setQuickEditTarget(null)}
+        manufacturer={quickEditTarget}
+        onSaved={handleQuickEditSuccess}
       />
     </div>
   );

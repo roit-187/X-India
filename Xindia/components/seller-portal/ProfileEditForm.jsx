@@ -362,7 +362,7 @@ export default function ProfileEditForm({ initialData, onUpdateSuccess }) {
       if (coverFile) formData.append('coverImage', coverFile);
 
       newPhotoFiles.forEach((file) => {
-        formData.append('manufacturingPlants', file);
+        formData.append('factoryPhotos', file);
       });
 
       if (removedPhotos.length > 0) {
@@ -556,6 +556,18 @@ export default function ProfileEditForm({ initialData, onUpdateSuccess }) {
                 {...register('gstNumber')}
               />
               <span className="seller-field-hint">Your 15-digit GSTIN helps establish verified authenticity with B2B buyers.</span>
+            </div>
+
+            <div className="seller-field-group">
+              <label className="seller-field-label">Official Corporate Email</label>
+              <input
+                type="email"
+                className="seller-input"
+                style={{ width: '100%' }}
+                placeholder="e.g. sales@factory.com or contact@brand.in"
+                {...register('companyEmail')}
+              />
+              <span className="seller-field-hint">Published on your public showroom for verified buyer inquiries. Never shares your private login email.</span>
             </div>
 
             <div className="seller-field-group">
@@ -1263,28 +1275,15 @@ export default function ProfileEditForm({ initialData, onUpdateSuccess }) {
               </div>
             </div>
 
-            <div className="seller-form-grid-2">
-              <div className="seller-field-group">
-                <label className="seller-field-label">Office / Landline Phone</label>
-                <input
-                  type="tel"
-                  className="seller-input"
-                  style={{ width: '100%' }}
-                  placeholder="022-28765432"
-                  {...register('businessPhone')}
-                />
-              </div>
-
-              <div className="seller-field-group">
-                <label className="seller-field-label">Official Company Email</label>
-                <input
-                  type="email"
-                  className="seller-input"
-                  style={{ width: '100%' }}
-                  placeholder="sales@company.com"
-                  {...register('companyEmail')}
-                />
-              </div>
+            <div className="seller-field-group">
+              <label className="seller-field-label">Office / Landline Phone</label>
+              <input
+                type="tel"
+                className="seller-input"
+                style={{ width: '100%' }}
+                placeholder="022-28765432"
+                {...register('businessPhone')}
+              />
             </div>
 
             <div className="seller-field-group">

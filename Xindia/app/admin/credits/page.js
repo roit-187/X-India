@@ -33,6 +33,9 @@ export default function AdminCreditsPage() {
     highIntentLeadCost: 3,
     standardInquiryCost: 1,
     creditExpiryDays: 90,
+    defaultLeadMaxSlots: 50,
+    defaultLeadExpiryDays: 7,
+    defaultPushFanOutCap: 50,
   });
   const [packages, setPackages] = useState([]);
   const [boostPlans, setBoostPlans] = useState([]);
@@ -590,6 +593,66 @@ export default function AdminCreditsPage() {
               />
               <span style={{ display: 'block', fontSize: 11, color: '#64748B', marginTop: 6 }}>
                 Cost to unlock standard catalog inquiries.
+              </span>
+            </div>
+
+            {/* Default Lead Capacity (Max Supplier Slots) */}
+            <div style={{ background: '#F8FAFC', padding: 18, borderRadius: 14, border: '1px solid #E2E8F0' }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 800, color: '#334155', marginBottom: 6 }}>
+                Standard Lead Capacity (Max Slots)
+              </label>
+              <input
+                type="number"
+                value={settings.defaultLeadMaxSlots ?? 50}
+                onChange={(e) => setSettings({ ...settings, defaultLeadMaxSlots: Number(e.target.value) })}
+                min="1"
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 10,
+                  border: '1px solid #CBD5E1', fontSize: 16, fontWeight: 700, outline: 'none',
+                }}
+              />
+              <span style={{ display: 'block', fontSize: 11, color: '#64748B', marginTop: 6 }}>
+                Max manufacturers that can unlock a standard lead (default 50).
+              </span>
+            </div>
+
+            {/* Default Lead Expiry Days */}
+            <div style={{ background: '#F8FAFC', padding: 18, borderRadius: 14, border: '1px solid #E2E8F0' }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 800, color: '#334155', marginBottom: 6 }}>
+                Standard Lead Expiry (Days)
+              </label>
+              <input
+                type="number"
+                value={settings.defaultLeadExpiryDays ?? 7}
+                onChange={(e) => setSettings({ ...settings, defaultLeadExpiryDays: Number(e.target.value) })}
+                min="1"
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 10,
+                  border: '1px solid #CBD5E1', fontSize: 16, fontWeight: 700, outline: 'none',
+                }}
+              />
+              <span style={{ display: 'block', fontSize: 11, color: '#64748B', marginTop: 6 }}>
+                Days before an active lead expires from feeds (default 7).
+              </span>
+            </div>
+
+            {/* Default Push Fan-Out Cap */}
+            <div style={{ background: '#F8FAFC', padding: 18, borderRadius: 14, border: '1px solid #E2E8F0' }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 800, color: '#334155', marginBottom: 6 }}>
+                Push Fan-Out Cap (Standard)
+              </label>
+              <input
+                type="number"
+                value={settings.defaultPushFanOutCap ?? 50}
+                onChange={(e) => setSettings({ ...settings, defaultPushFanOutCap: Number(e.target.value) })}
+                min="1"
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 10,
+                  border: '1px solid #CBD5E1', fontSize: 16, fontWeight: 700, outline: 'none',
+                }}
+              />
+              <span style={{ display: 'block', fontSize: 11, color: '#64748B', marginTop: 6 }}>
+                Max sellers notified on organic publication (default 50).
               </span>
             </div>
           </div>

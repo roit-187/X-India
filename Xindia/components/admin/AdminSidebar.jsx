@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Tag, Star, Settings, LogOut, UserCog, Shield, Bell, Receipt, Megaphone, ShieldCheck, Activity, MessageSquare, Sparkles, FileText } from 'lucide-react';
+import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Tag, Star, Settings, LogOut, UserCog, Shield, Bell, Receipt, Megaphone, ShieldCheck, Activity, MessageSquare, Sparkles, FileText, Wand2, Laptop } from 'lucide-react';
 import SearchBar from './SearchBar';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
@@ -11,13 +11,14 @@ import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 // plansOnly  → requires canManagePlans
 // creditsOnly → requires canManageCredits
 const ALL_LINKS = [
-  { href: '/admin/dashboard',     label: 'Dashboard',            icon: LayoutDashboard, flag: 'always' },
-  { href: '/admin/verifications', label: 'Verification Queue',   icon: ShieldCheck,     flag: 'always' },
-  { href: '/admin/leads',         label: 'Invoicing & Leads',    icon: FileText,        flag: 'always' },
-  { href: '/admin/manufacturers', label: 'Manufacturers',         icon: Factory,         flag: 'always' },
-  { href: '/admin/buyers',        label: 'Buyers',                icon: Users,           flag: 'always' },
-  { href: '/admin/products',      label: 'Products',              icon: Package,         flag: 'always' },
-  { href: '/admin/spotlights',    label: 'Spotlight & Overrides', icon: Sparkles,        flag: 'always' },
+  { href: '/admin/dashboard',            label: 'Dashboard',            icon: LayoutDashboard, flag: 'always' },
+  { href: '/admin/verifications',        label: 'Verification Queue',   icon: ShieldCheck,     flag: 'always' },
+  { href: '/admin/leads',                label: 'Invoicing & Leads',    icon: FileText,        flag: 'always' },
+  { href: '/admin/manufacturers',        label: 'Manufacturers',         icon: Factory,         flag: 'always' },
+  { href: '/admin/buyers',               label: 'Buyers',                icon: Users,           flag: 'always' },
+  { href: '/admin/products',             label: 'Products',              icon: Package,         flag: 'always' },
+  { href: '/admin/product-enhancements', label: 'Enhancement Requests',  icon: Wand2,           flag: 'always' },
+  { href: '/admin/spotlights',           label: 'Spotlight & Overrides', icon: Sparkles,        flag: 'always' },
   { href: '/admin/reviews',       label: 'Reviews & Moderation',  icon: Star,            flag: 'always' },
   { href: '/admin/staff',         label: 'Staff & Team',          icon: UserCog,         flag: 'staff' },
   { href: '/admin/plans',         label: 'Plans & Pricing',       icon: CreditCard,      flag: 'plans' },
@@ -29,6 +30,7 @@ const ALL_LINKS = [
   { href: '/admin/support',       label: 'Support Desk',          icon: MessageSquare,   flag: 'super' },
   { href: '/admin/broadcast',     label: 'Push Broadcasts',       icon: Megaphone,       flag: 'super' },
   { href: '/admin/activity',      label: 'Monitor Activity',      icon: Activity,        flag: 'super' },
+  { href: '/admin/sessions',      label: 'Active Sessions',       icon: Laptop,          flag: 'always' },
   { href: '/admin/settings',      label: 'System & Server',       icon: Settings,        flag: 'super' },
 ];
 

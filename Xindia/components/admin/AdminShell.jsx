@@ -6,7 +6,7 @@ import BfcacheReload from '@/components/BfcacheReload';
 
 export default function AdminShell({ children }) {
   const pathname = usePathname();
-  const isLoginPage = pathname === '/admin/login';
+  const isLoginPage = pathname === '/admin/login' || (typeof pathname === 'string' && pathname.startsWith('/admin/login/'));
 
   if (isLoginPage) {
     return (

@@ -67,6 +67,7 @@ export default function ManufacturerDetailPage({ params }) {
     marketCovered: '',
     factoryVideo: '',
     introVideo: '',
+    manufacturingPlants: [],
     bankDetails: {
       accountName: '',
       accountNumber: '',
@@ -75,6 +76,7 @@ export default function ManufacturerDetailPage({ params }) {
       branchName: '',
     },
   });
+  const [newPhotoUrl, setNewPhotoUrl] = useState('');
 
   // Document Reject Modal State
   const [rejectDocModal, setRejectDocModal] = useState(null); // { docType, label, rejectionReason: '' }
@@ -247,6 +249,9 @@ export default function ManufacturerDetailPage({ params }) {
       marketCovered: seller.marketCovered || m.marketCovered || '',
       factoryVideo: seller.factoryVideo || m.factoryVideo || '',
       introVideo: seller.introVideo || m.introVideo || '',
+      manufacturingPlants: Array.isArray(seller.manufacturingPlants)
+        ? [...seller.manufacturingPlants]
+        : (Array.isArray(m.manufacturingPlants) ? [...m.manufacturingPlants] : []),
       
       bankDetails: {
         accountName: seller.bankDetails?.accountName || '',
@@ -446,7 +451,7 @@ export default function ManufacturerDetailPage({ params }) {
               )}
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-              {hasPermission('manufacturers.edit') && (
+              {isSuperAdmin && (
                 <button
                   className="admin-btn admin-btn-primary"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13 }}
@@ -518,7 +523,7 @@ export default function ManufacturerDetailPage({ params }) {
           <div className="admin-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h3 style={{ margin: 0 }}>Business Details</h3>
-              {hasPermission('manufacturers.edit') && (
+              {isSuperAdmin && (
                 <button
                   className="admin-btn admin-btn-secondary"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '4px 10px' }}
@@ -1515,6 +1520,95 @@ export default function ManufacturerDetailPage({ params }) {
                       onChange={(e) => setEditForm({ ...editForm, introVideo: e.target.value })}
                     />
                   </div>
+                </div>
+
+                {/* Factory Photos Management */}
+                <div style={{ marginTop: 8 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: '#334155' }}>
+                    Factory & Plant Photos ({editForm.manufacturingPlants?.length || 0})
+                  </label>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                    <input
+                      className="admin-input"
+                      placeholder="Paste image URL to add to seller's gallery..."
+                      value={newPhotoUrl}
+                      onChange={(e) => setNewPhotoUrl(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-secondary"
+                      style={{ whiteSpace: 'nowrap' }}
+                      onClick={() => {
+                        if (newPhotoUrl.trim()) {
+                          setEditForm({
+                            ...editForm,
+                            manufacturingPlants: [...(editForm.manufacturingPlants || []), newPhotoUrl.trim()],
+                          });
+                          setNewPhotoUrl('');
+                        }
+                      }}
+                    >
+                      Add Photo
+                    </button>
+                  </div>
+                  {editForm.manufacturingPlants && editForm.manufacturingPlants.length > 0 ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10 }}>
+                      {editForm.manufacturingPlants.map((url, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            position: 'relative',
+                            borderRadius: 8,
+                            overflow: 'hidden',
+                            border: '1px solid #CBD5E1',
+                            height: 90,
+                            backgroundColor: '#F1F5F9',
+                          }}
+                        >
+                          <img
+                            src={url}
+                            alt={`Plant ${idx + 1}`}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = editForm.manufacturingPlants.filter((_, i) => i !== idx);
+                              setEditForm({ ...editForm, manufacturingPlants: updated });
+                            }}
+                            style={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              background: '#EF4444',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '50%',
+                              width: 22,
+                              height: 22,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 13,
+                              fontWeight: 'bold',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                            }}
+                            title="Remove photo"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 12, color: '#94A3B8', fontStyle: 'italic', padding: '8px 0' }}>
+                      No plant photos assigned to this seller.
+                    </div>
+                  )}
                 </div>
               </>
             )}

@@ -34,7 +34,8 @@ export default function LeadBoostPlanModal({ plan, isNew, onClose, onSave }) {
     accentColor: plan?.accentColor || '#FF6600',
     icon: plan?.icon || 'flash',
     bullets: plan?.bullets && plan.bullets.length > 0 ? [...plan.bullets] : ['Top visibility to verified suppliers', 'Priority badge on listing', 'Get 3x faster responses'],
-    fanOutCap: plan?.fanOutCap || 15,
+    fanOutCap: plan?.fanOutCap || (plan?.key === 'urgent' ? 150 : 100),
+    maxSlots: plan?.maxSlots || (plan?.key === 'urgent' ? 150 : 100),
     respondBySlaHours: plan?.respondBySlaHours || 24,
     order: plan?.order !== undefined ? plan.order : 0,
     isActive: plan?.isActive !== false,
@@ -96,7 +97,8 @@ export default function LeadBoostPlanModal({ plan, isNew, onClose, onSave }) {
         priceInr: Number(formData.priceInr),
         crossedPriceInr: formData.crossedPriceInr ? Number(formData.crossedPriceInr) : null,
         durationHours: Number(formData.durationHours),
-        fanOutCap: Number(formData.fanOutCap),
+        fanOutCap: Number(formData.fanOutCap) || 100,
+        maxSlots: Number(formData.maxSlots) || 100,
         respondBySlaHours: Number(formData.respondBySlaHours),
         order: Number(formData.order),
       };
@@ -335,8 +337,8 @@ export default function LeadBoostPlanModal({ plan, isNew, onClose, onSave }) {
 
             {/* Right Column: Features, Bullets & Live Preview */}
             <div>
-              {/* SLA & Fan-out */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+              {/* SLA, Fan-out & Max Slots */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 5 }}>
                     Fan-out Cap
@@ -347,19 +349,39 @@ export default function LeadBoostPlanModal({ plan, isNew, onClose, onSave }) {
                     value={formData.fanOutCap}
                     onChange={handleChange}
                     min="1"
-                    placeholder="e.g. 15, 30"
+                    placeholder="e.g. 100, 150"
                     style={{
                       width: '100%', padding: '9px 12px', borderRadius: 8,
                       border: '1px solid #CBD5E1', fontSize: 13, outline: 'none',
                     }}
                   />
                   <span style={{ fontSize: 10.5, color: '#64748B', display: 'block', marginTop: 2 }}>
-                    Max verified suppliers notified
+                    Max suppliers notified
                   </span>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 5 }}>
-                    Response SLA (Hours)
+                    Max Slots (Capacity)
+                  </label>
+                  <input
+                    type="number"
+                    name="maxSlots"
+                    value={formData.maxSlots}
+                    onChange={handleChange}
+                    min="1"
+                    placeholder="e.g. 100, 150"
+                    style={{
+                      width: '100%', padding: '9px 12px', borderRadius: 8,
+                      border: '1px solid #CBD5E1', fontSize: 13, outline: 'none',
+                    }}
+                  />
+                  <span style={{ fontSize: 10.5, color: '#64748B', display: 'block', marginTop: 2 }}>
+                    Max unlock capacity
+                  </span>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 5 }}>
+                    Response SLA (h)
                   </label>
                   <input
                     type="number"
@@ -374,7 +396,7 @@ export default function LeadBoostPlanModal({ plan, isNew, onClose, onSave }) {
                     }}
                   />
                   <span style={{ fontSize: 10.5, color: '#64748B', display: 'block', marginTop: 2 }}>
-                    Target turnaround guarantee
+                    Turnaround SLA
                   </span>
                 </div>
               </div>

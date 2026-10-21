@@ -55,6 +55,7 @@ export function useAdminPermissions() {
     // Specific capability flags
     canBlockSellers:    isSuperAdmin,
     canDeactivateSellers: isSuperAdmin,
+    canEditManufacturers: isSuperAdmin || hasPermission('manufacturers.edit'),
     canManageStaff,
     canManagePlans,
     canManageCredits,
