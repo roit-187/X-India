@@ -76,7 +76,8 @@ export default function AdminProductsPage() {
   };
 
   const handleToggleVisibility = async (product) => {
-    if (!hasPermission('products.moderate') || !product.manufacturerId) return;
+    if (!hasPermission('products.moderate') || !product?._id) return;
+    const mfrId = product.manufacturerId?._id || product.manufacturerId || 'default';
 
     // If currently active → open inactivation reason modal before hiding
     if (product.isActive) {
@@ -89,7 +90,7 @@ export default function AdminProductsPage() {
     // If currently hidden → re-activate directly
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/admin/manufacturers/${product.manufacturerId}/products/${product._id}/visibility`, {
+      const res = await fetch(`/api/admin/manufacturers/${mfrId}/products/${product._id}/visibility`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: true }),
@@ -106,10 +107,11 @@ export default function AdminProductsPage() {
 
   const confirmInactivate = async () => {
     if (!inactivateTarget) return;
+    const mfrId = inactivateTarget.manufacturerId?._id || inactivateTarget.manufacturerId || 'default';
     setActionLoading(true);
     try {
       const res = await fetch(
-        `/api/admin/manufacturers/${inactivateTarget.manufacturerId}/products/${inactivateTarget._id}/visibility`,
+        `/api/admin/manufacturers/${mfrId}/products/${inactivateTarget._id}/visibility`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },

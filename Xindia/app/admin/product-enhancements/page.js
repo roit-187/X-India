@@ -269,7 +269,7 @@ export default function ProductEnhancementsPage() {
                     </td>
                     <td style={{ padding: '12px 16px', fontSize: 13 }}>
                       <div style={{ fontWeight: 500, color: '#1E293B' }}>{p.manufacturerId?.name || p.sellerName || 'Seller'}</div>
-                      <div style={{ fontSize: 11.5, color: '#94A3B8' }}>ID: {p.sellerId?.slice(-6)}</div>
+                      <div style={{ fontSize: 11.5, color: '#94A3B8' }}>ID: {String(p.sellerId?._id || p.sellerId || '').slice(-6)}</div>
                     </td>
                     <td style={{ padding: '12px 16px', fontSize: 13 }}>
                       <div><strong>₹{p.price}</strong> / {p.unit || 'Piece'}</div>

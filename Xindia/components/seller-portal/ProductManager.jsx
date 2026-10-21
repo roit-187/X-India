@@ -53,10 +53,10 @@ export default function ProductManager({ sellerId }) {
   const [submitting, setSubmitting] = useState(false);
 
   const loadProducts = useCallback(async () => {
-    if (!sellerId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/seller-products?sellerId=${sellerId}&page=1&limit=50`);
+      const query = sellerId ? `?sellerId=${encodeURIComponent(sellerId)}&page=1&limit=50` : '?page=1&limit=50';
+      const res = await fetch(`/api/seller-products${query}`);
       const data = await res.json();
       if (data.success) {
         setProducts(data.products || data.items || []);
