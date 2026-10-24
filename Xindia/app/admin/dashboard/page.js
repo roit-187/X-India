@@ -19,7 +19,18 @@ export default function AdminDashboardPage() {
   const [verificationQueue, setVerificationQueue] = useState([]);
   const [verifPage, setVerifPage] = useState(1);
   const [verifTotalPages, setVerifTotalPages] = useState(1);
-  const [verifStatus, setVerifStatus] = useState('scheduled');
+  const [verifStatus, setVerifStatus] = useState('pending');
+
+  // Admin profile for attribution & employeeId auto-fetch
+  const [adminProfile, setAdminProfile] = useState(null);
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('admin_profile');
+      if (stored) setAdminProfile(JSON.parse(stored));
+    } catch (e) {
+      console.error('Failed to parse admin profile:', e);
+    }
+  }, []);
 
   // Verification Modals
   const [acceptTarget, setAcceptTarget] = useState(null);
@@ -28,6 +39,9 @@ export default function AdminDashboardPage() {
   const [decisionTarget, setDecisionTarget] = useState(null);
   const [decisionType, setDecisionType] = useState('verified');
   const [verifierNotes, setVerifierNotes] = useState('');
+
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
   const [loadingVerificationId, setLoadingVerificationId] = useState(null);
 
   const loadStats = useCallback(async () => {
@@ -85,14 +99,24 @@ export default function AdminDashboardPage() {
     if (!acceptTarget || loadingVerificationId) return;
     setLoadingVerificationId(acceptTarget);
     try {
-      await fetch(`/api/admin/verification/${acceptTarget}/accept`, {
+      const res = await fetch(`/api/admin/verification/${acceptTarget}/accept`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ verifierName }),
+        body: JSON.stringify({
+          verifierName: verifierName.trim(),
+          assignedAdminId: adminProfile?._id || adminProfile?.id,
+        }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.message || 'Failed to assign staff.');
+        return;
+      }
       setAcceptTarget(null);
       setVerifierName('');
       loadVerificationQueue();
+    } catch (err) {
+      alert(err.message || 'Network error while assigning staff.');
     } finally {
       setLoadingVerificationId(null);
     }
@@ -103,18 +127,64 @@ export default function AdminDashboardPage() {
     if (!decisionTarget || loadingVerificationId) return;
     setLoadingVerificationId(decisionTarget);
     try {
-      await fetch(`/api/admin/verification/${decisionTarget}/decision`, {
+      const res = await fetch(`/api/admin/verification/${decisionTarget}/decision`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           decision: decisionType,
-          verifierNotes,
+          verifierNotes: verifierNotes.trim() || 'Verified by compliance staff.',
           evidencePhotos: [],
+          adminAttribution: {
+            name: adminProfile?.fullName || adminProfile?.username || 'Compliance Officer',
+            employeeId: adminProfile?.employeeId || 'STAFF',
+            phone: adminProfile?.phone || '',
+          },
         }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.message || 'Failed to record verification decision.');
+        return;
+      }
       setDecisionTarget(null);
       setVerifierNotes('');
       loadVerificationQueue();
+    } catch (err) {
+      alert(err.message || 'Network error while recording decision.');
+    } finally {
+      setLoadingVerificationId(null);
+    }
+  };
+
+  const handleCancelSubmit = async (e) => {
+    e.preventDefault();
+    if (!cancelTarget || loadingVerificationId) return;
+    setLoadingVerificationId(cancelTarget);
+    try {
+      const res = await fetch(`/api/admin/verification/${cancelTarget}/decision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          decision: 'rejected',
+          reason: cancelReason.trim() || 'Cancelled by admin',
+          verifierNotes: cancelReason.trim() || 'Verification visit cancelled by admin.',
+          adminAttribution: {
+            name: adminProfile?.fullName || adminProfile?.username || 'Admin Officer',
+            employeeId: adminProfile?.employeeId || 'STAFF',
+            phone: adminProfile?.phone || '',
+          },
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.message || 'Failed to cancel verification request.');
+        return;
+      }
+      setCancelTarget(null);
+      setCancelReason('');
+      loadVerificationQueue();
+    } catch (err) {
+      alert(err.message || 'Network error while cancelling request.');
     } finally {
       setLoadingVerificationId(null);
     }
@@ -254,15 +324,21 @@ export default function AdminDashboardPage() {
               Newest 20 Requests
             </span>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {['scheduled', 'accepted', 'rejected'].map((st) => (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            {[
+              { key: 'pending', label: 'All Active' },
+              { key: 'scheduled', label: 'Scheduled' },
+              { key: 'accepted', label: 'Assigned' },
+              { key: 'verified', label: 'Verified' },
+              { key: 'rejected', label: 'Cancelled' },
+            ].map((st) => (
               <button
-                key={st}
-                className={`admin-btn ${verifStatus === st ? 'admin-btn-primary' : 'admin-btn-secondary'}`}
-                onClick={() => { setVerifStatus(st); setVerifPage(1); }}
-                style={{ textTransform: 'capitalize', padding: '4px 12px', fontSize: 13 }}
+                key={st.key}
+                className={`admin-btn ${verifStatus === st.key ? 'admin-btn-primary' : 'admin-btn-secondary'}`}
+                onClick={() => { setVerifStatus(st.key); setVerifPage(1); }}
+                style={{ padding: '4px 12px', fontSize: 13 }}
               >
-                {st}
+                {st.label}
               </button>
             ))}
             <Link
@@ -287,73 +363,120 @@ export default function AdminDashboardPage() {
             </tr>
           </thead>
           <tbody>
-            {verificationQueue.map((req) => (
-              <tr key={req._id}>
-                <td>
-                  <div><strong>{req.userId?.firstName || 'Seller'} {req.userId?.lastName || ''}</strong></div>
-                  <div style={{ fontSize: 12, color: '#64748B' }}>{req.userId?.email || '-'}</div>
-                  {req.userId?.phone && <div style={{ fontSize: 11, color: '#94A3B8' }}>{req.userId.phone}</div>}
-                </td>
-                <td>
-                  {req.manufacturerId ? (
-                    <a
-                      href={`/admin/manufacturers/${req.manufacturerId._id}`}
-                      style={{ color: '#2563EB', fontWeight: 600, textDecoration: 'none' }}
-                    >
-                      {req.manufacturerId.name} ↗
-                    </a>
-                  ) : (
-                    <strong>{req.userId?.companyName || 'Unlinked Factory'}</strong>
-                  )}
-                </td>
-                <td>{req.requestedLocation?.address || req.userId?.location || '-'}</td>
-                <td>
-                  {req.scheduledVisit?.date ? (
-                    <div>
-                      <strong>{req.scheduledVisit.date}</strong>
-                      <div style={{ fontSize: 12, color: '#EA580C', fontWeight: 600 }}>{req.scheduledVisit.slot}</div>
-                      {req.scheduledVisit.rescheduledCount > 0 && (
-                        <div style={{ marginTop: 2 }}>
-                          <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, backgroundColor: '#FEF3C7', color: '#92400E', fontWeight: 700 }}>
-                            Rescheduled ({req.scheduledVisit.rescheduledCount}x)
-                          </span>
-                        </div>
+            {verificationQueue.map((req) => {
+              const isAssigned = req.status === 'accepted' || req.status === 'partner_assigned' || !!req.assignedVerifier?.name;
+              const isPendingOrScheduled = (req.status === 'pending' || req.status === 'scheduled') && !isAssigned;
+
+              return (
+                <tr key={req._id}>
+                  <td>
+                    <div><strong>{req.userId?.firstName || 'Seller'} {req.userId?.lastName || ''}</strong></div>
+                    <div style={{ fontSize: 12, color: '#64748B' }}>{req.userId?.email || '-'}</div>
+                    {req.userId?.phone && <div style={{ fontSize: 11, color: '#94A3B8' }}>{req.userId.phone}</div>}
+                  </td>
+                  <td>
+                    {req.manufacturerId ? (
+                      <a
+                        href={`/admin/manufacturers/${req.manufacturerId._id}`}
+                        style={{ color: '#2563EB', fontWeight: 600, textDecoration: 'none' }}
+                      >
+                        {req.manufacturerId.name} ↗
+                      </a>
+                    ) : (
+                      <strong>{req.userId?.companyName || 'Unlinked Factory'}</strong>
+                    )}
+                  </td>
+                  <td>{req.requestedLocation?.address || req.userId?.location || '-'}</td>
+                  <td>
+                    {req.scheduledVisit?.date ? (
+                      <div>
+                        <strong>{req.scheduledVisit.date}</strong>
+                        <div style={{ fontSize: 12, color: '#EA580C', fontWeight: 600 }}>{req.scheduledVisit.slot}</div>
+                        {req.scheduledVisit.rescheduledCount > 0 && (
+                          <div style={{ marginTop: 2 }}>
+                            <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, backgroundColor: '#FEF3C7', color: '#92400E', fontWeight: 700 }}>
+                              Rescheduled ({req.scheduledVisit.rescheduledCount}x)
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span>{new Date(req.createdAt).toLocaleDateString()}</span>
+                    )}
+                  </td>
+                  <td>
+                    <Badge
+                      label={req.status === 'accepted' ? 'Assigned' : req.status}
+                      variant={req.status === 'verified' ? 'verified' : req.status === 'rejected' ? 'expired' : 'active'}
+                    />
+                    {req.assignedVerifier?.name && (
+                      <div style={{ fontSize: 11, color: '#475569', marginTop: 4, fontWeight: 500 }}>
+                        👤 {req.assignedVerifier.name}
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {isPendingOrScheduled && (
+                        <>
+                          <button
+                            className="admin-btn admin-btn-primary"
+                            style={{ padding: '4px 10px', fontSize: 12 }}
+                            onClick={() => {
+                              setAcceptTarget(req._id);
+                              setVerifierName(adminProfile?.fullName || adminProfile?.username || '');
+                            }}
+                          >
+                            Assign Staff
+                          </button>
+                          <button
+                            className="admin-btn admin-btn-danger"
+                            style={{ padding: '4px 10px', fontSize: 12 }}
+                            onClick={() => {
+                              setCancelTarget(req._id);
+                              setCancelReason('');
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                      {isAssigned && req.status !== 'verified' && req.status !== 'rejected' && (
+                        <>
+                          <button
+                            className="admin-btn"
+                            style={{ backgroundColor: '#16A34A', color: '#fff', borderColor: '#15803D', padding: '4px 10px', fontSize: 12 }}
+                            onClick={() => {
+                              setDecisionTarget(req._id);
+                              setDecisionType('verified');
+                              setVerifierNotes('');
+                            }}
+                          >
+                            Mark Verified
+                          </button>
+                          <button
+                            className="admin-btn admin-btn-danger"
+                            style={{ padding: '4px 10px', fontSize: 12 }}
+                            onClick={() => {
+                              setCancelTarget(req._id);
+                              setCancelReason('');
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                      {req.status === 'verified' && (
+                        <span style={{ fontSize: 12, color: '#16A34A', fontWeight: 600 }}>✓ Verified</span>
+                      )}
+                      {req.status === 'rejected' && (
+                        <span style={{ fontSize: 12, color: '#DC2626', fontWeight: 600 }}>✗ Cancelled</span>
                       )}
                     </div>
-                  ) : (
-                    <span>{new Date(req.createdAt).toLocaleDateString()}</span>
-                  )}
-                </td>
-                <td>
-                  <Badge
-                    label={req.status}
-                    variant={req.status === 'verified' ? 'verified' : req.status === 'rejected' ? 'expired' : 'active'}
-                  />
-                </td>
-                <td>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {req.status === 'scheduled' && (
-                      <button
-                        className="admin-btn admin-btn-primary"
-                        style={{ padding: '4px 10px', fontSize: 12 }}
-                        onClick={() => setAcceptTarget(req._id)}
-                      >
-                        Accept Visit
-                      </button>
-                    )}
-                    {(req.status === 'accepted' || req.status === 'scheduled') && (
-                      <button
-                        className="admin-btn admin-btn-secondary"
-                        style={{ padding: '4px 10px', fontSize: 12 }}
-                        onClick={() => setDecisionTarget(req._id)}
-                      >
-                        Record Decision
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              );
+            })}
             {verificationQueue.length === 0 && (
               <tr>
                 <td colSpan={6} style={{ textAlign: 'center', color: '#94A3B8' }}>No verification requests in queue</td>
@@ -371,10 +494,10 @@ export default function AdminDashboardPage() {
         )}
       </div>
 
-      {/* Modal Accept Verification */}
-      <Modal open={!!acceptTarget} onClose={() => setAcceptTarget(null)} title="Accept Verification Request">
+      {/* Modal Accept / Assign Verification */}
+      <Modal open={!!acceptTarget} onClose={() => setAcceptTarget(null)} title="Assign Staff for Verification">
         <form onSubmit={handleAcceptSubmit}>
-          <p style={{ fontSize: 14, color: '#475569', marginBottom: 12 }}>Assign a field verifier for this factory audit.</p>
+          <p style={{ fontSize: 14, color: '#475569', marginBottom: 12 }}>Assign a field verifier or compliance officer for this factory audit.</p>
           <input
             className="admin-input"
             style={{ width: '100%', marginBottom: 16 }}
@@ -382,34 +505,30 @@ export default function AdminDashboardPage() {
             value={verifierName}
             onChange={(e) => setVerifierName(e.target.value)}
             required
+            autoFocus
           />
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setAcceptTarget(null)}>Cancel</button>
-            <button type="submit" className="admin-btn admin-btn-primary">Assign & Accept</button>
+            <button type="submit" className="admin-btn admin-btn-primary" disabled={loadingVerificationId === acceptTarget}>
+              {loadingVerificationId === acceptTarget ? 'Assigning...' : 'Assign & Schedule'}
+            </button>
           </div>
         </form>
       </Modal>
 
-      {/* Modal Decision Verification */}
-      <Modal open={!!decisionTarget} onClose={() => setDecisionTarget(null)} title="Record Verification Decision">
+      {/* Modal Mark Verified */}
+      <Modal open={!!decisionTarget} onClose={() => setDecisionTarget(null)} title="Mark Factory as Verified">
         <form onSubmit={handleDecisionSubmit}>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Decision</label>
-            <div style={{ display: 'flex', gap: 16 }}>
-              <label style={{ fontSize: 14 }}>
-                <input type="radio" name="decision" value="verified" checked={decisionType === 'verified'} onChange={() => setDecisionType('verified')} /> Verified
-              </label>
-              <label style={{ fontSize: 14 }}>
-                <input type="radio" name="decision" value="rejected" checked={decisionType === 'rejected'} onChange={() => setDecisionType('rejected')} /> Rejected
-              </label>
-            </div>
+          <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 6, padding: '10px 14px', marginBottom: 14, fontSize: 13, color: '#334155' }}>
+            Operating Verifier: <strong>{adminProfile?.fullName || adminProfile?.username || 'Admin'}</strong>
+            <span style={{ marginLeft: 8, color: '#64748B' }}>(Employee ID: <strong>{adminProfile?.employeeId || 'STAFF'}</strong>)</span>
           </div>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Verifier Notes</label>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Audit & Verification Findings</label>
             <textarea
               className="admin-input"
               style={{ width: '100%', minHeight: 80 }}
-              placeholder="Notes on factory condition, machinery, etc."
+              placeholder="Notes on factory machinery, production capability, physical facility check..."
               value={verifierNotes}
               onChange={(e) => setVerifierNotes(e.target.value)}
               required
@@ -417,7 +536,36 @@ export default function AdminDashboardPage() {
           </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setDecisionTarget(null)}>Cancel</button>
-            <button type="submit" className="admin-btn admin-btn-primary">Submit Decision</button>
+            <button type="submit" className="admin-btn" style={{ backgroundColor: '#16A34A', color: '#fff', borderColor: '#15803D' }} disabled={loadingVerificationId === decisionTarget}>
+              {loadingVerificationId === decisionTarget ? 'Submitting...' : 'Confirm & Mark Verified'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal Cancel Verification */}
+      <Modal open={!!cancelTarget} onClose={() => setCancelTarget(null)} title="Cancel Verification Request">
+        <form onSubmit={handleCancelSubmit}>
+          <p style={{ fontSize: 14, color: '#475569', marginBottom: 12 }}>
+            Are you sure you want to cancel this verification visit? The seller will be notified.
+          </p>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Reason for Cancellation</label>
+            <textarea
+              className="admin-input"
+              style={{ width: '100%', minHeight: 70 }}
+              placeholder="e.g. Factory address unreachable, seller requested cancellation, or rescheduled..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              required
+              autoFocus
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setCancelTarget(null)}>Keep Visit</button>
+            <button type="submit" className="admin-btn admin-btn-danger" disabled={loadingVerificationId === cancelTarget}>
+              {loadingVerificationId === cancelTarget ? 'Cancelling...' : 'Confirm Cancellation'}
+            </button>
           </div>
         </form>
       </Modal>

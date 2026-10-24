@@ -52,7 +52,7 @@ const STATUS_CONFIG = {
   DISPATCHED: { label: 'Invoice Sent', statusClass: 'DISPATCHED', icon: Send },
   PAID: { label: 'Paid & Fulfilled', statusClass: 'PAID', icon: CheckCircle2 },
   EXPIRED: { label: 'Expired', statusClass: 'EXPIRED', icon: XCircle },
-  CANCELLED: { label: 'Cancelled', statusClass: 'CANCELLED', icon: XCircle },
+  CANCELLED: { label: 'Cancelled / Withdrawn', statusClass: 'CANCELLED', icon: XCircle },
 };
 
 const ITEM_TYPE_LABELS = {
@@ -520,7 +520,7 @@ export default function AdminLeadsPage() {
               { id: 'DISPATCHED', label: `🔵 Invoice Sent (${leadsSummary.DISPATCHED})` },
               { id: 'PAID', label: `🟢 Settled & Fulfilled (${leadsSummary.PAID})` },
               { id: 'EXPIRED', label: '⚪ Expired' },
-              { id: 'CANCELLED', label: '🔴 Cancelled' },
+              { id: 'CANCELLED', label: `🔴 Cancelled / Withdrawn (${leadsSummary.CANCELLED || 0})` },
             ].map((s) => (
               <button
                 key={s.id}
@@ -705,6 +705,11 @@ export default function AdminLeadsPage() {
                           <statusCfg.icon size={12} />
                           {statusCfg.label}
                         </span>
+                        {l.status === 'CANCELLED' && l.withdrawalReason && (
+                          <div style={{ fontSize: 10.5, color: '#DC2626', fontWeight: 600, marginTop: 3 }}>
+                            Reason: {l.withdrawalReason}
+                          </div>
+                        )}
                         {l.dispatchedAt && (
                           <div style={{ fontSize: 10.5, color: '#64748B', marginTop: 3 }}>
                             Sent: {formatDate(l.dispatchedAt)}
@@ -813,6 +818,29 @@ export default function AdminLeadsPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Withdrawal Information Box (if cancelled/withdrawn) */}
+              {selectedLead.status === 'CANCELLED' && selectedLead.withdrawalReason && (
+                <div style={{ background: '#FEF2F2', padding: 14, borderRadius: 8, border: '1px solid #FECACA' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 13, color: '#B91C1C', marginBottom: 4 }}>
+                    <XCircle size={15} />
+                    <span>Withdrawn by User</span>
+                    {selectedLead.withdrawnAt && (
+                      <span style={{ fontSize: 11, fontWeight: 500, color: '#991B1B', marginLeft: 'auto' }}>
+                        {formatDate(selectedLead.withdrawnAt)}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#7F1D1D' }}>
+                    <strong>Reason:</strong> {selectedLead.withdrawalReason}
+                  </div>
+                  {selectedLead.withdrawalNotes && (
+                    <div style={{ fontSize: 12, color: '#991B1B', marginTop: 4, fontStyle: 'italic' }}>
+                      "{selectedLead.withdrawalNotes}"
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Company Info Box */}
               <div style={{ background: '#F8FAFC', padding: 14, borderRadius: 8, border: '1px solid #E2E8F0' }}>
                 <div style={{ fontWeight: 700, fontSize: 14, color: '#0F172A', marginBottom: 6 }}>

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   UserPlus,
   CheckCircle2,
@@ -36,7 +37,11 @@ const STEPS = [
   { id: 5, label: 'Taxonomy, KYC & Decision', icon: Award },
 ];
 
-export default function StaffAddUserPage() {
+function StaffAddUserContent() {
+  const searchParams = useSearchParams();
+  const editId = searchParams ? (searchParams.get('edit') || searchParams.get('id')) : null;
+  const isEditMode = Boolean(editId);
+  const [loadingEditData, setLoadingEditData] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
 
   // Staff Representative Attribution
@@ -133,6 +138,74 @@ export default function StaffAddUserPage() {
       })
       .catch((err) => console.warn('Failed to load categories:', err.message));
   }, []);
+
+  // Hydrate all onboarding fields when in Edit Mode (?edit=<manufacturerId>)
+  useEffect(() => {
+    if (!editId) return;
+    setLoadingEditData(true);
+    fetch(`/api/admin/manufacturers/${editId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          const m = data.data;
+          const u = m.user || {};
+          if (m.name || m.companyName) setCompanyName(m.name || m.companyName);
+          if (m.companyOwner || u.firstName) setCompanyOwner(m.companyOwner || `${u.firstName || ''} ${u.lastName || ''}`.trim());
+          if (u.firstName) setFirstName(u.firstName);
+          if (u.lastName) setLastName(u.lastName);
+          if (u.phone || m.phone) setPhone(u.phone || m.phone);
+          if (u.email || m.email) setEmail(u.email || m.email);
+          if (m.gstNumber || u.gstNumber) setGstInput(m.gstNumber || u.gstNumber);
+          if (m.address || u.fullAddress) setFullAddress(m.address || u.fullAddress);
+          if (m.cityId?.name || m.city) setCity(m.cityId?.name || m.city);
+          if (m.stateId?.name || m.state || u.state) setState(m.stateId?.name || m.state || u.state);
+          if (m.pincode || u.pincode) setPincode(m.pincode || u.pincode);
+          if (m.location?.coordinates && m.location.coordinates.length === 2) {
+            setLongitude(String(m.location.coordinates[0]));
+            setLatitude(String(m.location.coordinates[1]));
+          }
+          if (m.businessType) setBusinessType(m.businessType);
+          if (m.legalStatus) setLegalStatus(m.legalStatus);
+          if (m.yearOfEstablishment) setYearOfEstablishment(String(m.yearOfEstablishment));
+          if (m.aboutFactory || m.about) setAboutFactory(m.aboutFactory || m.about);
+          if (m.factorySize) setFactorySize(m.factorySize);
+          if (m.machinesCount) setMachinesCount(String(m.machinesCount));
+          if (m.employeesCount) setEmployeesCount(String(m.employeesCount));
+          if (m.monthlyCapacity) setMonthlyCapacity(m.monthlyCapacity);
+          if (m.exportPercentage) setExportPercentage(m.exportPercentage);
+          if (m.businessPhone || u.businessPhone) setBusinessPhone(m.businessPhone || u.businessPhone);
+          if (m.alternatePhone) setAlternatePhone(m.alternatePhone);
+          if (m.buyerContactPhone || u.buyerContactPhone) setBuyerContactPhone(m.buyerContactPhone || u.buyerContactPhone);
+          if (m.whatsappNumber || u.whatsappNumber) setWhatsappNumber(m.whatsappNumber || u.whatsappNumber);
+          if (m.companyEmail || u.email) setCompanyEmail(m.companyEmail || u.email);
+          if (m.logo || m.manufacturingLogo) setLogoUrl(m.logo || m.manufacturingLogo);
+          if (m.coverImage) setCoverImageUrl(m.coverImage);
+          if (Array.isArray(m.manufacturingPlants) && m.manufacturingPlants.length > 0) {
+            setFactoryPhotos(m.manufacturingPlants);
+          } else if (Array.isArray(m.factoryPhotos)) {
+            setFactoryPhotos(m.factoryPhotos);
+          }
+          if (m.factoryVideo || m.videoUrl) {
+            setYoutubeUrl(m.factoryVideo || m.videoUrl);
+          }
+          if (Array.isArray(m.categories)) {
+            setSelectedCategoryIds(m.categories.map((c) => c._id || c));
+          }
+          if (Array.isArray(m.primaryProducts)) {
+            setPrimaryProductsStr(m.primaryProducts.join(', '));
+          }
+          if (Array.isArray(m.capabilities)) {
+            setCapabilitiesStr(m.capabilities.join(', '));
+          }
+          if (u.businessDocuments) {
+            const rawDocs = u.businessDocuments instanceof Map ? Object.fromEntries(u.businessDocuments) : u.businessDocuments;
+            setKycDocs(rawDocs);
+          }
+        }
+      })
+      .catch((err) => console.warn('Failed to load manufacturer details for edit:', err.message))
+      .finally(() => setLoadingEditData(false));
+  }, [editId]);
 
   // Live GSTIN Verification & Auto-Fill Handler
   const handleVerifyGst = async () => {
@@ -499,6 +572,7 @@ export default function StaffAddUserPage() {
   // Form Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading || loadingEditData) return;
 
     // Comprehensive required-field checks across steps before submitting
     if (!employeeId.trim()) {
@@ -553,61 +627,108 @@ export default function StaffAddUserPage() {
         : null;
 
     try {
-      const res = await fetch('/api/admin/staff/onboard-seller', {
-        method: 'POST',
+      const endpoint = isEditMode
+        ? `/api/admin/manufacturers/${editId}/profile`
+        : '/api/admin/staff/onboard-seller';
+      const method = isEditMode ? 'PUT' : 'POST';
+
+      const payload = isEditMode
+        ? {
+            companyName: companyName.trim(),
+            companyOwner: companyOwner.trim() || `${firstName.trim()} ${lastName.trim()}`.trim(),
+            fullAddress: fullAddress.trim(),
+            city: city.trim(),
+            state: state.trim(),
+            pincode: pincode.trim(),
+            officeLocation,
+            businessType,
+            legalStatus,
+            yearOfEstablishment: yearOfEstablishment.trim(),
+            aboutFactory: aboutFactory.trim(),
+            factorySize: factorySize.trim(),
+            machinesCount: machinesCount ? Number(machinesCount) : undefined,
+            employeesCount: employeesCount ? Number(employeesCount) : undefined,
+            monthlyCapacity: monthlyCapacity.trim(),
+            exportPercentage: exportPercentage.trim(),
+            manufacturingCategories: selectedCategoryIds,
+            primaryProducts,
+            capabilities,
+            gstNumber: gstInput.trim().toUpperCase(),
+            businessPhone: businessPhone.replace(/\D/g, '').slice(-10) || cleanPhone,
+            alternatePhone: alternatePhone.replace(/\D/g, '').slice(-10),
+            buyerContactPhone: buyerContactPhone.replace(/\D/g, '').slice(-10) || cleanPhone,
+            whatsappNumber: whatsappNumber.replace(/\D/g, '').slice(-10) || cleanPhone,
+            companyEmail: companyEmail.trim() || email.trim(),
+            manufacturingLogo: logoUrl,
+            coverImage: coverImageUrl,
+            manufacturingPlants: factoryPhotos,
+            factoryVideo: finalVideoUrl,
+            businessDocuments: kycDocs,
+          }
+        : {
+            employeeId: employeeId.trim(),
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            phone: cleanPhone,
+            email: email.trim(),
+            companyName: companyName.trim(),
+            companyOwner: companyOwner.trim() || `${firstName.trim()} ${lastName.trim()}`.trim(),
+            fullAddress: fullAddress.trim(),
+            location: city.trim() ? `${city.trim()}, ${state.trim()}` : fullAddress.trim(),
+            city: city.trim(),
+            state: state.trim(),
+            pincode: pincode.trim(),
+            officeLocation,
+            businessType,
+            legalStatus,
+            yearOfEstablishment: yearOfEstablishment.trim(),
+            aboutFactory: aboutFactory.trim(),
+            factorySize: factorySize.trim(),
+            machinesCount: machinesCount ? Number(machinesCount) : undefined,
+            employeesCount: employeesCount ? Number(employeesCount) : undefined,
+            monthlyCapacity: monthlyCapacity.trim(),
+            exportPercentage: exportPercentage.trim(),
+            manufacturingCategories: selectedCategoryIds,
+            primaryProducts,
+            capabilities,
+            gstNumber: gstInput.trim().toUpperCase(),
+            gstDocumentUrl: gstDocUrl,
+            businessPhone: businessPhone.replace(/\D/g, '').slice(-10) || cleanPhone,
+            alternatePhone: alternatePhone.replace(/\D/g, '').slice(-10),
+            buyerContactPhone: buyerContactPhone.replace(/\D/g, '').slice(-10) || cleanPhone,
+            whatsappNumber: whatsappNumber.replace(/\D/g, '').slice(-10) || cleanPhone,
+            companyEmail: companyEmail.trim() || email.trim(),
+            logo: logoUrl,
+            coverImage: coverImageUrl,
+            factoryPhotos,
+            factoryVideo: finalVideoUrl,
+            businessDocuments: kycDocs,
+            verificationAction,
+          };
+
+      const res = await fetch(endpoint, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          employeeId: employeeId.trim(),
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          phone: cleanPhone,
-          email: email.trim(),
-          companyName: companyName.trim(),
-          companyOwner: companyOwner.trim() || `${firstName.trim()} ${lastName.trim()}`.trim(),
-          fullAddress: fullAddress.trim(),
-          location: city.trim() ? `${city.trim()}, ${state.trim()}` : fullAddress.trim(),
-          city: city.trim(),
-          state: state.trim(),
-          pincode: pincode.trim(),
-          officeLocation,
-          businessType,
-          legalStatus,
-          yearOfEstablishment: yearOfEstablishment.trim(),
-          aboutFactory: aboutFactory.trim(),
-          factorySize: factorySize.trim(),
-          machinesCount: machinesCount ? Number(machinesCount) : undefined,
-          employeesCount: employeesCount ? Number(employeesCount) : undefined,
-          monthlyCapacity: monthlyCapacity.trim(),
-          exportPercentage: exportPercentage.trim(),
-          manufacturingCategories: selectedCategoryIds,
-          primaryProducts,
-          capabilities,
-          gstNumber: gstInput.trim().toUpperCase(),
-          gstDocumentUrl: gstDocUrl,
-          businessPhone: businessPhone.replace(/\D/g, '').slice(-10) || cleanPhone,
-          alternatePhone: alternatePhone.replace(/\D/g, '').slice(-10),
-          buyerContactPhone: buyerContactPhone.replace(/\D/g, '').slice(-10) || cleanPhone,
-          whatsappNumber: whatsappNumber.replace(/\D/g, '').slice(-10) || cleanPhone,
-          companyEmail: companyEmail.trim() || email.trim(),
-          logo: logoUrl,
-          coverImage: coverImageUrl,
-          factoryPhotos,
-          factoryVideo: finalVideoUrl,
-          businessDocuments: kycDocs,
-          verificationAction,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setStatusMsg({ type: 'success', text: data.message || 'Seller onboarded successfully!' });
+        setStatusMsg({
+          type: 'success',
+          text: isEditMode ? 'Manufacturer profile updated successfully!' : (data.message || 'Seller onboarded successfully!'),
+        });
         setResultData({
           ...data,
+          isEditMode,
           verificationAction,
         });
-        resetForm();
+        if (!isEditMode) resetForm();
       } else {
-        setStatusMsg({ type: 'error', text: data.message || 'Failed to onboard seller.' });
+        setStatusMsg({
+          type: 'error',
+          text: data.message || (isEditMode ? 'Failed to update manufacturer profile.' : 'Failed to onboard seller.'),
+        });
       }
     } catch (err) {
       setStatusMsg({ type: 'error', text: 'Network error connecting to backend.' });
@@ -645,10 +766,12 @@ export default function StaffAddUserPage() {
           </Link>
           <div>
             <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8 }}>
-              Staff Seller Onboarding Wizard
+              {isEditMode ? 'Edit Manufacturer Profile (360°)' : 'Staff Seller Onboarding Wizard'}
             </h1>
             <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748B' }}>
-              Full-featured merchant registration with GPS mapping, media dropzones, and instant or queued verification.
+              {isEditMode
+                ? `Updating all 5-step operational records for ${companyName || 'manufacturer'}.`
+                : 'Full-featured merchant registration with GPS mapping, media dropzones, and instant or queued verification.'}
             </p>
           </div>
         </div>
@@ -810,7 +933,29 @@ export default function StaffAddUserPage() {
 
         {/* Wizard Form Body */}
         <div style={{ padding: '28px 24px' }}>
-          <form onSubmit={handleSubmit}>
+          {loadingEditData ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <div
+                style={{
+                  display: 'inline-block',
+                  width: 32,
+                  height: 32,
+                  border: '3px solid #E2E8F0',
+                  borderTopColor: '#2563EB',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  marginBottom: 12,
+                }}
+              />
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1E293B' }}>
+                Loading Manufacturer Profile...
+              </h3>
+              <p style={{ margin: '6px 0 0', fontSize: 13, color: '#64748B' }}>
+                Hydrating operational records from database
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit}>
             {/* ── STEP 1: GST & Identity ── */}
             {activeStep === 1 && (
               <div>
@@ -1772,11 +1917,11 @@ export default function StaffAddUserPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || loadingEditData}
                     style={{
                       padding: '13px 28px',
                       borderRadius: 10,
-                      background: loading ? '#94A3B8' : '#0F172A',
+                      background: (loading || loadingEditData) ? '#94A3B8' : '#0F172A',
                       color: '#FFFFFF',
                       fontSize: 14,
                       fontWeight: 700,
@@ -1788,14 +1933,26 @@ export default function StaffAddUserPage() {
                     }}
                   >
                     <UserPlus size={18} />
-                    {loading ? 'Finalizing & Onboarding...' : 'Complete Onboarding & Credit Score (+1)'}
+                    {loading
+                      ? (isEditMode ? 'Saving Changes...' : 'Finalizing & Onboarding...')
+                      : (isEditMode ? 'Save Manufacturer Profile Changes' : 'Complete Onboarding & Credit Score (+1)')}
                   </button>
                 </div>
               </div>
             )}
           </form>
+          )}
         </div>
       </div>
     </div>
   );
 }
+
+export default function StaffAddUserPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#64748B' }}>Loading onboarding wizard...</div>}>
+      <StaffAddUserContent />
+    </Suspense>
+  );
+}
+

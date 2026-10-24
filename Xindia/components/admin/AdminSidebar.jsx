@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Tag, Star, Settings, LogOut, UserCog, Shield, Bell, Receipt, Megaphone, ShieldCheck, Activity, MessageSquare, Sparkles, FileText, Wand2, Laptop } from 'lucide-react';
@@ -71,6 +72,24 @@ export default function AdminSidebar() {
     loaded,
   } = useAdminPermissions();
 
+  const [counts, setCounts] = useState({ alerts: 0, verifications: 0, moderation: 0 });
+
+  useEffect(() => {
+    const handleCountsUpdate = (e) => {
+      if (e?.detail) {
+        setCounts((prev) => ({ ...prev, ...e.detail }));
+      }
+    };
+    window.addEventListener('admin-counts-update', handleCountsUpdate);
+    return () => window.removeEventListener('admin-counts-update', handleCountsUpdate);
+  }, []);
+
+  const BADGE_MAP = {
+    '/admin/alerts': { count: counts.alerts, bg: '#DC2626' },
+    '/admin/verifications': { count: counts.verifications, bg: '#EA580C' },
+    '/admin/reviews': { count: counts.moderation, bg: '#D97706' },
+  };
+
   if (pathname === '/admin/login') return null;
 
   // Resolve which links to show based on delegated capabilities.
@@ -125,10 +144,29 @@ export default function AdminSidebar() {
 
       {links.map(({ href, label, icon: Icon }) => {
         const isActive = pathname.startsWith(href);
+        const badgeInfo = BADGE_MAP[href];
+        const count = badgeInfo?.count || 0;
+
         return (
           <Link key={href} href={href} className={`admin-sidebar-link ${isActive ? 'active' : ''}`}>
             <Icon size={18} />
-            {label}
+            <span style={{ flex: 1 }}>{label}</span>
+            {count > 0 && (
+              <span
+                style={{
+                  background: badgeInfo.bg,
+                  color: '#FFFFFF',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: '1px 6px',
+                  borderRadius: 10,
+                  lineHeight: '14px',
+                  display: 'inline-block',
+                }}
+              >
+                {count > 99 ? '99+' : count}
+              </span>
+            )}
           </Link>
         );
       })}

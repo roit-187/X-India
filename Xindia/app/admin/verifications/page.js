@@ -71,6 +71,39 @@ export default function VerificationQueuePage() {
   const [evidenceFiles, setEvidenceFiles] = useState([]); // [{ url, name, size, type }]
   const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
 
+  // Assign Staff Modal State
+  const [assignTarget, setAssignTarget] = useState(null);
+  const [assignStaffName, setAssignStaffName] = useState('');
+
+  const handleAssignSubmit = async (e) => {
+    e.preventDefault();
+    if (!assignTarget || actionInProgressId) return;
+    setActionInProgressId(assignTarget._id);
+    try {
+      const res = await fetch(`/api/admin/verification/${assignTarget._id}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          verifierName: assignStaffName.trim(),
+          assignedAdminId: adminProfile?._id || adminProfile?.id,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`Staff verifier assigned for ${assignTarget.manufacturerId?.name || assignTarget.userId?.companyName || 'seller'}.`, 'success');
+        setAssignTarget(null);
+        setAssignStaffName('');
+        loadData();
+      } else {
+        showToast(data.message || 'Failed to assign verifier', 'error');
+      }
+    } catch (err) {
+      showToast('Error assigning verifier: ' + err.message, 'error');
+    } finally {
+      setActionInProgressId(null);
+    }
+  };
+
   // Toast feedback helper
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
@@ -1072,7 +1105,7 @@ export default function VerificationQueuePage() {
                         )}
                         <div style={{ marginTop: 4 }}>
                           <Badge
-                            label={r.status}
+                            label={r.status === 'accepted' ? 'Assigned' : r.status}
                             variant={
                               r.status === 'verified'
                                 ? 'verified'
@@ -1082,6 +1115,11 @@ export default function VerificationQueuePage() {
                             }
                           />
                         </div>
+                        {r.assignedVerifier?.name && (
+                          <div style={{ fontSize: 11, color: '#475569', marginTop: 4, fontWeight: 500 }}>
+                            👤 {r.assignedVerifier.name}
+                          </div>
+                        )}
                       </td>
 
                       <td>
@@ -1142,43 +1180,106 @@ export default function VerificationQueuePage() {
                             <Eye size={12} /> Inspect 360°
                           </button>
 
-                          {r.status !== 'verified' && (
-                            <button
-                              className="admin-btn admin-btn-primary"
-                              disabled={isBusy}
-                              style={{
-                                backgroundColor: '#16A34A',
-                                borderColor: '#15803D',
-                                padding: '4px 8px',
-                                fontSize: 11,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                              }}
-                              onClick={() => openApproveModal(r)}
-                            >
-                              {isBusy ? <RefreshCw size={10} className="spin" /> : null}
-                              Verify
-                            </button>
-                          )}
+                          {(() => {
+                            const isAssigned = r.status === 'accepted' || r.status === 'partner_assigned' || !!r.assignedVerifier?.name;
+                            const isPendingOrScheduled = (r.status === 'pending' || r.status === 'scheduled') && !isAssigned;
 
-                          {r.status !== 'rejected' && (
-                            <button
-                              className="admin-btn admin-btn-danger"
-                              disabled={isBusy}
-                              style={{
-                                padding: '4px 8px',
-                                fontSize: 11,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                              }}
-                              onClick={() => openDeclineModal(r)}
-                            >
-                              {isBusy ? <RefreshCw size={10} className="spin" /> : null}
-                              Decline
-                            </button>
-                          )}
+                            if (isPendingOrScheduled) {
+                              return (
+                                <>
+                                  <button
+                                    className="admin-btn admin-btn-primary"
+                                    disabled={isBusy}
+                                    style={{
+                                      padding: '4px 8px',
+                                      fontSize: 11,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                    }}
+                                    onClick={() => {
+                                      setAssignTarget(r);
+                                      setAssignStaffName(adminProfile?.fullName || adminProfile?.username || '');
+                                    }}
+                                  >
+                                    {isBusy ? <RefreshCw size={10} className="spin" /> : null}
+                                    Assign Staff
+                                  </button>
+                                  <button
+                                    className="admin-btn admin-btn-danger"
+                                    disabled={isBusy}
+                                    style={{
+                                      padding: '4px 8px',
+                                      fontSize: 11,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                    }}
+                                    onClick={() => openDeclineModal(r)}
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              );
+                            }
+
+                            if (isAssigned && r.status !== 'verified' && r.status !== 'rejected') {
+                              return (
+                                <>
+                                  <button
+                                    className="admin-btn"
+                                    disabled={isBusy}
+                                    style={{
+                                      backgroundColor: '#16A34A',
+                                      borderColor: '#15803D',
+                                      color: '#fff',
+                                      padding: '4px 8px',
+                                      fontSize: 11,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                    }}
+                                    onClick={() => openApproveModal(r)}
+                                  >
+                                    {isBusy ? <RefreshCw size={10} className="spin" /> : null}
+                                    Mark Verified
+                                  </button>
+                                  <button
+                                    className="admin-btn admin-btn-danger"
+                                    disabled={isBusy}
+                                    style={{
+                                      padding: '4px 8px',
+                                      fontSize: 11,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                    }}
+                                    onClick={() => openDeclineModal(r)}
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              );
+                            }
+
+                            if (r.status === 'verified') {
+                              return (
+                                <span style={{ fontSize: 11, color: '#16A34A', fontWeight: 600, padding: '4px 6px' }}>
+                                  ✓ Verified
+                                </span>
+                              );
+                            }
+
+                            if (r.status === 'rejected') {
+                              return (
+                                <span style={{ fontSize: 11, color: '#DC2626', fontWeight: 600, padding: '4px 6px' }}>
+                                  ✗ Cancelled
+                                </span>
+                              );
+                            }
+
+                            return null;
+                          })()}
                         </div>
                       </td>
                     </tr>
@@ -2363,6 +2464,39 @@ export default function VerificationQueuePage() {
           </div>
         </div>
       )}
+
+      {/* Assign Staff Modal */}
+      {assignTarget && (
+        <div className="admin-modal-overlay" onClick={() => setAssignTarget(null)}>
+          <div className="admin-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
+            <h3 style={{ marginTop: 0, marginBottom: 12 }}>Assign Verification Staff</h3>
+            <p style={{ fontSize: 13, color: '#64748B', marginBottom: 16 }}>
+              Assign a field auditor or compliance officer for {assignTarget.manufacturerId?.name || assignTarget.userId?.companyName || 'this factory'}.
+            </p>
+            <form onSubmit={handleAssignSubmit}>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Verifier Name / Staff Member</label>
+                <input
+                  className="admin-input"
+                  style={{ width: '100%' }}
+                  placeholder="e.g. Inspector Ramesh Kumar"
+                  value={assignStaffName}
+                  onChange={(e) => setAssignStaffName(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setAssignTarget(null)}>Cancel</button>
+                <button type="submit" className="admin-btn admin-btn-primary" disabled={actionInProgressId === assignTarget._id}>
+                  {actionInProgressId === assignTarget._id ? 'Assigning...' : 'Assign & Schedule'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
 
       {/* Global Toast Notification Banner */}
       {toast && (

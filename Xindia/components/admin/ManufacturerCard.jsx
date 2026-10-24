@@ -29,16 +29,24 @@ export default function ManufacturerCard({
 
   return (
     <div className="admin-card" style={isDeactivated ? { borderLeft: '4px solid #EF4444' } : {}}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
           <h3
-            style={{ margin: 0, cursor: onInspect ? 'pointer' : 'default', color: '#2563EB' }}
+            style={{ margin: 0, cursor: onInspect ? 'pointer' : 'default', color: '#2563EB', wordBreak: 'break-word' }}
             onClick={() => onInspect && onInspect(manufacturer._id)}
           >
             {manufacturer.name} ↗
           </h3>
         </div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', flexShrink: 0, maxWidth: '100%' }}>
+          <Link
+            href={`/staff/add-user?edit=${manufacturer._id}`}
+            className="admin-btn admin-btn-secondary"
+            style={{ padding: '4px 8px', fontSize: 11, textDecoration: 'none' }}
+            title="Full 360° Onboarding Edit"
+          >
+            Full Edit
+          </Link>
           {onQuickEdit && canEdit && (
             <button
               className="admin-btn admin-btn-secondary"
@@ -46,7 +54,7 @@ export default function ManufacturerCard({
               onClick={() => onQuickEdit(manufacturer)}
               title="Quick edit contact & profile details"
             >
-              Edit
+              Quick Edit
             </button>
           )}
           {onInspect && (
@@ -73,7 +81,9 @@ export default function ManufacturerCard({
               >
                 ⚡ Spotlight
               </Link>
-              <Toggle checked={manufacturer.isActive} onChange={(next) => onToggleActive(manufacturer._id, next)} />
+              <div style={{ flexShrink: 0 }}>
+                <Toggle checked={manufacturer.isActive} onChange={(next) => onToggleActive(manufacturer._id, next)} />
+              </div>
             </>
           )}
         </div>

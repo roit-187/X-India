@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import AdminSidebar from './AdminSidebar';
+import AdminRealtimeAlerts from './AdminRealtimeAlerts';
 import BfcacheReload from '@/components/BfcacheReload';
 
 export default function AdminShell({ children }) {
@@ -20,6 +21,7 @@ export default function AdminShell({ children }) {
   return (
     <div className="admin-shell">
       <BfcacheReload />
+      <AdminRealtimeAlerts />
       <AdminSidebar />
       <main className="admin-main">{children}</main>
     </div>
