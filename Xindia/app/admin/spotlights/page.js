@@ -27,6 +27,49 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
+const BANNER_PRESETS = {
+  navy: {
+    id: 'navy',
+    name: 'Royal Navy',
+    colors: ['#0B192C', '#1E3E62'],
+    accent: '#FF5E13',
+    ctaBg: '#FFFFFF',
+    ctaText: '#0F172A',
+  },
+  emerald: {
+    id: 'emerald',
+    name: 'Emerald Pro',
+    colors: ['#064E3B', '#059669'],
+    accent: '#FDE68A',
+    ctaBg: '#FFFFFF',
+    ctaText: '#064E3B',
+  },
+  midnight: {
+    id: 'midnight',
+    name: 'Midnight Dark',
+    colors: ['#0A0F1D', '#1E293B'],
+    accent: '#38BDF8',
+    ctaBg: '#FFFFFF',
+    ctaText: '#0F172A',
+  },
+  sunset: {
+    id: 'sunset',
+    name: 'Sunset Glow',
+    colors: ['#7C2D12', '#C2410C'],
+    accent: '#FEF08A',
+    ctaBg: '#FFFFFF',
+    ctaText: '#7C2D12',
+  },
+  crimson: {
+    id: 'crimson',
+    name: 'Crimson Elite',
+    colors: ['#581C87', '#7E22CE'],
+    accent: '#F472B6',
+    ctaBg: '#FFFFFF',
+    ctaText: '#3B0764',
+  },
+};
+
 function SpotlightContent() {
   const { isSuperAdmin, loaded } = useAdminPermissions();
   const searchParams = useSearchParams();
@@ -78,9 +121,29 @@ function SpotlightContent() {
   const [formLaunchDays, setFormLaunchDays] = useState(7);
   const [formNotes, setFormNotes] = useState('');
 
+  // Fully Customizable Banner Form State
+  const [bannerTagline, setBannerTagline] = useState('Start Your Own');
+  const [bannerTitle, setBannerTitle] = useState('');
+  const [bannerMetrics, setBannerMetrics] = useState([
+    { label: 'Avg. Profits', value: '₹40K – 80K', subtext: 'per month' },
+    { label: 'Launch in', value: '7 Days', subtext: '' },
+    { label: 'Start with', value: '₹25,000', subtext: '' },
+  ]);
+  const [bannerSocialProofEnabled, setBannerSocialProofEnabled] = useState(true);
+  const [bannerSocialProofText, setBannerSocialProofText] = useState('36 founders created');
+  const [bannerCtaText, setBannerCtaText] = useState('Explore Now');
+  const [bannerPreset, setBannerPreset] = useState('navy');
+  const [bannerThumbnail, setBannerThumbnail] = useState('');
+  const [bannerTargetKind, setBannerTargetKind] = useState('ENTITY');
+  const [bannerDeepLinkUrl, setBannerDeepLinkUrl] = useState('');
+  const [bannerBackground, setBannerBackground] = useState('');
+  const [previewWidth, setPreviewWidth] = useState(343);
+
   // Image Upload State for Banners
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingBgImage, setUploadingBgImage] = useState(false);
   const fileInputRef = useRef(null);
+  const bgFileInputRef = useRef(null);
 
   const showToast = (msg, type = 'success') => {
     setToastMessage({ msg, type });
@@ -136,12 +199,37 @@ function SpotlightContent() {
     }
   }, [loaded, fetchCampaigns]);
 
-  const handleSelectEntity = useCallback((entity) => {
+  const handleSelectEntity = useCallback(async (entity) => {
     setSelectedEntity(entity);
     setFormTitle((prev) => prev || `${entity.title} — Spotlight`);
-    setFormHeadline((prev) => prev || entity.title);
-    setFormSubHeadline((prev) => prev || entity.subtitle || '');
-    setFormCustomImage((prev) => prev || entity.imageUrl || '');
+    setFormHeadline(entity.title || '');
+    setFormSubHeadline(entity.subtitle || '');
+    setFormCustomImage(entity.imageUrl || '');
+    setBannerThumbnail(entity.imageUrl || '');
+    setBannerTitle(entity.title || '');
+
+    try {
+      const res = await fetch(`/api/admin/spotlight/banner-defaults?entityType=${entity.type}&entityId=${entity.id}`);
+      const data = await res.json();
+      if (data.success && data.data?.defaults) {
+        const d = data.data.defaults;
+        setBannerTagline(d.tagline || 'Start Your Own');
+        setBannerTitle(d.title || entity.title || '');
+        if (Array.isArray(d.metrics) && d.metrics.length > 0) {
+          setBannerMetrics(d.metrics);
+        }
+        setBannerSocialProofEnabled(d.socialProof?.enabled !== false);
+        setBannerSocialProofText(d.socialProof?.text || '36 founders created');
+        setBannerCtaText(d.cta?.text || 'Explore Now');
+        setBannerPreset(d.preset || 'navy');
+        setBannerThumbnail(d.thumbnailUrl || entity.imageUrl || '');
+        setBannerBackground(d.backgroundUrl || '');
+        setBannerTargetKind(d.target?.kind || 'ENTITY');
+        setBannerDeepLinkUrl(d.target?.deepLinkUrl || '');
+      }
+    } catch (err) {
+      console.warn('Failed to fetch banner defaults:', err);
+    }
   }, []);
 
   // Handle incoming shortcut params from Products or Manufacturers tables
@@ -174,7 +262,7 @@ function SpotlightContent() {
     const timer = setTimeout(async () => {
       try {
         setEntitySearching(true);
-        const searchEntityType = section === 'PRODUCTS' ? 'Product' : 'Manufacturer';
+        const searchEntityType = section === 'PRODUCTS' ? 'Product' : section === 'BANNERS' ? 'ALL' : 'Manufacturer';
         const res = await fetch(
           `/api/admin/spotlight/search-entities?q=${encodeURIComponent(entityQuery.trim())}&entityType=${searchEntityType}`
         );
@@ -224,6 +312,41 @@ function SpotlightContent() {
     } finally {
       setUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleBgImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WEBP).', 'error');
+      return;
+    }
+
+    try {
+      setUploadingBgImage(true);
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/admin/spotlight/upload-banner', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.success && data.url) {
+        setBannerBackground(data.url);
+        showToast('Full banner background uploaded successfully to R2!');
+      } else {
+        showToast(data.message || 'Background image upload failed', 'error');
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      showToast('Network error uploading background image', 'error');
+    } finally {
+      setUploadingBgImage(false);
+      if (bgFileInputRef.current) bgFileInputRef.current.value = '';
     }
   };
 
@@ -279,13 +402,40 @@ function SpotlightContent() {
         payload.slotPosition = Number(formPriority) || 1;
       } else if (payload.type === 'EXPLORE_BANNER') {
         payload.slotPosition = Number(formSlot) || 1;
+        const finalThumbnail = bannerThumbnail.trim() || formCustomImage.trim() || selectedEntity.imageUrl || '';
+        payload.bannerConfig = {
+          version: 2,
+          tagline: bannerTagline.trim() || 'Start Your Own',
+          title: bannerTitle.trim() || selectedEntity.title || 'Featured Opportunity',
+          metrics: bannerMetrics.map((m) => ({
+            label: (m.label || '').trim(),
+            value: (m.value || '').trim(),
+            subtext: (m.subtext || '').trim(),
+          })),
+          socialProof: {
+            enabled: bannerSocialProofEnabled,
+            text: bannerSocialProofText.trim() || '36 founders created',
+          },
+          cta: {
+            text: bannerCtaText.trim() || 'Explore Now',
+          },
+          thumbnailUrl: finalThumbnail,
+          backgroundUrl: bannerBackground.trim(),
+          preset: bannerPreset || 'navy',
+          target: {
+            kind: bannerTargetKind || 'ENTITY',
+            deepLinkUrl: bannerDeepLinkUrl.trim(),
+          },
+        };
         payload.bannerDetails = {
-          headline: formHeadline.trim() || selectedEntity.title,
-          subHeadline: formSubHeadline.trim() || selectedEntity.subtitle || 'Verified Factory',
+          headline: payload.bannerConfig.title,
+          subHeadline: payload.bannerConfig.tagline,
           badgeText: 'Featured Partner',
-          customImageUrl: formCustomImage.trim() || selectedEntity.imageUrl,
+          customImageUrl: finalThumbnail,
+          backgroundImageUrl: bannerBackground.trim(),
+          deepLinkUrl: payload.bannerConfig.target?.deepLinkUrl || '',
           investment: Number(formInvestment) || 25000,
-          profitEstimate: formProfitEstimate.trim() || '30% - 40%',
+          profitEstimate: bannerMetrics[0]?.value || '₹40K – ₹80K',
           launchDays: Number(formLaunchDays) || 7,
         };
       }
@@ -407,6 +557,23 @@ function SpotlightContent() {
     setFormProfitEstimate('₹40K – ₹80K');
     setFormLaunchDays(7);
     setFormNotes('');
+
+    setBannerTagline('Start Your Own');
+    setBannerTitle('');
+    setBannerMetrics([
+      { label: 'Avg. Profits', value: '₹40K – 80K', subtext: 'per month' },
+      { label: 'Launch in', value: '7 Days', subtext: '' },
+      { label: 'Start with', value: '₹25,000', subtext: '' },
+    ]);
+    setBannerSocialProofEnabled(true);
+    setBannerSocialProofText('36 founders created');
+    setBannerCtaText('Explore Now');
+    setBannerPreset('navy');
+    setBannerThumbnail('');
+    setBannerBackground('');
+    setBannerTargetKind('ENTITY');
+    setBannerDeepLinkUrl('');
+    setPreviewWidth(343);
   };
 
   const isExpired = (item) => new Date(item.endDate) < new Date();
@@ -441,7 +608,17 @@ function SpotlightContent() {
           {slots.map(({ slotNum, banner }) => {
             if (banner) {
               const details = banner.bannerDetails || {};
-              const imgUrl = details.customImageUrl || banner.targetSnapshot?.imageUrl;
+              const cfg = banner.bannerConfig && banner.bannerConfig.version === 2 ? banner.bannerConfig : null;
+              const tagline = cfg?.tagline || 'Start Your Own';
+              const title = cfg?.title || details.headline || banner.targetSnapshot?.title || banner.title;
+              const preset = (cfg?.preset && BANNER_PRESETS[cfg.preset]) ? BANNER_PRESETS[cfg.preset] : BANNER_PRESETS.navy;
+              const imgUrl = cfg?.thumbnailUrl || details.customImageUrl || banner.targetSnapshot?.imageUrl;
+              const bgUrl = cfg?.backgroundUrl || details.backgroundImageUrl || null;
+              const metrics = cfg?.metrics?.length ? cfg.metrics : [
+                { label: 'Profits', value: details.profitEstimate || '30%-40%' },
+                { label: 'Start', value: `₹${Number(details.investment || 25000).toLocaleString('en-IN')}` },
+                { label: 'Launch', value: `${details.launchDays || 7} Days` },
+              ];
               return (
                 <div
                   key={slotNum}
@@ -468,7 +645,7 @@ function SpotlightContent() {
                   <div
                     style={{
                       borderRadius: 12,
-                      background: 'linear-gradient(135deg, #061A37 0%, #031024 100%)',
+                      background: bgUrl ? '#0F172A' : `linear-gradient(135deg, ${preset.colors[0]} 0%, ${preset.colors[1]} 100%)`,
                       padding: 14,
                       color: '#FFFFFF',
                       display: 'flex',
@@ -477,26 +654,48 @@ function SpotlightContent() {
                       position: 'relative',
                       minHeight: 110,
                       boxShadow: '0 4px 12px rgba(3,16,36,0.3)',
+                      overflow: 'hidden',
                     }}
                   >
-                    <div style={{ flex: 1, paddingRight: 10 }}>
-                      <div style={{ fontSize: 9, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase' }}>
-                        Start Your Own
+                    {bgUrl && (
+                      <img
+                        src={bgUrl}
+                        alt=""
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          zIndex: 0,
+                        }}
+                      />
+                    )}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: bgUrl
+                          ? `linear-gradient(135deg, ${preset.colors[0]}CC 0%, ${preset.colors[1]}F2 100%)`
+                          : `linear-gradient(135deg, ${preset.colors[0]} 0%, ${preset.colors[1]} 100%)`,
+                        zIndex: 1,
+                      }}
+                    />
+
+                    <div style={{ flex: 1, paddingRight: 10, position: 'relative', zIndex: 2 }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: preset.accent, textTransform: 'uppercase' }}>
+                        {tagline}
                       </div>
                       <div style={{ fontSize: 13, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.2, marginTop: 2 }}>
-                        {details.headline || banner.targetSnapshot?.title || banner.title}
+                        {title}
                       </div>
 
                       <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-                        <div style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4, fontSize: 9 }}>
-                          Profits: {details.profitEstimate || '30%-40%'}
-                        </div>
-                        <div style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4, fontSize: 9 }}>
-                          Start: ₹{Number(details.investment || 25000).toLocaleString('en-IN')}
-                        </div>
-                        <div style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4, fontSize: 9 }}>
-                          {details.launchDays || 7} Days
-                        </div>
+                        {metrics.map((m, idx) => (
+                          <div key={idx} style={{ background: 'rgba(255,255,255,0.12)', padding: '2px 6px', borderRadius: 4, fontSize: 9 }}>
+                            {m.label ? `${m.label}: ` : ''}{m.value}
+                          </div>
+                        ))}
                       </div>
                     </div>
 
@@ -510,6 +709,8 @@ function SpotlightContent() {
                         overflow: 'hidden',
                         flexShrink: 0,
                         border: '1px solid rgba(255,255,255,0.15)',
+                        position: 'relative',
+                        zIndex: 2,
                       }}
                     >
                       {imgUrl ? (
@@ -1154,117 +1355,567 @@ function SpotlightContent() {
                 )}
               </div>
 
-              {/* ── BANNER SPECIFIC: IMAGE UPLOADER & LIVE MOBILE PREVIEW ──── */}
+              {/* ── BANNER SPECIFIC: FULLY CUSTOMIZABLE TEMPLATE & LIVE MOBILE PREVIEW ──── */}
               {section === 'BANNERS' && (
-                <div style={{ marginBottom: 20, padding: 16, background: '#F8FAFC', borderRadius: 12, border: '1px solid #E2E8F0' }}>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', marginBottom: 8 }}>
-                    Banner Icon / Thumbnail (78×94 Portrait)
-                  </label>
-
-                  {/* Upload Controls */}
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      style={{ display: 'none' }}
-                      id="banner-file-input"
-                    />
-                    <label
-                      htmlFor="banner-file-input"
-                      className="admin-btn admin-btn-secondary"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        cursor: 'pointer',
-                        fontSize: 12,
-                        background: '#FFFFFF',
-                        border: '1px solid #CBD5E1',
-                      }}
-                    >
-                      <Upload size={14} />
-                      {uploadingImage ? 'Uploading to R2...' : 'Upload Custom Banner Image'}
-                    </label>
-
-                    {selectedEntity?.imageUrl && formCustomImage !== selectedEntity.imageUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setFormCustomImage(selectedEntity.imageUrl)}
-                        className="admin-btn admin-btn-secondary"
-                        style={{ fontSize: 11, padding: '6px 10px' }}
-                      >
-                        Reset to Business Logo
-                      </button>
-                    )}
+                <div style={{ marginBottom: 20 }}>
+                  {/* Live Mobile App Carousel Preview Header & Width Switcher */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Eye size={14} color="#2563EB" /> 1:1 Live Mobile Preview
+                    </div>
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <span style={{ fontSize: 10, color: '#64748B', marginRight: 4 }}>Phone Width:</span>
+                      {[
+                        { label: '343px', val: 343 },
+                        { label: '375px', val: 375 },
+                        { label: '430px', val: 430 },
+                      ].map((w) => (
+                        <button
+                          key={w.val}
+                          type="button"
+                          onClick={() => setPreviewWidth(w.val)}
+                          style={{
+                            padding: '2px 8px',
+                            borderRadius: 6,
+                            border: '1px solid',
+                            borderColor: previewWidth === w.val ? '#2563EB' : '#CBD5E1',
+                            background: previewWidth === w.val ? '#EFF6FF' : '#FFFFFF',
+                            color: previewWidth === w.val ? '#1D4ED8' : '#64748B',
+                            fontSize: 10,
+                            fontWeight: previewWidth === w.val ? 700 : 500,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {w.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* LIVE MOBILE PREVIEW CARD */}
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Eye size={12} /> Live Mobile App Carousel Preview:
-                    </div>
-
-                    <div
-                      style={{
-                        borderRadius: 14,
-                        background: 'linear-gradient(135deg, #061A37 0%, #031024 100%)',
-                        padding: 16,
-                        color: '#FFFFFF',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        position: 'relative',
-                        boxShadow: '0 6px 16px rgba(3,16,36,0.35)',
-                      }}
-                    >
-                      <div style={{ flex: 1, paddingRight: 12 }}>
-                        <div style={{ fontSize: 9, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase' }}>
-                          Start Your Own
-                        </div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.2, marginTop: 2 }}>
-                          {formHeadline || selectedEntity?.title || 'Business / Brand Name'}
-                        </div>
-
-                        <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                          <div style={{ background: 'rgba(255,255,255,0.1)', padding: '3px 8px', borderRadius: 4, fontSize: 10 }}>
-                            Profits: {formProfitEstimate}
-                          </div>
-                          <div style={{ background: 'rgba(255,255,255,0.1)', padding: '3px 8px', borderRadius: 4, fontSize: 10 }}>
-                            Start with: ₹{Number(formInvestment || 25000).toLocaleString('en-IN')}
-                          </div>
-                          <div style={{ background: 'rgba(255,255,255,0.1)', padding: '3px 8px', borderRadius: 4, fontSize: 10 }}>
-                            {formLaunchDays} Days
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 78×94 Portrait Thumbnail */}
+                  {/* 1:1 Live Mobile Carousel Card */}
+                  {(() => {
+                    const preset = BANNER_PRESETS[bannerPreset] || BANNER_PRESETS.navy;
+                    const finalImg = bannerThumbnail || formCustomImage || selectedEntity?.imageUrl || '';
+                    const finalBg = bannerBackground.trim();
+                    return (
                       <div
                         style={{
-                          width: 78,
-                          height: 94,
-                          borderRadius: 10,
-                          background: '#0F172A',
+                          width: '100%',
+                          maxWidth: previewWidth,
+                          height: 188,
+                          borderRadius: 16,
+                          background: finalBg ? '#031024' : `linear-gradient(135deg, ${preset.colors[0]} 0%, ${preset.colors[1]} 100%)`,
+                          padding: 16,
+                          boxSizing: 'border-box',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          position: 'relative',
                           overflow: 'hidden',
-                          flexShrink: 0,
-                          border: '1px solid rgba(255,255,255,0.2)',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                          margin: '0 auto 16px auto',
+                          transition: 'max-width 0.2s ease',
                         }}
                       >
-                        {formCustomImage ? (
+                        {finalBg ? (
                           <img
-                            src={formCustomImage}
+                            src={finalBg}
                             alt=""
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            style={{
+                              position: 'absolute',
+                              inset: 0,
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                              zIndex: 0,
+                            }}
                           />
-                        ) : (
-                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B', fontSize: 11, textAlign: 'center', padding: 4 }}>
-                            No Image
+                        ) : null}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background: finalBg
+                              ? `linear-gradient(135deg, ${preset.colors[0]}CC 0%, ${preset.colors[1]}F2 100%)`
+                              : `linear-gradient(135deg, ${preset.colors[0]} 0%, ${preset.colors[1]} 100%)`,
+                            zIndex: 1,
+                          }}
+                        />
+
+                        {/* Left Content Area (66% width) */}
+                        <div style={{ width: '66%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', position: 'relative', zIndex: 2 }}>
+                          {/* Overline / Tagline */}
+                          <div
+                            style={{
+                              color: preset.accent,
+                              fontSize: 10,
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              letterSpacing: 0.5,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {bannerTagline || 'Start Your Own'}
+                          </div>
+
+                          {/* Main Title (2-line max) */}
+                          <div
+                            style={{
+                              color: '#FFFFFF',
+                              fontSize: 16,
+                              fontWeight: 800,
+                              lineHeight: '20px',
+                              marginTop: 2,
+                              minHeight: 40,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            {bannerTitle || selectedEntity?.title || 'Business Opportunity Title'}
+                          </div>
+
+                          {/* 3 Metrics Row */}
+                          <div style={{ display: 'flex', alignItems: 'center', marginTop: 8 }}>
+                            {bannerMetrics.map((m, idx) => (
+                              <div key={idx} style={{ display: 'flex', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <span style={{ color: '#94A3B8', fontSize: 9, fontWeight: 500, whiteSpace: 'nowrap' }}>
+                                    {m.label || `Metric ${idx + 1}`}
+                                  </span>
+                                  <span style={{ color: '#FFFFFF', fontSize: 13, fontWeight: 700, marginTop: 1, whiteSpace: 'nowrap' }}>
+                                    {m.value || '—'}
+                                  </span>
+                                  {m.subtext ? (
+                                    <span style={{ color: '#94A3B8', fontSize: 8, marginTop: 1, whiteSpace: 'nowrap' }}>
+                                      {m.subtext}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                {idx < bannerMetrics.length - 1 && (
+                                  <div style={{ width: 1, height: 22, backgroundColor: 'rgba(255, 255, 255, 0.18)', margin: '0 10px' }} />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Right Thumbnail Image (86x104) */}
+                        <div
+                          style={{
+                            width: 86,
+                            height: 104,
+                            borderRadius: 12,
+                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                            overflow: 'hidden',
+                            flexShrink: 0,
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                            position: 'relative',
+                            zIndex: 2,
+                          }}
+                        >
+                          {finalImg ? (
+                            <img src={finalImg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontSize: 11, textAlign: 'center', padding: 4 }}>
+                              86×104 Image
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Bottom-Left Social Proof Footer */}
+                        {bannerSocialProofEnabled && (
+                          <div style={{ position: 'absolute', bottom: 12, left: 16, display: 'flex', alignItems: 'center', zIndex: 2 }}>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                              {[
+                                'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=60',
+                                'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=60',
+                                'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=60',
+                              ].map((uri, idx) => (
+                                <img
+                                  key={idx}
+                                  src={uri}
+                                  alt=""
+                                  style={{
+                                    width: 16,
+                                    height: 16,
+                                    borderRadius: 8,
+                                    border: '1px solid #031024',
+                                    marginLeft: idx > 0 ? -5 : 0,
+                                    objectFit: 'cover',
+                                  }}
+                                />
+                              ))}
+                            </div>
+                            <span style={{ color: '#E2E8F0', fontSize: 9, fontWeight: 500, marginLeft: 6, maxWidth: 140, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {bannerSocialProofText || '36 founders created'}
+                            </span>
                           </div>
                         )}
+
+                        {/* Bottom-Right CTA Button */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: 12,
+                            right: 14,
+                            backgroundColor: preset.ctaBg,
+                            color: preset.ctaText,
+                            borderRadius: 14,
+                            padding: '5px 11px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontSize: 10,
+                            fontWeight: 700,
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                            zIndex: 2,
+                          }}
+                        >
+                          <span>{bannerCtaText || 'Explore Now'}</span>
+                          <span>→</span>
+                        </div>
                       </div>
+                    );
+                  })()}
+
+                  {/* ── Granular Edit Controls ── */}
+                  <div style={{ background: '#F8FAFC', borderRadius: 12, border: '1px solid #E2E8F0', padding: 16 }}>
+                    {/* 1. Tagline & Main Title */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12, marginBottom: 14 }}>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <label style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+                            Banner Tagline
+                          </label>
+                          <span style={{ fontSize: 10, color: '#94A3B8' }}>{bannerTagline.length}/28</span>
+                        </div>
+                        <input
+                          type="text"
+                          maxLength={28}
+                          value={bannerTagline}
+                          onChange={(e) => setBannerTagline(e.target.value)}
+                          placeholder="e.g. Start Your Own"
+                          className="admin-input"
+                          style={{ width: '100%', height: 36, fontSize: 13 }}
+                        />
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <label style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+                            Banner Headline (2 Lines Max)
+                          </label>
+                          <span style={{ fontSize: 10, color: '#94A3B8' }}>{bannerTitle.length}/65</span>
+                        </div>
+                        <input
+                          type="text"
+                          maxLength={65}
+                          value={bannerTitle}
+                          onChange={(e) => setBannerTitle(e.target.value)}
+                          placeholder="e.g. Workwear & Safety Equipment Manufacturer"
+                          className="admin-input"
+                          style={{ width: '100%', height: 36, fontSize: 13 }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* 2. 3 Metrics Columns */}
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <label style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+                          3 Highlights / Metrics Columns
+                        </label>
+                        {selectedEntity && (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectEntity(selectedEntity)}
+                            style={{ border: 'none', background: 'transparent', color: '#2563EB', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                          >
+                            <RefreshCw size={11} /> Reset to Defaults
+                          </button>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                        {bannerMetrics.map((m, idx) => (
+                          <div key={idx} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 8, padding: 10 }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: '#64748B', marginBottom: 4 }}>
+                              Metric #{idx + 1}
+                            </div>
+                            <input
+                              type="text"
+                              maxLength={16}
+                              placeholder="Label (e.g. Avg. Profits)"
+                              value={m.label}
+                              onChange={(e) => {
+                                const copy = [...bannerMetrics];
+                                copy[idx] = { ...copy[idx], label: e.target.value };
+                                setBannerMetrics(copy);
+                              }}
+                              className="admin-input"
+                              style={{ width: '100%', height: 30, fontSize: 11, marginBottom: 6 }}
+                            />
+                            <input
+                              type="text"
+                              maxLength={16}
+                              placeholder="Value (e.g. ₹85K)"
+                              value={m.value}
+                              onChange={(e) => {
+                                const copy = [...bannerMetrics];
+                                copy[idx] = { ...copy[idx], value: e.target.value };
+                                setBannerMetrics(copy);
+                              }}
+                              className="admin-input"
+                              style={{ width: '100%', height: 30, fontSize: 11, fontWeight: 700, marginBottom: 6 }}
+                            />
+                            <input
+                              type="text"
+                              maxLength={16}
+                              placeholder="Subtext (e.g. per month)"
+                              value={m.subtext}
+                              onChange={(e) => {
+                                const copy = [...bannerMetrics];
+                                copy[idx] = { ...copy[idx], subtext: e.target.value };
+                                setBannerMetrics(copy);
+                              }}
+                              className="admin-input"
+                              style={{ width: '100%', height: 30, fontSize: 11 }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 3. Social Proof & CTA Row */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <label style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <input
+                              type="checkbox"
+                              checked={bannerSocialProofEnabled}
+                              onChange={(e) => setBannerSocialProofEnabled(e.target.checked)}
+                            />
+                            Social Proof Footer
+                          </label>
+                          <span style={{ fontSize: 10, color: '#94A3B8' }}>{bannerSocialProofText.length}/32</span>
+                        </div>
+                        <input
+                          type="text"
+                          maxLength={32}
+                          disabled={!bannerSocialProofEnabled}
+                          value={bannerSocialProofText}
+                          onChange={(e) => setBannerSocialProofText(e.target.value)}
+                          placeholder="e.g. 36 founders created"
+                          className="admin-input"
+                          style={{ width: '100%', height: 36, fontSize: 13, opacity: bannerSocialProofEnabled ? 1 : 0.5 }}
+                        />
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <label style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+                            CTA Button Text
+                          </label>
+                          <span style={{ fontSize: 10, color: '#94A3B8' }}>{bannerCtaText.length}/20</span>
+                        </div>
+                        <input
+                          type="text"
+                          maxLength={20}
+                          value={bannerCtaText}
+                          onChange={(e) => setBannerCtaText(e.target.value)}
+                          placeholder="e.g. Explore Now"
+                          className="admin-input"
+                          style={{ width: '100%', height: 36, fontSize: 13 }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* 4. Theme Preset Swatches */}
+                    <div style={{ marginBottom: 14 }}>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: 6 }}>
+                        Visual Theme / Preset
+                      </label>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {Object.values(BANNER_PRESETS).map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setBannerPreset(p.id)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '6px 12px',
+                              borderRadius: 8,
+                              border: '2px solid',
+                              borderColor: bannerPreset === p.id ? '#2563EB' : '#E2E8F0',
+                              background: bannerPreset === p.id ? '#EFF6FF' : '#FFFFFF',
+                              cursor: 'pointer',
+                              fontSize: 12,
+                              fontWeight: bannerPreset === p.id ? 700 : 500,
+                              color: bannerPreset === p.id ? '#1D4ED8' : '#334155',
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: 14,
+                                height: 14,
+                                borderRadius: 7,
+                                background: `linear-gradient(135deg, ${p.colors[0]}, ${p.colors[1]})`,
+                                display: 'inline-block',
+                              }}
+                            />
+                            {p.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 4.5. Custom Full Banner Background Image */}
+                    <div style={{ marginBottom: 14 }}>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: 6 }}>
+                        Full Banner Background Image (Custom Photo / Texture)
+                      </label>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+                        <input
+                          ref={bgFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleBgImageUpload}
+                          style={{ display: 'none' }}
+                          id="banner-bg-file-input"
+                        />
+                        <label
+                          htmlFor="banner-bg-file-input"
+                          className="admin-btn admin-btn-secondary"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            cursor: 'pointer',
+                            fontSize: 12,
+                            background: '#FFFFFF',
+                            border: '1px solid #CBD5E1',
+                          }}
+                        >
+                          <Upload size={14} />
+                          {uploadingBgImage ? 'Uploading to R2...' : 'Upload Background Photo'}
+                        </label>
+
+                        {bannerBackground && (
+                          <button
+                            type="button"
+                            onClick={() => setBannerBackground('')}
+                            className="admin-btn admin-btn-secondary"
+                            style={{ fontSize: 11, padding: '6px 10px', color: '#DC2626' }}
+                          >
+                            Reset to Default Texture
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Or paste background image URL (https://...)"
+                        value={bannerBackground}
+                        onChange={(e) => setBannerBackground(e.target.value)}
+                        className="admin-input"
+                        style={{ width: '100%', height: 34, fontSize: 12 }}
+                      />
+                      <span style={{ fontSize: 11, color: '#64748B', display: 'block', marginTop: 4 }}>
+                        Replaces the default blue card texture while preserving the gradient scrim for 100% text readability.
+                      </span>
+                    </div>
+
+                    {/* 5. Custom Thumbnail Upload Controls */}
+                    <div style={{ marginBottom: 14 }}>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: 6 }}>
+                        Banner Thumbnail Image (86×104 Portrait)
+                      </label>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          style={{ display: 'none' }}
+                          id="banner-file-input"
+                        />
+                        <label
+                          htmlFor="banner-file-input"
+                          className="admin-btn admin-btn-secondary"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            cursor: 'pointer',
+                            fontSize: 12,
+                            background: '#FFFFFF',
+                            border: '1px solid #CBD5E1',
+                          }}
+                        >
+                          <Upload size={14} />
+                          {uploadingImage ? 'Uploading to R2...' : 'Upload Custom Thumbnail'}
+                        </label>
+
+                        {selectedEntity?.imageUrl && (bannerThumbnail !== selectedEntity.imageUrl || formCustomImage !== selectedEntity.imageUrl) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBannerThumbnail(selectedEntity.imageUrl);
+                              setFormCustomImage(selectedEntity.imageUrl);
+                            }}
+                            className="admin-btn admin-btn-secondary"
+                            style={{ fontSize: 11, padding: '6px 10px' }}
+                          >
+                            Reset to Entity Logo
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 6. Navigation Destination Target */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: 6 }}>
+                        Slide Click Navigation Destination
+                      </label>
+                      <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer', color: '#1E293B', fontWeight: 600 }}>
+                          <input
+                            type="radio"
+                            name="bannerTargetKind"
+                            value="ENTITY"
+                            checked={bannerTargetKind === 'ENTITY'}
+                            onChange={() => setBannerTargetKind('ENTITY')}
+                          />
+                          Open Selected Entity ({selectedEntity?.type || 'Listing'})
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer', color: '#1E293B', fontWeight: 600 }}>
+                          <input
+                            type="radio"
+                            name="bannerTargetKind"
+                            value="CUSTOM_LINK"
+                            checked={bannerTargetKind === 'CUSTOM_LINK'}
+                            onChange={() => setBannerTargetKind('CUSTOM_LINK')}
+                          />
+                          Custom In-App Deep Link or URL
+                        </label>
+                      </div>
+
+                      {bannerTargetKind === 'CUSTOM_LINK' && (
+                        <input
+                          type="text"
+                          maxLength={300}
+                          placeholder="e.g. xindia://opportunity/explore_list?category=workwear or https://..."
+                          value={bannerDeepLinkUrl}
+                          onChange={(e) => setBannerDeepLinkUrl(e.target.value)}
+                          className="admin-input"
+                          style={{ width: '100%', height: 36, fontSize: 13 }}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1357,49 +2008,9 @@ function SpotlightContent() {
                 </div>
               )}
 
-              {/* BANNER SPECIFIC: EDITABLE CHIPS & SLIDES */}
+              {/* BANNER SPECIFIC: CAROUSEL SLOT SELECTION */}
               {section === 'BANNERS' && (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 14 }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748B', marginBottom: 4 }}>
-                        START WITH (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={formInvestment}
-                        onChange={(e) => setFormInvestment(Number(e.target.value))}
-                        className="admin-input"
-                        style={{ width: '100%', height: 36, fontSize: 13 }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748B', marginBottom: 4 }}>
-                        AVG. PROFITS (MONTHLY)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. ₹40K – ₹80K or 35%"
-                        value={formProfitEstimate}
-                        onChange={(e) => setFormProfitEstimate(e.target.value)}
-                        className="admin-input"
-                        style={{ width: '100%', height: 36, fontSize: 13 }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748B', marginBottom: 4 }}>
-                        LAUNCH IN (DAYS)
-                      </label>
-                      <input
-                        type="number"
-                        value={formLaunchDays}
-                        onChange={(e) => setFormLaunchDays(Number(e.target.value))}
-                        className="admin-input"
-                        style={{ width: '100%', height: 36, fontSize: 13 }}
-                      />
-                    </div>
-                  </div>
-
                   <div style={{ marginBottom: 14 }}>
                     <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', marginBottom: 4 }}>
                       Carousel Slide Slot

@@ -24,6 +24,7 @@ import {
   Info,
 } from 'lucide-react';
 import { resolveImageUrl, FALLBACK_PRODUCT_IMAGE } from '@/lib/image';
+import YouTubePlayer from '@/components/common/YouTubePlayer';
 
 export default function ProductDetailModal({ product, seller, isOpen, onClose, initialRequestSample = false }) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
@@ -235,6 +236,17 @@ export default function ProductDetailModal({ product, seller, isOpen, onClose, i
                       <img src={thumb} alt="" className="product-modal-thumb-img" />
                     </button>
                   ))}
+                </div>
+              )}
+
+              {/* Product Video Tour */}
+              {product.videoUrl && (
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#0F172A', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', backgroundColor: '#EF4444' }}></span>
+                    Product Demonstration / Video Tour
+                  </div>
+                  <YouTubePlayer videoUrl={product.videoUrl} title={`${product.name} Video Tour`} showThumbnailFirst={true} />
                 </div>
               )}
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Server, Globe, ShieldAlert, CheckCircle2, AlertCircle, RefreshCw, Activity, Cpu, ArrowRight, ExternalLink, AlertTriangle, Mail, Phone, MessageSquare, Smartphone, Zap, PhoneCall, Flame, Trash2, Plus, Share2, Bell, Check, X } from 'lucide-react';
+import { Server, Globe, ShieldAlert, ShieldCheck, CheckCircle2, AlertCircle, RefreshCw, Activity, Cpu, ArrowRight, ExternalLink, AlertTriangle, Mail, Phone, MessageSquare, Smartphone, Zap, PhoneCall, Flame, Trash2, Plus, Share2, Bell, Check, X } from 'lucide-react';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 export default function AdminSettingsPage() {
@@ -12,6 +12,7 @@ export default function AdminSettingsPage() {
     websiteUrl: 'https://xindia.live',
     isMaintenanceMode: false,
     isGstVerificationEnabled: false,
+    sellerPublishPolicy: 'MODEL_A',
     supportEmail: 'support@xindia.live',
     supportPhone: '',
     grievanceOfficerName: 'Designated Grievance Redressal Officer',
@@ -249,6 +250,7 @@ export default function AdminSettingsPage() {
           websiteUrl: data.settings.websiteUrl || 'https://xindia.live',
           isMaintenanceMode: Boolean(data.settings.isMaintenanceMode),
           isGstVerificationEnabled: Boolean(data.settings.isGstVerificationEnabled),
+          sellerPublishPolicy: data.settings.sellerPublishPolicy || 'MODEL_A',
           supportEmail: data.settings.supportEmail || 'support@xindia.live',
           supportPhone: data.settings.supportPhone || '',
           grievanceOfficerName: data.settings.grievanceOfficerName || 'Designated Grievance Redressal Officer',
@@ -515,6 +517,137 @@ export default function AdminSettingsPage() {
                   </span>
                 </div>
               )}
+            </div>
+
+            {/* Seller Publishing & Verification Policy Card */}
+            <div className="admin-card">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ background: '#ECFDF5', padding: 8, borderRadius: 8, color: '#059669' }}>
+                    <ShieldCheck size={20} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--adm-text)' }}>
+                      Seller Publishing &amp; Verification Policy
+                    </h3>
+                    <p style={{ margin: 0, fontSize: 13, color: 'var(--adm-text-med)' }}>
+                      Control how unverified seller listings are handled when created from mobile or web apps.
+                    </p>
+                  </div>
+                </div>
+                <span
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    background:
+                      settings.sellerPublishPolicy === 'MODEL_A'
+                        ? '#DCFCE7'
+                        : settings.sellerPublishPolicy === 'MODEL_B'
+                        ? '#FEF3C7'
+                        : '#FEE2E2',
+                    color:
+                      settings.sellerPublishPolicy === 'MODEL_A'
+                        ? '#15803D'
+                        : settings.sellerPublishPolicy === 'MODEL_B'
+                        ? '#B45309'
+                        : '#B91C1C',
+                  }}
+                >
+                  Active: {settings.sellerPublishPolicy || 'MODEL_A'}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+                {[
+                  {
+                    id: 'MODEL_A',
+                    title: 'Model A — Progressive Trust (Default)',
+                    badge: 'Instant Live, No Badge',
+                    badgeColor: '#15803D',
+                    badgeBg: '#DCFCE7',
+                    desc: 'Unverified sellers can publish products and business opportunities immediately without waiting. Listings go live on the marketplace right away without verified shield badges. Verified badges are awarded only after admin physical verification.',
+                  },
+                  {
+                    id: 'MODEL_B',
+                    title: 'Model B — Staged Draft Queue',
+                    badge: 'Draft Queue',
+                    badgeColor: '#B45309',
+                    badgeBg: '#FEF3C7',
+                    desc: 'Unverified sellers can compose and create listings without roadblocks, but listings are saved as "draft" and hidden from the public feed. Once an admin approves the seller verification, their drafts automatically activate to live.',
+                  },
+                  {
+                    id: 'MODEL_C',
+                    title: 'Model C — Strict Verification Gate',
+                    badge: 'Hard Blocker',
+                    badgeColor: '#B91C1C',
+                    badgeBg: '#FEE2E2',
+                    desc: 'Unverified sellers are blocked from creating listings by a verification roadblock modal. Sellers must complete physical verification before composing any products or opportunities.',
+                  },
+                ].map((m) => {
+                  const selected = (settings.sellerPublishPolicy || 'MODEL_A') === m.id;
+                  return (
+                    <label
+                      key={m.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 14,
+                        padding: '14px 16px',
+                        borderRadius: 'var(--adm-radius-sm)',
+                        border: selected ? '2px solid var(--adm-primary)' : '1px solid var(--adm-border)',
+                        background: selected ? 'rgba(255, 94, 19, 0.04)' : '#FFFFFF',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="sellerPublishPolicy"
+                        value={m.id}
+                        checked={selected}
+                        onChange={() => setSettings({ ...settings, sellerPublishPolicy: m.id })}
+                        style={{ marginTop: 3, accentColor: 'var(--adm-primary)' }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--adm-text)' }}>
+                            {m.title}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              padding: '2px 8px',
+                              borderRadius: 12,
+                              background: m.badgeBg,
+                              color: m.badgeColor,
+                            }}
+                          >
+                            {m.badge}
+                          </span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: 12, color: 'var(--adm-text-med)', lineHeight: 1.5 }}>
+                          {m.desc}
+                        </p>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 14, borderTop: '1px solid var(--adm-border)' }}>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 20px', fontSize: 13, fontWeight: 700 }}
+                  disabled={saving}
+                >
+                  <CheckCircle2 size={15} />
+                  {saving ? 'Saving...' : 'Save Publishing Policy'}
+                </button>
+              </div>
             </div>
 
             {/* Website & Domain Configuration */}

@@ -49,6 +49,7 @@ export default function ProductManager({ sellerId }) {
   const [samplePrice, setSamplePrice] = useState('');
   const [hsnCode, setHsnCode] = useState('');
   const [gstRate, setGstRate] = useState(18);
+  const [videoUrl, setVideoUrl] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -88,6 +89,7 @@ export default function ProductManager({ sellerId }) {
     setSamplePrice('');
     setHsnCode('');
     setGstRate(18);
+    setVideoUrl('');
     setImageFile(null);
     setModalOpen(true);
   };
@@ -101,12 +103,13 @@ export default function ProductManager({ sellerId }) {
     setUnit(p.unit || 'Piece');
     setMoq(p.moq || '100');
     setLocation(p.location || '');
-    setCategory(p.category || p.categoryId?.name || '');
+    setCategory(p.categoryId?._id || p.categoryId || p.category || '');
     setDeliveryTime(p.deliveryTime || '3–5 Days');
     setSampleAvailable(p.samplePolicy?.available || false);
     setSamplePrice(p.samplePolicy?.price ? String(p.samplePolicy.price) : '');
     setHsnCode(p.hsnCode || '');
     setGstRate(p.gstRate !== undefined ? p.gstRate : 18);
+    setVideoUrl(p.videoUrl || '');
     setImageFile(null);
     setModalOpen(true);
   };
@@ -126,6 +129,7 @@ export default function ProductManager({ sellerId }) {
       if (category) formData.append('categoryId', category);
       if (deliveryTime) formData.append('deliveryTime', deliveryTime);
       if (hsnCode) formData.append('hsnCode', hsnCode);
+      if (videoUrl) formData.append('videoUrl', videoUrl.trim());
       formData.append('gstRate', String(gstRate));
       formData.append(
         'samplePolicy',
@@ -351,6 +355,11 @@ export default function ProductManager({ sellerId }) {
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Description *</label>
                 <textarea className="seller-input" style={{ width: '100%', minHeight: 60 }} placeholder="Technical features, material grade, and applications..." value={description} onChange={(e) => setDescription(e.target.value)} required />
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Video Tour / Demo URL (Optional)</label>
+                <input className="seller-input" style={{ width: '100%' }} placeholder="https://youtube.com/watch?v=... or https://youtu.be/..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
               </div>
 
               <div style={{ marginBottom: 16 }}>
