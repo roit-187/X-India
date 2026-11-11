@@ -7,17 +7,17 @@ import {
   Cpu,
   Users,
   Layers,
+  Globe2,
   Building,
   Maximize2,
   X,
   Video,
   ChevronLeft,
   ChevronRight,
-  ShieldCheck,
-  Award,
 } from 'lucide-react';
 import YouTubePlayer from '@/components/common/YouTubePlayer';
-import { resolveImageUrl, FALLBACK_FACTORY_IMAGE } from '@/lib/image';
+import { resolveImageUrl } from '@/lib/image';
+import PortfolioImage from './PortfolioImage';
 
 export default function FactorySection({ seller }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
@@ -29,10 +29,19 @@ export default function FactorySection({ seller }) {
       : (Array.isArray(seller.gallery) ? seller.gallery : []));
 
   const photos = rawPhotos
-    .map((p) => resolveImageUrl(p, FALLBACK_FACTORY_IMAGE))
+    .map((p) => resolveImageUrl(p))
     .filter(Boolean);
 
   const factories = Array.isArray(seller.factories) ? seller.factories : [];
+  const cleanExport = seller.exportPercentage
+    ? `${String(seller.exportPercentage).replace(/%+$/, '')}%`
+    : '';
+  const hasFactoryMetrics = Boolean(
+    seller.factorySize || seller.machinesCount > 0 || seller.employeesCount > 0 ||
+    seller.monthlyCapacity || cleanExport
+  );
+
+  if (!hasFactoryMetrics && !seller.factoryVideo && !seller.aboutFactory && !factories.length && !photos.length) return null;
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -55,7 +64,7 @@ export default function FactorySection({ seller }) {
             </div>
             <h2 className="portfolio-section-title">Factory Infrastructure & Machinery</h2>
             <p className="portfolio-section-desc">
-              Precision machinery, workshop floor area, and certified production line capacities.
+              Facilities, equipment, and capacity details provided by this seller.
             </p>
           </div>
         </div>
@@ -77,7 +86,7 @@ export default function FactorySection({ seller }) {
               </div>
               <div>
                 <div className="portfolio-stat-value portfolio-mono">{seller.factorySize}</div>
-                <div className="portfolio-stat-label">Plant Space</div>
+                <div className="portfolio-stat-label">Facility size</div>
               </div>
             </motion.div>
           )}
@@ -101,7 +110,7 @@ export default function FactorySection({ seller }) {
               </div>
               <div>
                 <div className="portfolio-stat-value portfolio-mono">{seller.employeesCount}</div>
-                <div className="portfolio-stat-label">Skilled Operators</div>
+                <div className="portfolio-stat-label">Employees</div>
               </div>
             </motion.div>
           )}
@@ -113,7 +122,19 @@ export default function FactorySection({ seller }) {
               </div>
               <div>
                 <div className="portfolio-stat-value portfolio-mono">{seller.monthlyCapacity}</div>
-                <div className="portfolio-stat-label">Monthly Output</div>
+                <div className="portfolio-stat-label">Monthly capacity</div>
+              </div>
+            </motion.div>
+          )}
+
+          {cleanExport && (
+            <motion.div variants={itemVariants} className="portfolio-stat-card">
+              <div className="portfolio-stat-icon-wrap" style={{ background: '#EEF2FF', color: '#6366F1' }}>
+                <Globe2 size={20} />
+              </div>
+              <div>
+                <div className="portfolio-stat-value portfolio-mono">{cleanExport}</div>
+                <div className="portfolio-stat-label">Export share · seller-provided</div>
               </div>
             </motion.div>
           )}
@@ -130,8 +151,7 @@ export default function FactorySection({ seller }) {
           >
             <div className="portfolio-compact-video-header">
               <Video size={15} color="var(--p-primary)" />
-              <span>Official Factory Tour</span>
-              <span className="portfolio-video-verified-badge">Verified</span>
+              <span>Factory video</span>
             </div>
             <div className="portfolio-compact-player-body">
               <YouTubePlayer videoUrl={seller.factoryVideo} title="Factory Tour" showThumbnailFirst />
@@ -179,7 +199,7 @@ export default function FactorySection({ seller }) {
           <div className="portfolio-gallery-section">
             <div className="portfolio-gallery-header-row">
               <h3 className="portfolio-card-heading" style={{ margin: 0 }}>
-                Factory Floor & Inspection Gallery ({photos.length} Photos)
+                Business photos ({photos.length})
               </h3>
               <span className="portfolio-gallery-hint">Tap any photo to view high-res</span>
             </div>
@@ -195,8 +215,7 @@ export default function FactorySection({ seller }) {
                     if (e.key === 'Enter' || e.key === ' ') setSelectedImageIndex(i);
                   }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photo} alt={`Factory floor photo ${i + 1}`} className="portfolio-gallery-img" loading="lazy" />
+                  <PortfolioImage src={photo} alt={`Factory floor photo ${i + 1}`} className="portfolio-gallery-img" placeholderLabel="Factory image not provided" loading="lazy" />
                   <div className="portfolio-gallery-overlay">
                     <Maximize2 size={20} color="#FFFFFF" />
                   </div>
@@ -246,16 +265,16 @@ export default function FactorySection({ seller }) {
                 </>
               )}
 
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <PortfolioImage
                 src={photos[selectedImageIndex]}
                 alt="Factory floor high-res"
                 className="product-lightbox-img"
+                placeholderLabel="Factory image not provided"
               />
 
               {photos.length > 1 && (
                 <div className="product-lightbox-footer">
-                  <span>Factory Floor Inspection</span>
+                  <span>Business photo</span>
                   <span>Photo {selectedImageIndex + 1} of {photos.length}</span>
                 </div>
               )}

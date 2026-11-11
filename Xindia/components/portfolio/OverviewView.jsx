@@ -7,9 +7,7 @@ import {
   Calendar,
   Users,
   Factory,
-  TrendingUp,
   Globe2,
-  MapPin,
   Star,
   Sparkles,
   Palette,
@@ -26,55 +24,48 @@ import {
   Package,
 } from 'lucide-react';
 import YouTubePlayer from '@/components/common/YouTubePlayer';
-import { resolveImageUrl, FALLBACK_PRODUCT_IMAGE } from '@/lib/image';
+import { resolveImageUrl } from '@/lib/image';
 import ProductDetailModal from './ProductDetailModal';
+import PortfolioImage from './PortfolioImage';
 
 const CAPABILITY_CONFIG = {
   'Custom Logo Printing': {
     icon: Palette,
-    desc: 'Screen, Pad & Laser engraving',
     bg: '#EFF6FF',
     color: '#3B82F6',
   },
   'Custom Mould Tooling': {
     icon: Boxes,
-    desc: 'CAD 3D design & precision moulds',
     bg: '#FEF3C7',
     color: '#D97706',
   },
   'Private Label Packaging': {
     icon: Tag,
-    desc: 'Custom boxes, barcoding & inserts',
     bg: '#FCE7F3',
     color: '#DB2777',
   },
   'Rapid Sample Dispatch': {
     icon: Zap,
-    desc: 'Prototyping ready in 3-5 days',
     bg: '#ECFDF5',
     color: '#059669',
   },
   'Quality Assurance': {
     icon: ShieldCheck,
-    desc: '100% pre-dispatch batch audit',
     bg: '#F3E8FF',
     color: '#7C3AED',
   },
   'Global Export Delivery': {
     icon: Plane,
-    desc: 'FOB, CIF & door-to-door logistics',
     bg: '#E0F2FE',
     color: '#0284C7',
   },
   'OEM / ODM Production': {
     icon: Cpu,
-    desc: 'Full custom design & manufacturing',
     bg: '#FEE2E2',
     color: '#DC2626',
   },
   'Small Batch Sourcing': {
     icon: Layers,
-    desc: 'Low MOQ trial orders supported',
     bg: '#F1F5F9',
     color: '#475569',
   },
@@ -99,16 +90,7 @@ export default function OverviewView({ seller, topProducts, slug }) {
     },
   };
 
-  const capabilities = Array.isArray(seller.capabilities) && seller.capabilities.length > 0
-    ? seller.capabilities
-    : [
-        'Custom Logo Printing',
-        'Custom Mould Tooling',
-        'Private Label Packaging',
-        'Rapid Sample Dispatch',
-        'Quality Assurance',
-        'Global Export Delivery',
-      ];
+  const capabilities = Array.isArray(seller.capabilities) ? seller.capabilities.filter(Boolean) : [];
 
   // Clean formatted metrics
   const cleanExport = seller.exportPercentage ? seller.exportPercentage.replace(/%+$/, '') + '%' : null;
@@ -129,7 +111,7 @@ export default function OverviewView({ seller, topProducts, slug }) {
             </div>
             <div>
               <div className="portfolio-stat-value portfolio-mono">{seller.yearOfEstablishment}</div>
-              <div className="portfolio-stat-label">Established</div>
+              <div className="portfolio-stat-label">Established · seller-provided</div>
             </div>
           </div>
         )}
@@ -141,7 +123,7 @@ export default function OverviewView({ seller, topProducts, slug }) {
             </div>
             <div>
               <div className="portfolio-stat-value portfolio-mono">{seller.employeesCount}+</div>
-              <div className="portfolio-stat-label">Employees</div>
+              <div className="portfolio-stat-label">Employees · seller-provided</div>
             </div>
           </div>
         )}
@@ -153,7 +135,7 @@ export default function OverviewView({ seller, topProducts, slug }) {
             </div>
             <div>
               <div className="portfolio-stat-value portfolio-mono">{seller.factorySize}</div>
-              <div className="portfolio-stat-label">Factory Size</div>
+              <div className="portfolio-stat-label">Factory size · seller-provided</div>
             </div>
           </div>
         )}
@@ -170,32 +152,6 @@ export default function OverviewView({ seller, topProducts, slug }) {
           </div>
         )}
 
-        {seller.annualTurnover && (
-          <div className="portfolio-stat-card">
-            <div className="portfolio-stat-icon-wrap" style={{ background: '#FCE7F3', color: '#EC4899' }}>
-              <TrendingUp size={20} />
-            </div>
-            <div>
-              <div className="portfolio-stat-value portfolio-mono">{seller.annualTurnover}</div>
-              <div className="portfolio-stat-label">Annual Turnover</div>
-            </div>
-          </div>
-        )}
-
-        {seller.marketCovered && (
-          <div className="portfolio-stat-card">
-            <div className="portfolio-stat-icon-wrap" style={{ background: '#F1F5F9', color: '#475569' }}>
-              <MapPin size={20} />
-            </div>
-            <div>
-              <div className="portfolio-stat-value" style={{ fontSize: '15px', fontWeight: 800 }}>
-                {seller.marketCovered}
-              </div>
-              <div className="portfolio-stat-label">Markets Covered</div>
-            </div>
-          </div>
-        )}
-
         {seller.reviewCount > 0 && (
           <div className="portfolio-stat-card">
             <div className="portfolio-stat-icon-wrap" style={{ background: '#FEF9C3', color: '#CA8A04' }}>
@@ -203,7 +159,7 @@ export default function OverviewView({ seller, topProducts, slug }) {
             </div>
             <div>
               <div className="portfolio-stat-value portfolio-mono">{seller.rating}★</div>
-              <div className="portfolio-stat-label">{seller.reviewCount} Verified Reviews</div>
+              <div className="portfolio-stat-label">{seller.reviewCount} Buyer Reviews</div>
             </div>
           </div>
         )}
@@ -258,9 +214,9 @@ export default function OverviewView({ seller, topProducts, slug }) {
       <motion.div variants={itemVariants}>
         <div className="portfolio-section-header">
           <div>
-            <h2 className="portfolio-section-title">Custom Sourcing & OEM Capabilities</h2>
+            <h2 className="portfolio-section-title">Seller-listed capabilities</h2>
             <p className="portfolio-section-desc">
-              Specialized services offered for private label brands, bulk buyers, and contract manufacturing.
+              Capabilities listed by this seller.
             </p>
           </div>
         </div>
@@ -269,7 +225,6 @@ export default function OverviewView({ seller, topProducts, slug }) {
           {capabilities.map((capName) => {
             const conf = CAPABILITY_CONFIG[capName] || {
               icon: Sparkles,
-              desc: 'Custom manufacturing & procurement support',
               bg: '#F8FAFC',
               color: '#64748B',
             };
@@ -281,7 +236,6 @@ export default function OverviewView({ seller, topProducts, slug }) {
                 </div>
                 <div>
                   <h3 className="portfolio-capability-name">{capName}</h3>
-                  <p className="portfolio-capability-desc">{conf.desc}</p>
                 </div>
               </div>
             );
@@ -296,7 +250,7 @@ export default function OverviewView({ seller, topProducts, slug }) {
             <div>
               <h2 className="portfolio-section-title">Featured Products</h2>
               <p className="portfolio-section-desc">
-                High-volume catalog lines ready for dispatch & custom branding.
+                Selected products from this seller’s catalogue.
               </p>
             </div>
             <Link href={`/p/${slug}/products`} className="portfolio-view-all-btn">
@@ -311,7 +265,7 @@ export default function OverviewView({ seller, topProducts, slug }) {
               const hasLogo = custOpts.logoCustomization || custOpts.customLogo;
               const hasPkg = custOpts.packagingCustomization || custOpts.customPackaging;
 
-              const resolvedImg = resolveImageUrl(p.imageUrl, FALLBACK_PRODUCT_IMAGE);
+              const resolvedImg = resolveImageUrl(p.imageUrl || p.images?.[0]);
               return (
                 <div
                   key={p._id}
@@ -321,11 +275,11 @@ export default function OverviewView({ seller, topProducts, slug }) {
                   tabIndex={0}
                 >
                   <div className="portfolio-product-image-frame">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <PortfolioImage
                       src={resolvedImg}
                       alt={p.name}
                       className="portfolio-product-image"
+                      placeholderLabel="Product image not provided"
                       loading="lazy"
                     />
                     {p.deliveryTime && (

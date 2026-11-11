@@ -63,8 +63,8 @@ export default function ReviewForm({ slug }) {
           <MessageSquare size={18} color="var(--p-primary)" />
         </div>
         <div>
-          <h3 className="portfolio-review-form-title">Write a Verified Review</h3>
-          <p className="portfolio-review-form-desc">Share your experience to help other verified buyers make informed sourcing decisions.</p>
+          <h3 className="portfolio-review-form-title">Share your experience</h3>
+          <p className="portfolio-review-form-desc">Share feedback to help other buyers make informed sourcing decisions.</p>
         </div>
       </div>
 

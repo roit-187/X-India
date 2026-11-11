@@ -1,12 +1,5 @@
 import { API_URL } from './api';
 
-export const FALLBACK_PRODUCT_IMAGE =
-  'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=600&auto=format&fit=crop';
-export const FALLBACK_FACTORY_IMAGE =
-  'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=600&auto=format&fit=crop';
-export const FALLBACK_LOGO_IMAGE =
-  'https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=200&auto=format&fit=crop';
-
 /**
  * Safely resolves image paths to complete, loadable URLs.
  * Handles:
@@ -15,7 +8,7 @@ export const FALLBACK_LOGO_IMAGE =
  * - Insecure http://res.cloudinary.com URLs upgraded to https://
  * - Local server relative paths (/uploads/...) prepended with API_URL
  * - Windows-style backslashes
- * - Fallbacks for empty/broken values
+ * - Empty values when no seller-provided image exists
  */
 export function resolveImageUrl(path, fallback = '') {
   if (!path) return fallback;

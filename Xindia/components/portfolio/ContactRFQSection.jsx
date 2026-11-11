@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   PhoneCall,
@@ -18,13 +18,7 @@ import {
   AlertCircle,
   Lock,
 } from 'lucide-react';
-
-function maskGST(gst) {
-  if (!gst || typeof gst !== 'string') return '';
-  const clean = gst.trim();
-  if (clean.length < 8) return clean;
-  return `${clean.slice(0, 5)}•••••${clean.slice(-3)}`;
-}
+import { getPlayStoreUrl, openSellerInApp, trackPortfolioEvent } from '@/lib/portfolioAnalytics';
 
 export default function ContactRFQSection({ seller }) {
   const [buyerName, setBuyerName] = useState('');
@@ -39,6 +33,31 @@ export default function ContactRFQSection({ seller }) {
   const [confirmation, setConfirmation] = useState(null);
   const [honeypot, setHoneypot] = useState('');
   const [fanOut, setFanOut] = useState(false);
+  const [playStoreUrl, setPlayStoreUrl] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    getPlayStoreUrl({ slug: seller.slug }).then((url) => {
+      if (active) setPlayStoreUrl(url);
+    });
+    return () => { active = false; };
+  }, [seller.slug]);
+
+  useEffect(() => {
+    const handleRequirementPrefill = (event) => {
+      const requirement = typeof event.detail?.requirement === 'string'
+        ? event.detail.requirement.trim()
+        : '';
+      if (requirement) setProductReq(requirement.slice(0, 2000));
+    };
+    window.addEventListener('xindia:portfolio-rfq-prefill', handleRequirementPrefill);
+    return () => window.removeEventListener('xindia:portfolio-rfq-prefill', handleRequirementPrefill);
+  }, []);
+
+  const handleOpenInApp = () => {
+    if (openSellerInApp(seller._id || seller.id, seller.slug)) return;
+    document.getElementById('portfolio-rfq-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const websiteUrl = seller.contact?.website || (seller.website ? seller.website : null);
   const formattedWebsite = websiteUrl && !websiteUrl.startsWith('http') ? `https://${websiteUrl}` : websiteUrl;
@@ -56,7 +75,7 @@ export default function ContactRFQSection({ seller }) {
     : (rawPhone ? String(rawPhone).trim() : null);
   const dialPhone = standardDigits.length === 10 ? `+91${standardDigits}` : (cleanDigits ? `+${cleanDigits}` : null);
 
-  const rawWhatsapp = seller.whatsappNumber || seller.contact?.whatsapp;
+  const rawWhatsapp = seller.whatsappNumber || seller.buyerContactPhone;
   const cleanWa = rawWhatsapp ? String(rawWhatsapp).replace(/\D/g, '') : '';
   const standardWa = cleanWa.length === 12 && cleanWa.startsWith('91')
     ? cleanWa.slice(2)
@@ -89,6 +108,7 @@ export default function ContactRFQSection({ seller }) {
     }
 
     setSubmitting(true);
+    trackPortfolioEvent(seller.slug, 'rfq_start');
 
     const targetWhatsapp = dialWhatsapp || (standardDigits.length === 10 ? `91${standardDigits}` : cleanDigits);
     const msg = encodeURIComponent(
@@ -98,7 +118,7 @@ export default function ContactRFQSection({ seller }) {
       `• *Contact Phone:* +91 ${validDigits}\n` +
       `• *Email:* ${buyerEmail.trim() || 'N/A'}\n` +
       `• *Product / Requirement:* ${productReq.trim()}\n` +
-      `• *Target Quantity:* ${orderQty.trim() || 'Standard MOQ'}\n` +
+      `• *Target Quantity:* ${orderQty.trim() || 'Not specified'}\n` +
       `• *Delivery Timeline:* ${timeline}\n\n` +
       `Please provide formal quotation and commercial catalog.`
     );
@@ -169,8 +189,23 @@ export default function ContactRFQSection({ seller }) {
             </div>
             <h2 className="portfolio-section-title">Request Quotation & Contact Factory</h2>
             <p className="portfolio-section-desc">
-              Direct channels to factory executive management, sales desk, and instant wholesale RFQs.
+              Contact {seller.name} through XINDIA, or send an inquiry here from your browser.
             </p>
+            <button type="button" className="portfolio-rfq-submit-btn" onClick={handleOpenInApp}>
+              <MessageSquare size={15} />
+              <span>Open seller contact in XINDIA · browser RFQ available below</span>
+            </button>
+            {playStoreUrl && (
+              <a
+                href={playStoreUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackPortfolioEvent(seller.slug, 'play_store_click')}
+                style={{ display: 'inline-flex', marginTop: 8, fontSize: 13, fontWeight: 700, color: 'var(--p-primary)' }}
+              >
+                Get XINDIA from Google Play
+              </a>
+            )}
           </div>
         </div>
 
@@ -190,7 +225,7 @@ export default function ContactRFQSection({ seller }) {
               </div>
               <div>
                 <h3 className="portfolio-rfq-title">Send Direct Factory RFQ</h3>
-                <p className="portfolio-rfq-desc">Fill in your specifications to receive a formal wholesale quote directly from {seller.name}.</p>
+                <p className="portfolio-rfq-desc">Share your requirements with {seller.name} through XINDIA.</p>
               </div>
             </div>
 
@@ -203,8 +238,8 @@ export default function ContactRFQSection({ seller }) {
                   RFQ Dispatched to Manufacturer Desk!
                 </h4>
                 <p style={{ margin: '0 0 16px', fontSize: 14, color: '#166534', lineHeight: 1.5 }}>
-                  Your requirement has been securely registered and forwarded to {seller.name}&apos;s commercial desk.
-                  {confirmation.fanOut && ' We have also matched this request with up to 3 other verified factories in this category for competitive quotes.'} The factory team will follow up directly on your phone/WhatsApp.
+                  Your requirement has been submitted to {seller.name} through XINDIA.
+                  {confirmation.fanOut && ' A request for additional competitive quotes has also been submitted.'}
                 </p>
                 <div style={{ display: 'inline-block', background: '#fff', border: '1px solid #86EFAC', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 800, color: '#15803D', marginBottom: 18 }}>
                   Reference: {confirmation.referenceNumber}
@@ -256,7 +291,7 @@ export default function ContactRFQSection({ seller }) {
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSendRFQ} className="portfolio-rfq-form">
+              <form id="portfolio-rfq-form" onSubmit={handleSendRFQ} className="portfolio-rfq-form">
                 {/* Honeypot field for bot protection */}
                 <input
                   type="text"
@@ -402,7 +437,7 @@ export default function ContactRFQSection({ seller }) {
 
                 <div className="portfolio-rfq-guarantee">
                   <Lock size={12} color="#10B981" />
-                  <span>Zero spam guarantee. Direct connection with verified factory commercial desk.</span>
+                  <span>Your inquiry is submitted to XINDIA for this seller.</span>
                 </div>
               </form>
             )}
@@ -425,7 +460,10 @@ export default function ContactRFQSection({ seller }) {
 
             <div className="portfolio-channels-list">
               {displayPhone && dialPhone && (
-                <a href={`tel:${dialPhone}`} className="portfolio-channel-card">
+                <a href={`tel:${dialPhone}`} onClick={(event) => {
+                  trackPortfolioEvent(seller.slug, 'contact_click');
+                  if (openSellerInApp(seller._id || seller.id, seller.slug)) event.preventDefault();
+                }} className="portfolio-channel-card">
                   <div className="portfolio-channel-icon" style={{ background: '#EFF6FF', color: '#3B82F6' }}>
                     <PhoneCall size={18} />
                   </div>
@@ -440,6 +478,10 @@ export default function ContactRFQSection({ seller }) {
               {displayWhatsapp && dialWhatsapp && (
                 <a
                   href={`https://wa.me/${dialWhatsapp}`}
+                  onClick={(event) => {
+                    trackPortfolioEvent(seller.slug, 'whatsapp_click');
+                    if (openSellerInApp(seller._id || seller.id, seller.slug)) event.preventDefault();
+                  }}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="portfolio-channel-card whatsapp"
@@ -456,7 +498,10 @@ export default function ContactRFQSection({ seller }) {
               )}
 
               {email && (
-                <a href={`mailto:${email}`} className="portfolio-channel-card">
+                <a href={`mailto:${email}`} onClick={(event) => {
+                  trackPortfolioEvent(seller.slug, 'contact_click');
+                  if (openSellerInApp(seller._id || seller.id, seller.slug)) event.preventDefault();
+                }} className="portfolio-channel-card">
                   <div className="portfolio-channel-icon" style={{ background: '#FCE7F3', color: '#DB2777' }}>
                     <Mail size={18} />
                   </div>
@@ -503,12 +548,12 @@ export default function ContactRFQSection({ seller }) {
             </div>
 
             {/* GSTIN & Compliance Verification Badge Box */}
-            {seller.gstin && (
+            {seller.gstVerified && (
               <div className="portfolio-gst-trust-card">
                 <FileCheck size={20} color="#10B981" />
                 <div>
-                  <div className="portfolio-gst-title">GSTIN Verified Manufacturer</div>
-                  <div className="portfolio-gst-num portfolio-mono">{maskGST(seller.gstin)}</div>
+                  <div className="portfolio-gst-title">GST Verified</div>
+                  <div className="portfolio-gst-num portfolio-mono">GST registration verified</div>
                 </div>
                 <span className="portfolio-verified-badge" style={{ marginLeft: 'auto' }}>
                   <ShieldCheck size={12} /> Active

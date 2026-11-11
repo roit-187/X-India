@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Sparkles, Share2, Check, Copy, X } from 'lucide-react';
+import { MessageSquare, Share2, Check, Copy, X } from 'lucide-react';
 
 export default function FloatingQuickDock({ seller, slug }) {
   const [visible, setVisible] = useState(false);
@@ -17,12 +17,6 @@ export default function FloatingQuickDock({ seller, slug }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const rawWhatsapp = seller.whatsappNumber || seller.buyerContactPhone || seller.businessPhone;
-  const cleanWa = rawWhatsapp ? String(rawWhatsapp).replace(/\D/g, '') : '';
-  const standardWa = cleanWa.length === 12 && cleanWa.startsWith('91')
-    ? cleanWa.slice(2)
-    : (cleanWa.length === 11 && cleanWa.startsWith('0') ? cleanWa.slice(1) : cleanWa);
-  const whatsappNum = standardWa.length === 10 ? `91${standardWa}` : cleanWa;
   const cleanSlug = seller.slug || slug;
   const showroomUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/p/${cleanSlug}`
@@ -36,45 +30,12 @@ export default function FloatingQuickDock({ seller, slug }) {
     }
   };
 
-  const handleScrollToRFQ = (e) => {
-    e.preventDefault();
-    const elem = document.getElementById('contact');
-    if (elem) {
-      const offsetTop = elem.getBoundingClientRect().top + window.scrollY - 80;
-      window.scrollTo({ top: offsetTop, behavior: 'smooth' });
-    }
-  };
-
   if (!visible) return null;
 
   return (
     <>
       <div className="portfolio-floating-dock-container">
         <div className="portfolio-floating-dock">
-          {whatsappNum && (
-            <a
-              href={`https://wa.me/${whatsappNum.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                `Hello ${seller.name}, I am visiting your official XINDIA digital showroom and would like to inquire about your manufacturing capabilities.`
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="portfolio-dock-btn whatsapp"
-              title="Chat directly on WhatsApp"
-            >
-              <MessageSquare size={16} />
-              <span>WhatsApp</span>
-            </a>
-          )}
-
-          <button
-            type="button"
-            className="portfolio-dock-btn primary"
-            onClick={handleScrollToRFQ}
-          >
-            <Sparkles size={15} />
-            <span>Instant Quote</span>
-          </button>
-
           <button
             type="button"
             className="portfolio-dock-btn secondary"
@@ -107,7 +68,7 @@ export default function FloatingQuickDock({ seller, slug }) {
 
             <div className="portfolio-modal-share-body">
               <p className="portfolio-modal-share-text">
-                Share this verified manufacturer profile with your sourcing team, clients, or purchasing partners.
+                Share this seller portfolio with your sourcing team, clients, or purchasing partners.
               </p>
 
               <div className="portfolio-share-copy-row">
@@ -130,7 +91,7 @@ export default function FloatingQuickDock({ seller, slug }) {
               <div className="portfolio-modal-share-actions">
                 <a
                   href={`https://wa.me/?text=${encodeURIComponent(
-                    `Check out ${seller.name} — Verified Indian Manufacturer on XINDIA:\n${showroomUrl}`
+                    `Check out ${seller.name}'s business portfolio on XINDIA${seller.verified ? ' — XINDIA verified' : ''}:\n${showroomUrl}`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"

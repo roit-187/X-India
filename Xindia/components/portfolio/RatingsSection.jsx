@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import {
   Star,
   MessageSquare,
-  ShieldCheck,
   User,
 } from 'lucide-react';
 import ReviewForm from './ReviewForm';
@@ -30,11 +29,11 @@ export default function RatingsSection({ reviews = [], averageRating = 0, totalR
           <div>
             <div className="portfolio-section-eyebrow">
               <Star size={13} />
-              <span>Buyer Trust & Reviews</span>
+            <span>Buyer reviews</span>
             </div>
-            <h2 className="portfolio-section-title">Verified Ratings & Buyer Feedback</h2>
+            <h2 className="portfolio-section-title">Ratings & buyer feedback</h2>
             <p className="portfolio-section-desc">
-              Authentic reviews and verification scores from brands and entrepreneurs who ordered from this manufacturer.
+              Reviews submitted by XINDIA account holders. A review does not by itself confirm a completed purchase.
             </p>
           </div>
         </div>
@@ -47,7 +46,7 @@ export default function RatingsSection({ reviews = [], averageRating = 0, totalR
           viewport={{ once: true, margin: '-50px' }}
           variants={itemVariants}
         >
-          <div className="portfolio-rating-number portfolio-mono">{roundedRating || '5.0'}</div>
+          <div className="portfolio-rating-number portfolio-mono">{totalReviews > 0 ? roundedRating.toFixed(1) : '—'}</div>
           <div>
             <div className="portfolio-rating-stars">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -57,17 +56,17 @@ export default function RatingsSection({ reviews = [], averageRating = 0, totalR
                   style={{
                     display: 'inline-block',
                     marginRight: 3,
-                    fill: i < Math.round(roundedRating || 5) ? '#F59E0B' : 'transparent',
-                    color: i < Math.round(roundedRating || 5) ? '#F59E0B' : '#CBD5E1',
+                    fill: totalReviews > 0 && i < Math.round(roundedRating) ? '#F59E0B' : 'transparent',
+                    color: totalReviews > 0 && i < Math.round(roundedRating) ? '#F59E0B' : '#CBD5E1',
                   }}
                 />
               ))}
             </div>
             <div className="portfolio-rating-subtitle">
               {totalReviews > 0 ? (
-                <>Based on <strong>{totalReviews} verified buyer review{totalReviews === 1 ? '' : 's'}</strong></>
+                <>Based on <strong>{totalReviews} review{totalReviews === 1 ? '' : 's'}</strong></>
               ) : (
-                <span>100% Certified Indian Manufacturer Baseline Trust Score</span>
+                <span>No buyer reviews yet.</span>
               )}
             </div>
           </div>
@@ -94,7 +93,7 @@ export default function RatingsSection({ reviews = [], averageRating = 0, totalR
           {(!reviews || reviews.length === 0) ? (
             <div className="portfolio-empty-state">
               <MessageSquare size={36} color="#94A3B8" style={{ marginBottom: 12 }} />
-              <div>No reviews posted yet. Be the first brand to submit verified feedback!</div>
+              <div>No buyer reviews yet.</div>
             </div>
           ) : (
             <div className="portfolio-reviews-list">
@@ -113,9 +112,6 @@ export default function RatingsSection({ reviews = [], averageRating = 0, totalR
                           ) : ''}
                         </span>
                       </div>
-                      <span className="portfolio-verified-buyer-pill">
-                        <ShieldCheck size={11} /> Verified Buyer
-                      </span>
                     </div>
 
                     <div style={{ display: 'flex', gap: 2 }}>

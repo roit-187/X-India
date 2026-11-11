@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Badge from '@/components/admin/Badge';
 import Modal from '@/components/admin/Modal';
 import QRCode from 'qrcode';
+import PortfolioCustomizationEditor from '@/components/seller-portal/PortfolioCustomizationEditor';
 import {
   Globe,
   ExternalLink,
@@ -78,7 +79,7 @@ export default function SellerPortfolioPage() {
   useEffect(() => {
     if (portfolio?.slug) {
       const url = portfolio.url || `${SITE_URL}/p/${portfolio.slug}`;
-      QRCode.toDataURL(url, { width: 220, margin: 1 })
+      QRCode.toDataURL(`${url.split('#')[0]}${url.includes('?') ? '&' : '?'}src=qr#products`, { width: 220, margin: 1 })
         .then((dataUrl) => setQrDataUrl(dataUrl))
         .catch(console.error);
     }
@@ -135,7 +136,7 @@ export default function SellerPortfolioPage() {
         setPublishSuccessUrl(liveUrl);
 
         try {
-          const dataUrl = await QRCode.toDataURL(liveUrl, { width: 220, margin: 1 });
+          const dataUrl = await QRCode.toDataURL(`${liveUrl.split('#')[0]}${liveUrl.includes('?') ? '&' : '?'}src=qr#products`, { width: 220, margin: 1 });
           setQrDataUrl(dataUrl);
         } catch (qrErr) {
           console.error('QR generation failed:', qrErr);
@@ -197,6 +198,9 @@ export default function SellerPortfolioPage() {
   const liveUrl = portfolio?.slug ? `${SITE_URL}/p/${portfolio.slug}` : '';
   const canPublish = stats ? stats.completedCount >= stats.totalRequired : false;
   const completionPct = stats?.totalRequired ? Math.round((stats.completedCount / stats.totalRequired) * 100) : 0;
+  const graceEndLabel = stats?.graceEndsAt
+    ? new Date(stats.graceEndsAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+    : null;
 
   return (
     <div style={{ maxWidth: 900 }}>
@@ -214,10 +218,10 @@ export default function SellerPortfolioPage() {
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: 'var(--sp-text)' }}>Business Portfolio</h1>
           <p style={{ margin: '6px 0 0', fontSize: 13.5, color: 'var(--sp-text-med)' }}>
-            Manage your public business portfolio URL, review mandatory publish requirements, and download your branded QR card.
+            Manage your seller-branded portfolio on XINDIA, review publish requirements, and download your branded QR card.
           </p>
           <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center' }}>
-            <Badge label={isPublished ? 'Live on Marketplace' : 'Draft Mode'} variant={isPublished ? 'published' : 'draft'} />
+            <Badge label={isPublished ? 'Live seller portfolio' : 'Portfolio offline'} variant={isPublished ? 'published' : 'draft'} />
             {portfolio?.slug && (
               <span style={{ fontSize: 13, color: 'var(--sp-text-med)' }}>
                 Storefront Slug: <strong style={{ color: 'var(--sp-text)' }}>{portfolio.slug}</strong>
@@ -251,6 +255,17 @@ export default function SellerPortfolioPage() {
           )}
         </div>
       </div>
+
+      {stats?.planStatus === 'grace' && (
+        <div className="seller-card" style={{ marginBottom: 20, borderColor: '#F59E0B', color: '#92400E' }}>
+          Your portfolio remains public during the seven-day renewal grace period{graceEndLabel ? `, through ${graceEndLabel}` : ''}. It will go offline after that if the plan is not renewed.
+        </div>
+      )}
+      {stats?.planStatus === 'expired' && !isPublished && (
+        <div className="seller-card" style={{ marginBottom: 20 }}>
+          Your portfolio is offline until you renew. Your XINDIA-hosted seller link and QR code stay associated with your account; after renewal, publish the portfolio again here.
+        </div>
+      )}
 
       {/* Error Alert */}
       {publishError && (
@@ -301,7 +316,7 @@ export default function SellerPortfolioPage() {
                 >
                   LIVE ONLINE
                 </span>
-                <span style={{ fontSize: 13, color: '#94A3B8' }}>Verified Buyer Storefront</span>
+                <span style={{ fontSize: 13, color: '#94A3B8' }}>Public seller portfolio</span>
               </div>
 
               <h2 style={{ fontSize: 20, fontWeight: 800, margin: '4px 0 10px', color: '#fff' }}>
@@ -309,7 +324,7 @@ export default function SellerPortfolioPage() {
               </h2>
 
               <p style={{ fontSize: 13, color: '#CBD5E1', marginBottom: 16, lineHeight: 1.5 }}>
-                Your storefront is currently public and receiving discovery traffic from verified B2B buyers on Xindia.
+                Your portfolio is published and shareable. Recorded visits and buyer actions appear in your activity metrics.
               </p>
 
               {/* URL Box */}
@@ -400,6 +415,35 @@ export default function SellerPortfolioPage() {
                 </a>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      <PortfolioCustomizationEditor
+        customization={portfolio?.portfolioCustomization}
+        portfolio={portfolio}
+        onSaved={loadData}
+      />
+
+      {stats && (
+        <div className="seller-card" style={{ marginBottom: 24 }}>
+          <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 800, color: 'var(--sp-text)' }}>Portfolio activity</h3>
+          <p style={{ margin: '0 0 14px', fontSize: 12.5, color: 'var(--sp-text-med)' }}>Recorded activity over the last 30 days. Play Store clicks measure install handoffs, not confirmed installs.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
+            {[
+              ['Portfolio views', stats.catalogViews],
+              ['Product opens', stats.productClicks],
+              ['RFQ starts', stats.rfqStarts],
+              ['Contact actions', stats.contactClicks],
+              ['Catalogue opens', stats.catalogueOpens],
+              ['App handoff attempts', stats.appOpens],
+              ['Play Store clicks', stats.playStoreClicks],
+            ].map(([label, value]) => (
+              <div key={label} style={{ padding: '12px 14px', border: '1px solid var(--sp-border)', borderRadius: 10 }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--sp-text)' }}>{Number.isFinite(Number(value)) ? Number(value) : '—'}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--sp-text-med)' }}>{label}</div>
+              </div>
+            ))}
           </div>
         </div>
       )}

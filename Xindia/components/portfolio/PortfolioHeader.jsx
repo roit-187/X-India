@@ -1,14 +1,13 @@
 'use client';
 
 import React from 'react';
-import { ShieldCheck, Award, FileCheck2, MapPin, Building2, ExternalLink, PhoneCall, Sparkles } from 'lucide-react';
+import { ShieldCheck, MapPin, Building2, ExternalLink, PhoneCall } from 'lucide-react';
 import { motion } from 'framer-motion';
+import PortfolioImage from './PortfolioImage';
+import { getPortfolioVerificationSignals } from '@/lib/portfolioTrust';
 
 export default function PortfolioHeader({ seller }) {
-  const verifiedDocs = seller.verifiedDocuments ? Object.keys(seller.verifiedDocuments) : [];
-  const hasGst = seller.gstVerified || verifiedDocs.includes('gst');
-  const hasIso = verifiedDocs.includes('iso') || (seller.certifications && seller.certifications.some(c => c.toLowerCase().includes('iso')));
-  const hasMsme = verifiedDocs.includes('msme');
+  const verificationSignals = getPortfolioVerificationSignals(seller);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -33,8 +32,7 @@ export default function PortfolioHeader({ seller }) {
       <div className="portfolio-grid-overlay" />
 
       {seller.coverImage ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={seller.coverImage} alt="" className="portfolio-cover" />
+        <PortfolioImage src={seller.coverImage} alt="" className="portfolio-cover" placeholderLabel="Cover image unavailable" />
       ) : (
         <div className="portfolio-cover-placeholder" />
       )}
@@ -46,11 +44,11 @@ export default function PortfolioHeader({ seller }) {
         animate="visible"
       >
         <motion.div variants={itemVariants} className="portfolio-logo-frame">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={seller.logo || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=200&auto=format&fit=crop'}
+          <PortfolioImage
+            src={seller.logo}
             alt={seller.name}
             className="portfolio-logo"
+            placeholderLabel="Seller logo not provided"
           />
           {seller.verified && (
             <div className="portfolio-logo-badge" title="Verified Manufacturer">
@@ -63,30 +61,12 @@ export default function PortfolioHeader({ seller }) {
           <motion.div variants={itemVariants} className="portfolio-name-row">
             <h1 className="portfolio-name">{seller.name}</h1>
             
-            {seller.verified && (
-              <span className="portfolio-verified-badge">
-                <Sparkles size={13} />
-                Verified Supplier
+            {verificationSignals.map(({ id, title, icon: Icon }) => (
+              <span className="portfolio-trust-badge" key={id}>
+                <Icon size={12} />
+                {title}
               </span>
-            )}
-            {hasGst && (
-              <span className="portfolio-trust-badge">
-                <FileCheck2 size={12} color="#10B981" />
-                GST Verified
-              </span>
-            )}
-            {hasIso && (
-              <span className="portfolio-trust-badge">
-                <Award size={12} color="#F59E0B" />
-                ISO Certified
-              </span>
-            )}
-            {hasMsme && (
-              <span className="portfolio-trust-badge">
-                <ShieldCheck size={12} color="#60A5FA" />
-                MSME Registered
-              </span>
-            )}
+            ))}
           </motion.div>
 
           <motion.div variants={itemVariants} className="portfolio-header-tags">

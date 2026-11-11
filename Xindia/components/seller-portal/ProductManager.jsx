@@ -44,9 +44,11 @@ export default function ProductManager({ sellerId }) {
   const [moq, setMoq] = useState('100');
   const [location, setLocation] = useState('');
   const [category, setCategory] = useState('');
-  const [deliveryTime, setDeliveryTime] = useState('3–5 Days');
+  const [deliveryTime, setDeliveryTime] = useState('');
+  const [deliveryTimeConfirmed, setDeliveryTimeConfirmed] = useState(false);
   const [sampleAvailable, setSampleAvailable] = useState(false);
   const [samplePrice, setSamplePrice] = useState('');
+  const [sampleLeadTimeDays, setSampleLeadTimeDays] = useState('');
   const [hsnCode, setHsnCode] = useState('');
   const [gstRate, setGstRate] = useState(18);
   const [videoUrl, setVideoUrl] = useState('');
@@ -84,9 +86,11 @@ export default function ProductManager({ sellerId }) {
     setMoq('100');
     setLocation('');
     setCategory('');
-    setDeliveryTime('3–5 Days');
+    setDeliveryTime('');
+    setDeliveryTimeConfirmed(false);
     setSampleAvailable(false);
     setSamplePrice('');
+    setSampleLeadTimeDays('');
     setHsnCode('');
     setGstRate(18);
     setVideoUrl('');
@@ -104,9 +108,11 @@ export default function ProductManager({ sellerId }) {
     setMoq(p.moq || '100');
     setLocation(p.location || '');
     setCategory(p.categoryId?._id || p.categoryId || p.category || '');
-    setDeliveryTime(p.deliveryTime || '3–5 Days');
+    setDeliveryTime(p.deliveryTime || '');
+    setDeliveryTimeConfirmed(Boolean(p.deliveryTimeConfirmed));
     setSampleAvailable(p.samplePolicy?.available || false);
     setSamplePrice(p.samplePolicy?.price ? String(p.samplePolicy.price) : '');
+    setSampleLeadTimeDays(p.samplePolicy?.leadTimeDays || '');
     setHsnCode(p.hsnCode || '');
     setGstRate(p.gstRate !== undefined ? p.gstRate : 18);
     setVideoUrl(p.videoUrl || '');
@@ -127,7 +133,8 @@ export default function ProductManager({ sellerId }) {
       if (moq) formData.append('moq', moq);
       if (location) formData.append('location', location);
       if (category) formData.append('categoryId', category);
-      if (deliveryTime) formData.append('deliveryTime', deliveryTime);
+      formData.append('deliveryTime', deliveryTime.trim());
+      formData.append('deliveryTimeConfirmed', String(deliveryTimeConfirmed && Boolean(deliveryTime.trim())));
       if (hsnCode) formData.append('hsnCode', hsnCode);
       if (videoUrl) formData.append('videoUrl', videoUrl.trim());
       formData.append('gstRate', String(gstRate));
@@ -136,7 +143,7 @@ export default function ProductManager({ sellerId }) {
         JSON.stringify({
           available: sampleAvailable,
           price: Number(samplePrice) || 0,
-          leadTimeDays: deliveryTime,
+          leadTimeDays: sampleLeadTimeDays.trim(),
         })
       );
       if (imageFile) formData.append('images', imageFile);
@@ -373,7 +380,25 @@ export default function ProductManager({ sellerId }) {
             <div>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Standard Production Lead Time</label>
-                <input className="seller-input" style={{ width: '100%' }} placeholder="e.g. 3–5 Days" value={deliveryTime} onChange={(e) => setDeliveryTime(e.target.value)} />
+                <input
+                  className="seller-input"
+                  style={{ width: '100%' }}
+                  placeholder="Enter a seller-confirmed estimate"
+                  value={deliveryTime}
+                  onChange={(event) => {
+                    setDeliveryTime(event.target.value);
+                    setDeliveryTimeConfirmed(false);
+                  }}
+                />
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 8, fontSize: 12, color: '#475569' }}>
+                  <input
+                    type="checkbox"
+                    checked={deliveryTimeConfirmed}
+                    disabled={!deliveryTime.trim()}
+                    onChange={(event) => setDeliveryTimeConfirmed(event.target.checked)}
+                  />
+                  I confirm this is a current estimate for this product.
+                </label>
               </div>
 
               <div style={{ backgroundColor: '#F8FAFC', padding: 12, borderRadius: 8, marginBottom: 14, border: '1px solid #E2E8F0' }}>
@@ -385,6 +410,8 @@ export default function ProductManager({ sellerId }) {
                   <div style={{ marginTop: 10 }}>
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Sample Unit Price (₹)</label>
                     <input type="number" className="seller-input" style={{ width: '100%' }} placeholder="e.g. 450" value={samplePrice} onChange={(e) => setSamplePrice(e.target.value)} />
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, margin: '10px 0 4px' }}>Sample dispatch estimate (optional)</label>
+                    <input className="seller-input" style={{ width: '100%' }} placeholder="e.g. 7 days" value={sampleLeadTimeDays} onChange={(e) => setSampleLeadTimeDays(e.target.value)} />
                   </div>
                 )}
               </div>

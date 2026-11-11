@@ -9,14 +9,12 @@ export default function ViralShowroomFooter({ seller }) {
       <div className="portfolio-container">
         <div className="portfolio-footer-bottom">
           <div className="portfolio-footer-brand">
-            <span className="portfolio-footer-logo-text">XINDIA</span>
-            <span className="portfolio-footer-dot">•</span>
-            <span className="portfolio-footer-tagline">India&apos;s Business Launchpad</span>
+            <span className="portfolio-footer-tagline">{seller.name}&apos;s business portfolio</span>
           </div>
 
           <div className="portfolio-footer-trust">
-            <ShieldCheck size={14} color="#10B981" />
-            <span>Verified Manufacturer Showroom for <strong>{seller.name}</strong></span>
+            {seller.verified && <ShieldCheck size={14} color="#10B981" />}
+            <span>{seller.verified ? 'XINDIA verified' : 'Seller portfolio'} · Powered by XINDIA</span>
           </div>
         </div>
       </div>

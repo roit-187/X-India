@@ -10,10 +10,8 @@ import {
   Zap,
   Tag,
   ShieldCheck,
-  Truck,
   Layers,
   FileText,
-  MessageSquare,
   Sparkles,
   Copy,
   Check,
@@ -23,14 +21,15 @@ import {
   Palette,
   Info,
 } from 'lucide-react';
-import { resolveImageUrl, FALLBACK_PRODUCT_IMAGE } from '@/lib/image';
+import { resolveImageUrl } from '@/lib/image';
+import { openProductInApp } from '@/lib/portfolioAnalytics';
 import YouTubePlayer from '@/components/common/YouTubePlayer';
+import PortfolioImage from './PortfolioImage';
 
 export default function ProductDetailModal({ product, seller, isOpen, onClose, initialRequestSample = false }) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [sampleRequested, setSampleRequested] = useState(false);
 
   // Collect and deduplicate all images
   const allImages = useMemo(() => {
@@ -47,8 +46,7 @@ export default function ProductDetailModal({ product, seller, isOpen, onClose, i
         if (img && !list.includes(img)) list.push(img);
       });
     }
-    const resolved = list.map((img) => resolveImageUrl(img, FALLBACK_PRODUCT_IMAGE)).filter(Boolean);
-    return resolved.length > 0 ? resolved : [FALLBACK_PRODUCT_IMAGE];
+    return [...new Set(list.map((img) => resolveImageUrl(img)).filter(Boolean))];
   }, [product]);
 
   // Reset states when opening a new product
@@ -57,7 +55,6 @@ export default function ProductDetailModal({ product, seller, isOpen, onClose, i
       setActiveImgIndex(0);
       setLightboxOpen(false);
       setCopiedLink(false);
-      setSampleRequested(false);
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -74,9 +71,9 @@ export default function ProductDetailModal({ product, seller, isOpen, onClose, i
       if (e.key === 'Escape') {
         if (lightboxOpen) setLightboxOpen(false);
         else onClose();
-      } else if (e.key === 'ArrowRight') {
+      } else if (e.key === 'ArrowRight' && allImages.length > 0) {
         setActiveImgIndex((prev) => (prev + 1) % allImages.length);
-      } else if (e.key === 'ArrowLeft') {
+      } else if (e.key === 'ArrowLeft' && allImages.length > 0) {
         setActiveImgIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
       }
     };
@@ -86,41 +83,29 @@ export default function ProductDetailModal({ product, seller, isOpen, onClose, i
 
   if (!isOpen || !product) return null;
 
-  const currentImg = allImages[activeImgIndex] || FALLBACK_PRODUCT_IMAGE;
+  const currentImg = allImages[activeImgIndex] || '';
 
   const handlePrevImg = (e) => {
     e?.stopPropagation();
-    setActiveImgIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+    if (allImages.length > 0) setActiveImgIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
   };
 
   const handleNextImg = (e) => {
     e?.stopPropagation();
-    setActiveImgIndex((prev) => (prev + 1) % allImages.length);
+    if (allImages.length > 0) setActiveImgIndex((prev) => (prev + 1) % allImages.length);
   };
 
-  const sellerName = seller?.name || seller?.companyName || 'Verified Manufacturer';
-  const whatsappNum = seller?.whatsappNumber || seller?.businessPhone || seller?.buyerContactPhone || '';
+  const sellerName = seller?.name || seller?.companyName || 'Seller';
+  const handleOpenProduct = () => {
+    openProductInApp(product._id || product.id, seller?.slug);
+  };
 
-  // WhatsApp Inquiry Handler
-  const handleWhatsAppInquiry = (isSample = false) => {
-    const rawNumber = whatsappNum.replace(/[^0-9]/g, '');
-    const cleanOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://xindia.live';
-    const pageUrl = `${cleanOrigin}/p/${seller?.slug || ''}#products`;
-
-    let msg = '';
-    if (isSample) {
-      msg = `Hello ${sellerName},\nI would like to request a sample of "${product.name}".\n\n• Unit Price: ₹${product.price} / ${product.unit || 'Piece'}\n• Minimum Order: ${product.moq || 1} ${product.unit || 'Units'}\n• Dispatch Days: ${product.deliveryTime || '3-5 Days'}\n\nPlease share sample pricing and dispatch details.\n\nProduct Link: ${pageUrl}`;
-    } else {
-      msg = `Hello ${sellerName},\nI am interested in sourcing "${product.name}" from your direct factory catalog.\n\n• Quoted Price: ₹${product.price} / ${product.unit || 'Piece'}\n• Required Quantity (MOQ): ${product.moq || 1} ${product.unit || 'Units'}\n• Lead Time: ${product.deliveryTime || '3-5 Days'}\n\nPlease share commercial quotation, tiered rates, and delivery timeline.\n\nProduct Link: ${pageUrl}`;
-    }
-
-    if (rawNumber) {
-      window.open(`https://wa.me/${rawNumber}?text=${encodeURIComponent(msg)}`, '_blank');
-    } else {
-      window.location.href = '#contact';
-      onClose();
-    }
-    setSampleRequested(true);
+  const handleStartRFQ = () => {
+    const productLabel = `${product.name}${product.sku ? ` (SKU: ${product.sku})` : ''}`;
+    window.dispatchEvent(new CustomEvent('xindia:portfolio-rfq-prefill', {
+      detail: { requirement: productLabel },
+    }));
+    onClose();
   };
 
   const handleCopyProductLink = () => {
@@ -167,16 +152,16 @@ export default function ProductDetailModal({ product, seller, isOpen, onClose, i
             {/* ─── LEFT COLUMN: Visual Media Showcase & Carousel ───────── */}
             <div className="product-modal-media-col">
               <div className="product-modal-main-image-wrap">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <PortfolioImage
                   src={currentImg}
                   alt={product.name}
                   className="product-modal-main-image"
-                  onClick={() => setLightboxOpen(true)}
+                  placeholderLabel="Product image not provided"
+                  onClick={currentImg ? () => setLightboxOpen(true) : undefined}
                 />
 
                 {/* Click to Expand Lightbox Badge */}
-                <button
+                {currentImg && <button
                   type="button"
                   className="product-modal-zoom-badge"
                   onClick={() => setLightboxOpen(true)}
@@ -184,7 +169,7 @@ export default function ProductDetailModal({ product, seller, isOpen, onClose, i
                 >
                   <Maximize2 size={13} />
                   <span>Tap for full photo</span>
-                </button>
+                </button>}
 
                 {/* Carousel Arrow Controls */}
                 {allImages.length > 1 && (
@@ -214,7 +199,7 @@ export default function ProductDetailModal({ product, seller, isOpen, onClose, i
                 )}
 
                 {/* Dispatch pill overlay */}
-                {product.deliveryTime && (
+                {product.deliveryTimeConfirmed && product.deliveryTime && (
                   <div className="product-modal-dispatch-badge">
                     <Zap size={12} />
                     <span>Dispatch: {product.deliveryTime}</span>
@@ -232,8 +217,7 @@ export default function ProductDetailModal({ product, seller, isOpen, onClose, i
                       className={`product-modal-thumb-btn ${idx === activeImgIndex ? 'active' : ''}`}
                       onClick={() => setActiveImgIndex(idx)}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={thumb} alt="" className="product-modal-thumb-img" />
+                      <PortfolioImage src={thumb} alt="" className="product-modal-thumb-img" placeholderLabel="Product image not provided" />
                     </button>
                   ))}
                 </div>
@@ -250,23 +234,28 @@ export default function ProductDetailModal({ product, seller, isOpen, onClose, i
                 </div>
               )}
 
-              {/* Verified Factory Guarantee Card */}
-              <div className="product-modal-trust-card">
-                <div className="product-modal-trust-item">
-                  <ShieldCheck size={18} color="#10B981" />
-                  <div>
-                    <div className="trust-item-title">Verified Manufacturer Supply</div>
-                    <div className="trust-item-sub">Direct factory contract, zero intermediary markup.</div>
-                  </div>
+              {(seller?.verified || product.pricingTerms) && (
+                <div className="product-modal-trust-card">
+                  {seller?.verified && (
+                    <div className="product-modal-trust-item">
+                      <ShieldCheck size={18} color="#10B981" />
+                      <div>
+                        <div className="trust-item-title">XINDIA-verified manufacturer</div>
+                        <div className="trust-item-sub">Verification status is provided by XINDIA.</div>
+                      </div>
+                    </div>
+                  )}
+                  {product.pricingTerms && (
+                    <div className="product-modal-trust-item">
+                      <FileText size={18} color="#3B82F6" />
+                      <div>
+                        <div className="trust-item-title">Commercial terms</div>
+                        <div className="trust-item-sub">{product.pricingTerms}</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="product-modal-trust-item">
-                  <Truck size={18} color="#3B82F6" />
-                  <div>
-                    <div className="trust-item-title">Pan-India / Global Freight</div>
-                    <div className="trust-item-sub">{product.pricingTerms || 'EXW'} & Doorstep delivery options.</div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* ─── RIGHT COLUMN: Specifications & Commercial Details ────── */}
@@ -274,7 +263,7 @@ export default function ProductDetailModal({ product, seller, isOpen, onClose, i
               {/* Category & Brand Eyebrow */}
               <div className="product-modal-eyebrow-row">
                 <span className="product-modal-cat-pill">
-                  {product.category?.name || product.customCategoryLabel || product.category || 'Direct Industrial Supply'}
+                  {product.category?.name || product.customCategoryLabel || product.category || 'Category not specified'}
                 </span>
                 {product.brandName && product.brandName !== 'Unbranded / OEM' && (
                   <span className="product-modal-brand-pill">
@@ -296,20 +285,26 @@ export default function ProductDetailModal({ product, seller, isOpen, onClose, i
                 <div className="product-modal-price-block">
                   <div className="product-modal-price-label">Factory Wholesale Price</div>
                   <div className="product-modal-price-val">
-                    {product.priceDisplayMode === 'range' && product.priceRange
-                      ? product.priceRange
-                      : `₹${product.price}`}
-                    <span className="product-modal-price-unit"> / {product.unit || 'Piece'}</span>
+                    {product.priceDisplayMode === 'on_request'
+                      ? 'Price on request'
+                      : product.priceDisplayMode === 'range' && product.priceRange
+                        ? product.priceRange
+                        : product.price !== null && product.price !== undefined
+                          ? `₹${product.price}`
+                          : 'Contact seller for price'}
+                    {product.unit && product.priceDisplayMode !== 'on_request' ? <span className="product-modal-price-unit"> / {product.unit}</span> : null}
                   </div>
                   <div className="product-modal-tax-note">
-                    {product.isGstInclusive ? 'GST Inclusive' : '+ 18% GST as applicable'}
+                    {product.isGstInclusive === true ? 'GST inclusive' : product.isGstInclusive === false ? 'GST not included' : 'GST details not provided'}
                   </div>
                 </div>
 
                 <div className="product-modal-moq-block">
                   <div className="product-modal-moq-label">Minimum Order Qty</div>
                   <div className="product-modal-moq-val">
-                    {product.moq || '100'} <span style={{ fontSize: 13, fontWeight: 500 }}>{product.unit || 'Units'}</span>
+                    {product.moq
+                      ? <>{product.moq} {product.unit || ''}</>
+                      : 'Not specified'}
                   </div>
                   {product.countryOfOrigin && (
                     <div className="product-modal-origin-note">Made in {product.countryOfOrigin}</div>
@@ -347,17 +342,27 @@ export default function ProductDetailModal({ product, seller, isOpen, onClose, i
                     <div>
                       <div className="sample-banner-title">Sample Units Available</div>
                       <div className="sample-banner-sub">
-                        Sample Price: <strong>₹{product.samplePolicy.price || product.price}</strong> • Dispatch in{' '}
-                        <strong>{product.samplePolicy.leadTimeDays || '3-5'} days</strong>
+                        {product.samplePolicy.price !== undefined && product.samplePolicy.price !== null
+                          ? <>Sample price: <strong>₹{product.samplePolicy.price}</strong></>
+                          : null}
+                        {product.samplePolicy.price !== undefined && product.samplePolicy.price !== null && product.samplePolicy.leadTimeDays
+                          ? ' • '
+                          : null}
+                        {product.samplePolicy.leadTimeDays
+                          ? <>Dispatch in <strong>{product.samplePolicy.leadTimeDays} days</strong></>
+                          : null}
+                        {!product.samplePolicy.price && !product.samplePolicy.leadTimeDays
+                          ? 'Contact the seller for sample pricing and timing.'
+                          : null}
                       </div>
                     </div>
                   </div>
                   <button
                     type="button"
                     className="product-modal-sample-btn"
-                    onClick={() => handleWhatsAppInquiry(true)}
+                    onClick={handleOpenProduct}
                   >
-                    Request Sample
+                    Ask about sample in XINDIA
                   </button>
                 </div>
               )}
@@ -474,16 +479,16 @@ export default function ProductDetailModal({ product, seller, isOpen, onClose, i
                 <button
                   type="button"
                   className="product-modal-primary-inquire-btn"
-                  onClick={() => handleWhatsAppInquiry(false)}
+                  onClick={handleOpenProduct}
                 >
-                  <MessageSquare size={16} />
-                  <span>Inquire via WhatsApp</span>
+                  <ExternalLink size={16} />
+                  <span>Open product in XINDIA</span>
                 </button>
 
                 <a
                   href="#contact"
                   className="product-modal-rfq-btn"
-                  onClick={onClose}
+                  onClick={handleStartRFQ}
                 >
                   <Sparkles size={15} />
                   <span>Send Formal RFQ</span>
@@ -538,8 +543,7 @@ export default function ProductDetailModal({ product, seller, isOpen, onClose, i
               </>
             )}
 
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={currentImg} alt={product.name} className="product-lightbox-img" />
+            <PortfolioImage src={currentImg} alt={product.name} className="product-lightbox-img" placeholderLabel="Product image not provided" />
 
             <div className="product-lightbox-footer">
               <span>{product.name}</span>

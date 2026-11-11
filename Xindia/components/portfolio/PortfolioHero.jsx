@@ -3,39 +3,30 @@
 import React, { useState } from 'react';
 import {
   ShieldCheck,
-  Award,
-  FileCheck2,
   MapPin,
   Building2,
   Copy,
   Check,
   MessageSquare,
-  Sparkles,
   Calendar,
-  Users,
-  Factory,
-  Globe2,
-  Star,
-  CheckCircle2,
-  Coins,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { resolveImageUrl, FALLBACK_LOGO_IMAGE } from '@/lib/image';
+import { resolveImageUrl } from '@/lib/image';
+import PortfolioImage from './PortfolioImage';
+import { getPortfolioVerificationSignals } from '@/lib/portfolioTrust';
 
 export default function PortfolioHero({ seller, slug }) {
   const [copied, setCopied] = useState(false);
-  const verifiedDocs = seller.verifiedDocuments ? Object.keys(seller.verifiedDocuments) : [];
-  const hasGst = seller.gstVerified || verifiedDocs.includes('gst');
-  const hasIso = verifiedDocs.includes('iso') || (seller.certifications && seller.certifications.some(c => c.toLowerCase().includes('iso')));
-  const hasMsme = verifiedDocs.includes('msme');
+  const verificationSignals = getPortfolioVerificationSignals(seller);
 
   const cleanSlug = seller.slug || slug;
+  const portfolioPath = `/p/${encodeURIComponent(cleanSlug)}`;
   const showroomUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/p/${cleanSlug}`
     : `${process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live'}/p/${cleanSlug}`;
 
   const coverImg = resolveImageUrl(seller.coverImage);
-  const logoImg = resolveImageUrl(seller.logo, FALLBACK_LOGO_IMAGE);
+  const logoImg = resolveImageUrl(seller.logo);
 
   const handleCopyLink = () => {
     if (navigator.clipboard) {
@@ -46,7 +37,7 @@ export default function PortfolioHero({ seller, slug }) {
   };
 
   const whatsappShareText = encodeURIComponent(
-    `Check out our official digital showroom on XINDIA: ${seller.name} — Verified Indian Manufacturer:\n${showroomUrl}`
+    `Check out ${seller.name}'s business portfolio on XINDIA${seller.verified ? ' — XINDIA verified' : ''}:\n${showroomUrl}`
   );
 
   const containerVariants = {
@@ -65,8 +56,6 @@ export default function PortfolioHero({ seller, slug }) {
       transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] }
     }
   };
-
-  const cleanExport = seller.exportPercentage ? seller.exportPercentage.replace(/%+$/, '') + '%' : null;
 
   return (
     <div className="portfolio-hero-wrapper">
@@ -109,8 +98,7 @@ export default function PortfolioHero({ seller, slug }) {
         <div className="portfolio-grid-overlay" />
 
         {coverImg ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={coverImg} alt="" className="portfolio-cover" />
+          <PortfolioImage src={coverImg} alt="" className="portfolio-cover" placeholderLabel="Cover image unavailable" />
         ) : (
           <div className="portfolio-cover-placeholder" />
         )}
@@ -123,11 +111,11 @@ export default function PortfolioHero({ seller, slug }) {
         >
           {/* Logo Frame */}
           <motion.div variants={itemVariants} className="portfolio-logo-frame">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <PortfolioImage
               src={logoImg}
               alt={seller.name}
               className="portfolio-logo"
+              placeholderLabel="Seller logo not provided"
             />
             {seller.verified && (
               <div className="portfolio-logo-badge" title="Verified Manufacturer">
@@ -141,30 +129,12 @@ export default function PortfolioHero({ seller, slug }) {
             <motion.div variants={itemVariants} className="portfolio-name-row">
               <h1 className="portfolio-name">{seller.name}</h1>
               
-              {seller.verified && (
-                <span className="portfolio-verified-badge">
-                  <Sparkles size={13} />
-                  Verified Manufacturer
+              {verificationSignals.map(({ id, title, icon: Icon }) => (
+                <span className="portfolio-trust-badge" key={id}>
+                  <Icon size={12} />
+                  {title}
                 </span>
-              )}
-              {hasGst && (
-                <span className="portfolio-trust-badge">
-                  <FileCheck2 size={12} color="#10B981" />
-                  GSTIN Verified
-                </span>
-              )}
-              {hasIso && (
-                <span className="portfolio-trust-badge">
-                  <Award size={12} color="#F59E0B" />
-                  ISO Certified
-                </span>
-              )}
-              {hasMsme && (
-                <span className="portfolio-trust-badge">
-                  <ShieldCheck size={12} color="#60A5FA" />
-                  MSME Registered
-                </span>
-              )}
+              ))}
             </motion.div>
 
             <motion.div variants={itemVariants} className="portfolio-header-tags">
@@ -183,16 +153,10 @@ export default function PortfolioHero({ seller, slug }) {
                   {seller.address}
                 </span>
               )}
-              {seller.annualTurnover && (
+              {seller.yearOfEstablishment && (
                 <span className="portfolio-badge-pill">
-                  <Coins size={12} style={{ marginRight: 4 }} color="#D97706" />
-                  Turnover: {seller.annualTurnover}
-                </span>
-              )}
-              {seller.marketCovered && (
-                <span className="portfolio-badge-pill">
-                  <Globe2 size={12} style={{ marginRight: 4 }} color="#2563EB" />
-                  Markets: {seller.marketCovered}
+                  <Calendar size={12} style={{ marginRight: 4 }} />
+                  Established {seller.yearOfEstablishment} · seller-provided
                 </span>
               )}
             </motion.div>
@@ -206,24 +170,7 @@ export default function PortfolioHero({ seller, slug }) {
 
             {/* CTAs */}
             <motion.div variants={itemVariants} className="portfolio-header-actions">
-              <a href="#contact" className="portfolio-primary-btn">
-                <Sparkles size={15} />
-                <span>Request Instant Quote</span>
-              </a>
-
-              {seller.whatsappNumber && (
-                <a
-                  href={`https://wa.me/${seller.whatsappNumber.replace(/[^0-9]/g, '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="portfolio-whatsapp-btn"
-                >
-                  <MessageSquare size={15} />
-                  <span>WhatsApp Factory</span>
-                </a>
-              )}
-
-              <a href="#products" className="portfolio-ghost-btn">
+              <a href={`${portfolioPath}#products`} className="portfolio-ghost-btn">
                 <span>View Catalog</span>
               </a>
             </motion.div>
@@ -231,80 +178,6 @@ export default function PortfolioHero({ seller, slug }) {
         </motion.div>
       </div>
 
-      {/* ─── 3. High-Impact Executive Metrics Bar ────────────────────────────── */}
-      <div className="portfolio-metrics-strip">
-        <div className="portfolio-metrics-grid">
-          {seller.yearOfEstablishment && (
-            <div className="portfolio-metric-item">
-              <div className="portfolio-metric-icon-wrap" style={{ background: '#EFF6FF', color: '#3B82F6' }}>
-                <Calendar size={18} />
-              </div>
-              <div>
-                <div className="portfolio-metric-value">{seller.yearOfEstablishment}</div>
-                <div className="portfolio-metric-label">Year Established</div>
-              </div>
-            </div>
-          )}
-
-          {seller.employeesCount > 0 && (
-            <div className="portfolio-metric-item">
-              <div className="portfolio-metric-icon-wrap" style={{ background: '#ECFDF5', color: '#10B981' }}>
-                <Users size={18} />
-              </div>
-              <div>
-                <div className="portfolio-metric-value">{seller.employeesCount}+</div>
-                <div className="portfolio-metric-label">Skilled Workforce</div>
-              </div>
-            </div>
-          )}
-
-          {seller.factorySize && (
-            <div className="portfolio-metric-item">
-              <div className="portfolio-metric-icon-wrap" style={{ background: '#FEF3C7', color: '#F59E0B' }}>
-                <Factory size={18} />
-              </div>
-              <div>
-                <div className="portfolio-metric-value">{seller.factorySize}</div>
-                <div className="portfolio-metric-label">Plant Floor Area</div>
-              </div>
-            </div>
-          )}
-
-          {cleanExport && (
-            <div className="portfolio-metric-item">
-              <div className="portfolio-metric-icon-wrap" style={{ background: '#EEF2FF', color: '#6366F1' }}>
-                <Globe2 size={18} />
-              </div>
-              <div>
-                <div className="portfolio-metric-value">{cleanExport}</div>
-                <div className="portfolio-metric-label">Export Markets</div>
-              </div>
-            </div>
-          )}
-
-          {seller.reviewCount > 0 ? (
-            <div className="portfolio-metric-item">
-              <div className="portfolio-metric-icon-wrap" style={{ background: '#FEF9C3', color: '#CA8A04' }}>
-                <Star size={18} />
-              </div>
-              <div>
-                <div className="portfolio-metric-value">{seller.rating}★</div>
-                <div className="portfolio-metric-label">{seller.reviewCount} Verified Reviews</div>
-              </div>
-            </div>
-          ) : (
-            <div className="portfolio-metric-item">
-              <div className="portfolio-metric-icon-wrap" style={{ background: '#ECFDF5', color: '#059669' }}>
-                <CheckCircle2 size={18} />
-              </div>
-              <div>
-                <div className="portfolio-metric-value">100%</div>
-                <div className="portfolio-metric-label">Direct Factory Supply</div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

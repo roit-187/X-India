@@ -1,29 +1,42 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { openSellerInApp } from '@/lib/portfolioAnalytics';
+import PortfolioImage from './PortfolioImage';
 import {
-  LayoutDashboard,
+  Home,
   Package,
   Factory,
   Star,
   Briefcase,
   PhoneCall,
   Sparkles,
-  ShieldCheck,
 } from 'lucide-react';
 
 const SECTIONS = [
-  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'home', label: 'Home', icon: Home, page: 'catalog' },
   { id: 'products', label: 'Products', icon: Package },
-  { id: 'factory', label: 'Factory & Specs', icon: Factory },
-  { id: 'ratings', label: 'Ratings & Reviews', icon: Star },
-  { id: 'opportunities', label: 'Opportunities', icon: Briefcase },
-  { id: 'contact', label: 'Contact & RFQ', icon: PhoneCall },
+  { id: 'factory', label: 'Factory & Specs', icon: Factory, page: 'catalog' },
+  { id: 'ratings', label: 'Ratings & Reviews', icon: Star, page: 'catalog' },
+  { id: 'opportunities', label: 'Opportunities', icon: Briefcase, page: 'catalog' },
+  { id: 'contact', label: 'Contact & RFQ', icon: PhoneCall, page: 'catalog' },
 ];
 
-export default function PortfolioStickyNav({ seller, totalProducts = 0, totalReviews = 0, totalOpportunities = 0 }) {
-  const [activeSection, setActiveSection] = useState('overview');
+export default function PortfolioStickyNav({ seller, slug, currentPage = 'catalog', totalProducts = 0, totalReviews = 0, totalOpportunities = 0 }) {
+  const [activeSection, setActiveSection] = useState(currentPage === 'home' ? 'home' : 'products');
   const [isScrolled, setIsScrolled] = useState(false);
+  const portfolioPath = `/p/${encodeURIComponent(seller?.slug || slug || '')}`;
+  const factoryPhotos = Array.isArray(seller?.manufacturingPlants) && seller.manufacturingPlants.length > 0
+    ? seller.manufacturingPlants
+    : (Array.isArray(seller?.factoryPhotos) && seller.factoryPhotos.length > 0
+      ? seller.factoryPhotos
+      : (Array.isArray(seller?.gallery) ? seller.gallery : []));
+  const hasFactoryContent = Boolean(
+    seller?.factorySize || seller?.machinesCount > 0 || seller?.employeesCount > 0 ||
+    seller?.monthlyCapacity || seller?.exportPercentage || seller?.factoryVideo ||
+    seller?.aboutFactory || (Array.isArray(seller?.factories) && seller.factories.length > 0) || factoryPhotos.length > 0
+  );
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,23 +57,54 @@ export default function PortfolioStickyNav({ seller, totalProducts = 0, totalRev
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [currentPage]);
 
-  // Filter nav tabs: hide Opportunities tab when there are none
-  const visibleSections = SECTIONS.filter(
-    (sec) => sec.id !== 'opportunities' || totalOpportunities > 0
-  );
+  // Home and Products stay first and available regardless of seller customization.
+  const optionalOrder = seller?.portfolioCustomization?.sectionOrder || [];
+  const hiddenSections = new Set(seller?.portfolioCustomization?.hiddenSections || []);
+  const fixedSections = SECTIONS.filter((section) => ['home', 'products'].includes(section.id));
+  const orderedOptionalSections = [
+    ...optionalOrder
+      .filter((id) => !['home', 'products'].includes(id))
+      .map((id) => SECTIONS.find((section) => section.id === id)),
+    ...SECTIONS.filter((section) => !['home', 'products'].includes(section.id)),
+  ].filter((section, index, all) => section && all.findIndex((item) => item?.id === section.id) === index);
+  const visibleSections = [
+    ...fixedSections,
+    ...orderedOptionalSections.filter((section) => !hiddenSections.has(section.id)),
+  ].filter((section) => {
+    if (section.id === 'factory') return hasFactoryContent;
+    if (section.id === 'opportunities') return totalOpportunities > 0;
+    if (section.id === 'ratings') return totalReviews > 0;
+    return true;
+  });
 
-  const handleNavClick = (e, id) => {
-    e.preventDefault();
-    const elem = document.getElementById(id);
+  const getHref = (section) => {
+    if (section.id === 'home') return currentPage === 'catalog' ? '#home' : `${portfolioPath}#home`;
+    if (section.id === 'products') return currentPage === 'catalog' ? '#products' : `${portfolioPath}#products`;
+    if (section.page === currentPage) return `#${section.id}`;
+    return section.page === 'home'
+      ? `${portfolioPath}/home#${section.id}`
+      : `${portfolioPath}#${section.id}`;
+  };
+
+  const handleNavClick = (e, section) => {
+    const localPage = section.id === 'home'
+      ? currentPage === 'home' || currentPage === 'catalog'
+      : section.id === 'products'
+        ? currentPage === 'catalog'
+        : section.page === currentPage;
+    const elem = localPage ? document.getElementById(section.id) : null;
     if (elem) {
-      const offsetTop = elem.getBoundingClientRect().top + window.scrollY - 85;
+      e.preventDefault();
+      const navHeight = document.querySelector('.portfolio-sticky-dock')?.getBoundingClientRect().height || 85;
+      const offsetTop = elem.getBoundingClientRect().top + window.scrollY - navHeight - 8;
+      const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
       window.scrollTo({
         top: offsetTop,
-        behavior: 'smooth',
+        behavior,
       });
-      setActiveSection(id);
+      setActiveSection(section.id);
     }
   };
 
@@ -69,17 +113,10 @@ export default function PortfolioStickyNav({ seller, totalProducts = 0, totalRev
       <div className="portfolio-dock-container">
         {/* Left mini brand presence (visible when scrolled) */}
         <div className={`portfolio-dock-brand ${isScrolled ? 'visible' : ''}`}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={seller.logo || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=60&auto=format&fit=crop'}
-            alt=""
-            className="portfolio-dock-logo"
-          />
+          {seller.logo && <PortfolioImage src={seller.logo} alt="" className="portfolio-dock-logo" placeholderLabel="Seller logo unavailable" showPlaceholderText={false} />}
           <div className="portfolio-dock-brand-text">
             <span className="portfolio-dock-brand-name">{seller.name}</span>
-            <span className="portfolio-dock-brand-badge">
-              <ShieldCheck size={11} color="#10B981" /> Verified
-            </span>
+            {seller.verified && <span className="portfolio-dock-brand-badge">XINDIA verified</span>}
           </div>
         </div>
 
@@ -87,7 +124,7 @@ export default function PortfolioStickyNav({ seller, totalProducts = 0, totalRev
         <div className="portfolio-dock-tabs">
           {visibleSections.map((sec) => {
             const Icon = sec.icon;
-            const isActive = activeSection === sec.id;
+            const isActive = (sec.id === 'home' && currentPage === 'home') || (sec.id === 'products' && currentPage === 'catalog') || activeSection === sec.id;
 
             let count = null;
             if (sec.id === 'products' && totalProducts > 0) count = totalProducts;
@@ -95,11 +132,14 @@ export default function PortfolioStickyNav({ seller, totalProducts = 0, totalRev
             if (sec.id === 'opportunities' && totalOpportunities > 0) count = totalOpportunities;
 
             return (
-              <a
+              <motion.a
                 key={sec.id}
-                href={`#${sec.id}`}
-                onClick={(e) => handleNavClick(e, sec.id)}
-                className={`portfolio-dock-tab ${isActive ? 'active' : ''}`}
+                href={getHref(sec)}
+                onClick={(e) => handleNavClick(e, sec)}
+                className={`portfolio-dock-tab ${['home', 'products'].includes(sec.id) ? 'portfolio-dock-tab-core' : 'portfolio-dock-tab-optional'} ${isActive ? 'active' : ''}`}
+                whileTap={{ scale: 0.97 }}
+                transition={{ duration: 0.16 }}
+                aria-current={isActive ? 'page' : undefined}
               >
                 <Icon size={14} className="portfolio-dock-tab-icon" />
                 <span>{sec.label}</span>
@@ -108,7 +148,7 @@ export default function PortfolioStickyNav({ seller, totalProducts = 0, totalRev
                     {count}
                   </span>
                 )}
-              </a>
+              </motion.a>
             );
           })}
         </div>
@@ -116,9 +156,16 @@ export default function PortfolioStickyNav({ seller, totalProducts = 0, totalRev
         {/* Right CTA */}
         <div className="portfolio-dock-cta-wrap">
           <a
-            href="#contact"
-            onClick={(e) => handleNavClick(e, 'contact')}
+            href={getHref(SECTIONS.find((section) => section.id === 'contact'))}
+            onClick={(e) => {
+              if (openSellerInApp(seller?._id || seller?.id, seller?.slug || slug)) {
+                e.preventDefault();
+                return;
+              }
+              handleNavClick(e, SECTIONS.find((section) => section.id === 'contact'));
+            }}
             className="portfolio-dock-rfq-btn"
+            aria-label="Request a quote"
           >
             <Sparkles size={13} />
             <span>Request Quote</span>

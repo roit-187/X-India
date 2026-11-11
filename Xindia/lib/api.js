@@ -10,19 +10,36 @@ async function apiFetch(path, { revalidate = 3600, tags, ...init } = {}) {
 }
 
 export async function getSeller(slug) {
-  const res = await apiFetch(`/api/public/sellers/${slug}`);
+  const res = await apiFetch(`/api/public/sellers/${slug}`, { revalidate: 60 });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('Failed to load seller');
   const data = await res.json();
   return data.seller;
 }
 
-export async function getSellerProducts(slug, { page = 1, category } = {}) {
+export async function getSellerProducts(slug, { page = 1, limit = 20, category } = {}) {
   const params = new URLSearchParams({ page: String(page) });
+  params.set('limit', String(limit));
   if (category && category !== 'all') params.set('category', category);
-  const res = await apiFetch(`/api/public/sellers/${slug}/products?${params.toString()}`);
+  const res = await apiFetch(`/api/public/sellers/${slug}/products?${params.toString()}`, {
+    revalidate: 60,
+    tags: [`products-${slug}`],
+  });
   if (!res.ok) return { products: [], total: 0, totalPages: 1 };
   return res.json();
+}
+
+export async function getPublicProduct(id) {
+  if (!/^[a-f\d]{24}$/i.test(String(id || ''))) return null;
+  try {
+    const res = await apiFetch(`/api/products/${encodeURIComponent(id)}`, { revalidate: 60 });
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.success ? data.product || null : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getSellerReviews(slug, { page = 1 } = {}) {
@@ -66,7 +83,7 @@ export async function getAllPublishedSlugs() {
   // a bulk endpoint, this quietly returns an empty list rather than failing
   // the whole sitemap build.
   try {
-    const res = await apiFetch('/api/public/sellers/slugs', { revalidate: 3600 });
+    const res = await apiFetch('/api/public/sellers/slugs', { revalidate: 60 });
     if (!res.ok) return [];
     const data = await res.json();
     return data.slugs || [];

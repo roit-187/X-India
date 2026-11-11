@@ -22,8 +22,10 @@ import {
   Tag,
   Quote,
 } from 'lucide-react';
-import { resolveImageUrl, FALLBACK_FACTORY_IMAGE } from '@/lib/image';
+import { resolveImageUrl } from '@/lib/image';
 import YouTubePlayer from '@/components/common/YouTubePlayer';
+import { trackPortfolioEvent } from '@/lib/portfolioAnalytics';
+import PortfolioImage from './PortfolioImage';
 
 export default function OpportunitiesSection({ opportunities = [], seller }) {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -43,7 +45,8 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
   };
 
   const openLightbox = (imgUrl, allImages = []) => {
-    const list = allImages.length > 0 ? allImages : [imgUrl];
+    const list = (allImages.length > 0 ? allImages : [imgUrl]).filter(Boolean);
+    if (list.length === 0) return;
     const idx = Math.max(0, list.indexOf(imgUrl));
     setLightboxList(list);
     setLightboxIndex(idx);
@@ -67,19 +70,14 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
   };
 
   const handleInquireOpportunity = (op) => {
-    const whatsappNum = seller.whatsappNumber || seller.businessPhone || seller.buyerContactPhone;
-    const sellerName = seller.name || seller.companyName || 'Verified Manufacturer';
-    const cleanOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://xindia.live';
-    const oppUrl = `${cleanOrigin}/p/${seller.slug || ''}#opportunities`;
-
-    const msg = encodeURIComponent(
-      `Hello ${sellerName},\nI am interested in partnering on the contract manufacturing opportunity: "${op.title}".\n\n• Estimated Capital: ₹${op.investment?.toLocaleString('en-IN') || '0'}\n• Profit Margin: ${op.profitRange || op.profitMargin || '30% – 50%'}\n• Minimum Batch (MOQ): ${op.moq || '100 Units'}\n• Launch Timeline: ${op.launchDays ? `${op.launchDays} days` : '7-10 days'}\n\nPlease share the contract terms, sample availability, and onboarding kit.\n\nSourced via XINDIA Showroom:\n${oppUrl}`
-    );
-    if (whatsappNum) {
-      window.open(`https://wa.me/${whatsappNum.replace(/[^0-9]/g, '')}?text=${msg}`, '_blank');
-    } else {
-      window.location.href = '#contact';
-    }
+    trackPortfolioEvent(seller.slug, 'contact_click');
+    window.dispatchEvent(new CustomEvent('xindia:portfolio-rfq-prefill', {
+      detail: { requirement: `Business opportunity: ${op.title}` },
+    }));
+    document.getElementById('contact')?.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
+    });
   };
 
   return (
@@ -94,7 +92,7 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
             </div>
             <h2 className="portfolio-section-title">Business & Contract Opportunities</h2>
             <p className="portfolio-section-desc">
-              Turnkey production lines open for private-label brands, regional distributors, and strategic manufacturing partnerships.
+              Opportunity details and commercial terms are supplied by this seller. Confirm current availability and terms directly.
             </p>
           </div>
         </div>
@@ -110,11 +108,11 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
           }}
         >
           {opportunities.map((op) => {
-            const mainImg = resolveImageUrl(op.imageUrl, FALLBACK_FACTORY_IMAGE);
+            const mainImg = resolveImageUrl(op.imageUrl);
             const productPhotos = Array.isArray(op.productPhotos)
-              ? op.productPhotos.map((p) => resolveImageUrl(p, FALLBACK_FACTORY_IMAGE)).filter(Boolean)
+              ? op.productPhotos.map((p) => resolveImageUrl(p)).filter(Boolean)
               : [];
-            const allOpportunityPhotos = [mainImg, ...productPhotos];
+            const allOpportunityPhotos = [mainImg, ...productPhotos].filter(Boolean);
             const itemsOffered = Array.isArray(op.itemsOffered) ? op.itemsOffered : [];
             const highlights = Array.isArray(op.highlights) ? op.highlights : [];
 
@@ -123,20 +121,20 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
                 {/* ─── Top Media & Header Banner ────────────────────────────── */}
                 <div className="portfolio-opportunity-media-banner">
                   <div
-                    className="portfolio-opportunity-image-wrap"
-                    onClick={() => openLightbox(mainImg, allOpportunityPhotos)}
+                    className={`portfolio-opportunity-image-wrap ${mainImg ? 'has-image' : ''}`}
+                    onClick={mainImg ? () => openLightbox(mainImg, allOpportunityPhotos) : undefined}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <PortfolioImage
                       src={mainImg}
                       alt={op.title}
                       className="portfolio-opportunity-image"
+                      placeholderLabel="Opportunity image not provided"
                       loading="lazy"
                     />
-                    <div className="portfolio-opportunity-zoom-badge">
+                    {mainImg && <div className="portfolio-opportunity-zoom-badge">
                       <Maximize2 size={12} />
                       <span>Expand image</span>
-                    </div>
+                    </div>}
                   </div>
 
                   <div className="portfolio-opportunity-meta-panel">
@@ -144,9 +142,14 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
                       <div>
                         <div className="portfolio-opportunity-status-pill">
                           <Sparkles size={11} />
-                          <span>Active Turnkey Production Line</span>
+                          <span>Seller opportunity</span>
                         </div>
                         <h3 className="portfolio-opportunity-title">{op.title}</h3>
+                        {(op.categoryLabel || op.subCategoryLabel) && (
+                          <p className="portfolio-opportunity-category">
+                            {[op.categoryLabel, op.subCategoryLabel].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
                       </div>
 
                       <button
@@ -155,7 +158,7 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
                         onClick={() => handleInquireOpportunity(op)}
                       >
                         <MessageSquare size={14} />
-                        <span>Inquire Line via WhatsApp</span>
+                        <span>Ask about this opportunity</span>
                       </button>
                     </div>
 
@@ -163,12 +166,12 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
 
                     {/* Key Commercial Figure Cards */}
                     <div className="portfolio-opportunity-figures">
-                      <div className="figure-card">
+                      {op.investment !== undefined && op.investment !== null && <div className="figure-card">
                         <div className="portfolio-opportunity-figure-label">Estimated Capital</div>
                         <div className="portfolio-opportunity-figure-value portfolio-mono" style={{ color: 'var(--p-primary)' }}>
-                          ₹{op.investment?.toLocaleString('en-IN') || '0'}
+                          ₹{Number(op.investment).toLocaleString('en-IN')}
                         </div>
-                      </div>
+                      </div>}
 
                       {op.monthlyRevenue && (
                         <div className="figure-card">
@@ -179,26 +182,26 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
                         </div>
                       )}
 
-                      <div className="figure-card">
+                      {(op.profitRange || op.profitMargin) && <div className="figure-card">
                         <div className="portfolio-opportunity-figure-label">Profit Margin</div>
                         <div className="portfolio-opportunity-figure-value" style={{ color: '#059669' }}>
-                          {op.profitRange || op.profitMargin || '30% – 50%'}
+                          {op.profitRange || op.profitMargin}
                         </div>
-                      </div>
+                      </div>}
 
-                      <div className="figure-card">
+                      {op.moq && <div className="figure-card">
                         <div className="portfolio-opportunity-figure-label">Minimum Batch (MOQ)</div>
                         <div className="portfolio-opportunity-figure-value portfolio-mono">
-                          {op.moq || '100'} Units
+                          {op.moq}
                         </div>
-                      </div>
+                      </div>}
 
-                      <div className="figure-card">
+                      {op.launchDays && <div className="figure-card">
                         <div className="portfolio-opportunity-figure-label">Launch Turnaround</div>
                         <div className="portfolio-opportunity-figure-value portfolio-mono" style={{ color: '#2563EB' }}>
-                          {op.launchDays ? `${op.launchDays} days` : '7-10 days'}
+                          {op.launchDays} days
                         </div>
-                      </div>
+                      </div>}
 
                       {op.breakEvenTime && (
                         <div className="figure-card">
@@ -228,11 +231,11 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
                           className="portfolio-opp-thumb-card"
                           onClick={() => openLightbox(photoUrl, allOpportunityPhotos)}
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
+                          <PortfolioImage
                             src={photoUrl}
                             alt={`Product sample ${pIdx + 1}`}
                             className="portfolio-opp-thumb-img"
+                            placeholderLabel="Product sample image not provided"
                             loading="lazy"
                           />
                           <div className="portfolio-opp-thumb-overlay">
@@ -406,8 +409,7 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
               </>
             )}
 
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={selectedImage} alt="Contract opportunity media" className="product-lightbox-img" />
+            <PortfolioImage src={selectedImage} alt="Contract opportunity media" className="product-lightbox-img" placeholderLabel="Opportunity image not provided" />
 
             {lightboxList.length > 1 && (
               <div className="product-lightbox-footer">

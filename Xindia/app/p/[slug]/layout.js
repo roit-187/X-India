@@ -1,16 +1,17 @@
 import { notFound } from 'next/navigation';
 import '../../portfolio.css';
 import { getSeller } from '@/lib/api';
+import { PortfolioMotionProvider } from '@/components/portfolio/PortfolioMotionProvider';
 
 export async function generateMetadata({ params }) {
   const seller = await getSeller(params.slug);
   if (!seller) return { title: 'Seller Not Found — XINDIA' };
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live';
   return {
-    title: `${seller.name} — Verified Manufacturer Digital Showroom | XINDIA`,
+    title: `${seller.name} — ${seller.verified ? 'Verified Seller Portfolio' : 'Seller Portfolio'} | XINDIA`,
     description: (seller.portfolioAbout || seller.description || `${seller.name} on XINDIA — India's Business Launchpad.`).slice(0, 160),
     openGraph: {
-      title: `${seller.name} — Verified Digital Showroom`,
+      title: `${seller.name} — ${seller.verified ? 'XINDIA verified seller' : 'Seller portfolio'}`,
       description: (seller.portfolioAbout || seller.description || `${seller.name} on XINDIA`).slice(0, 160),
       images: [seller.coverImage || seller.logo || `${siteUrl}/og-image.jpg`],
     },
@@ -37,7 +38,7 @@ export default async function SellerPortfolioLayout({ children, params }) {
 
   return (
     <div className="portfolio-page">
-      {children}
+      <PortfolioMotionProvider>{children}</PortfolioMotionProvider>
       <script
         type="application/ld+json"
         // eslint-disable-next-line react/no-danger
