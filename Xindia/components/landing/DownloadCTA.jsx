@@ -1,12 +1,25 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { QrCode } from 'lucide-react';
+import QRCode from 'qrcode';
+import Image from 'next/image';
+import { usePlayStoreUrl } from '@/lib/usePlayStoreUrl';
 
 const DownloadCTA = () => {
   const [ref, inView] = useInView({ threshold: 0.2, triggerOnce: true });
+  const playStoreUrl = usePlayStoreUrl();
+  const [qrImage, setQrImage] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    QRCode.toDataURL(playStoreUrl, { width: 220, margin: 4 })
+      .then((image) => { if (mounted) setQrImage({ url: playStoreUrl, image }); })
+      .catch(() => { if (mounted) setQrImage(null); });
+    return () => { mounted = false; };
+  }, [playStoreUrl]);
 
   return (
     <section className="download-section" id="download" ref={ref}>
@@ -29,7 +42,7 @@ const DownloadCTA = () => {
 
             <div className="download-buttons">
               <motion.a
-                href="https://play.google.com/store/apps/details?id=com.xindia.marketplace"
+                href={playStoreUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="download-store-btn"
@@ -67,7 +80,10 @@ const DownloadCTA = () => {
                 <p className="app-tagline">
                   India's Business<br />Launchpad
                 </p>
-                <motion.div
+                <motion.a
+                  href={playStoreUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style={{
                     background: '#E8581C',
                     color: 'white',
@@ -75,13 +91,14 @@ const DownloadCTA = () => {
                     borderRadius: '999px',
                     fontSize: '13px',
                     fontWeight: 600,
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    textDecoration: 'none'
                   }}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   Get Started →
-                </motion.div>
+                </motion.a>
               </div>
             </div>
 
@@ -96,34 +113,11 @@ const DownloadCTA = () => {
               animate={{ y: [0, -6, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             >
-              <div style={{
-                width: '100%',
-                height: '100%',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(9, 1fr)',
-                gridTemplateRows: 'repeat(9, 1fr)',
-                gap: '2px',
-                padding: '4px'
-              }}>
-                {/* Simplified QR pattern */}
-                {Array.from({ length: 81 }, (_, i) => {
-                  const row = Math.floor(i / 9);
-                  const col = i % 9;
-                  const isCorner = (row < 3 && col < 3) || (row < 3 && col > 5) || (row > 5 && col < 3);
-                  const isCenter = row === 4 && col === 4;
-                  const isRandom = [5, 12, 18, 23, 31, 37, 42, 49, 56, 63, 68, 74].includes(i);
-                  const filled = isCorner || isCenter || isRandom;
-                  return (
-                    <div
-                      key={i}
-                      style={{
-                        background: filled ? '#0F1B2D' : '#F8FAFC',
-                        borderRadius: '1px'
-                      }}
-                    />
-                  );
-                })}
-              </div>
+              <a href={playStoreUrl} target="_blank" rel="noopener noreferrer" aria-label="Get XINDIA on Google Play">
+                {qrImage?.url === playStoreUrl ? (
+                  <Image src={qrImage.image} alt="Scan to download XINDIA" width={220} height={220} unoptimized style={{ width: '100%', height: '100%', display: 'block' }} />
+                ) : <QrCode aria-hidden="true" />}
+              </a>
             </motion.div>
             <p className="qr-label" style={{ marginTop: '24px' }}>Scan to Download App</p>
           </motion.div>

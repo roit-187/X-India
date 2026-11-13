@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   PhoneCall,
-  MessageSquare,
   Mail,
   Globe,
   MapPin,
@@ -18,7 +17,8 @@ import {
   AlertCircle,
   Lock,
 } from 'lucide-react';
-import { getPlayStoreUrl, openSellerInApp, trackPortfolioEvent } from '@/lib/portfolioAnalytics';
+import { getPlayStoreUrl, trackPortfolioEvent } from '@/lib/portfolioAnalytics';
+import PortfolioProductAppActions from './PortfolioProductAppActions';
 
 export default function ContactRFQSection({ seller }) {
   const [buyerName, setBuyerName] = useState('');
@@ -54,10 +54,9 @@ export default function ContactRFQSection({ seller }) {
     return () => window.removeEventListener('xindia:portfolio-rfq-prefill', handleRequirementPrefill);
   }, []);
 
-  const handleOpenInApp = () => {
-    if (openSellerInApp(seller._id || seller.id, seller.slug)) return;
-    document.getElementById('portfolio-rfq-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  const source = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('src') || 'unknown' : 'unknown';
+  const appParams = new URLSearchParams({ portfolioSlug: seller.slug, portfolioSource: source, contactIntent: '1' });
+  const appUrl = `xindia://seller/${encodeURIComponent(seller._id || seller.id)}?${appParams}`;
 
   const websiteUrl = seller.contact?.website || (seller.website ? seller.website : null);
   const formattedWebsite = websiteUrl && !websiteUrl.startsWith('http') ? `https://${websiteUrl}` : websiteUrl;
@@ -65,30 +64,6 @@ export default function ContactRFQSection({ seller }) {
   // with a valid hostname. Blocks javascript: URIs and other dangerous schemes.
   const isSafeWebsite = formattedWebsite &&
     /^https?:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.[a-zA-Z]{2,}/.test(formattedWebsite);
-  const rawPhone = seller.buyerContactPhone || seller.businessPhone || seller.contact?.phone;
-  const cleanDigits = rawPhone ? String(rawPhone).replace(/\D/g, '') : '';
-  const standardDigits = cleanDigits.length === 12 && cleanDigits.startsWith('91')
-    ? cleanDigits.slice(2)
-    : (cleanDigits.length === 11 && cleanDigits.startsWith('0') ? cleanDigits.slice(1) : cleanDigits);
-  const displayPhone = standardDigits.length === 10
-    ? `+91 ${standardDigits.slice(0, 5)} ${standardDigits.slice(5)}`
-    : (rawPhone ? String(rawPhone).trim() : null);
-  const dialPhone = standardDigits.length === 10 ? `+91${standardDigits}` : (cleanDigits ? `+${cleanDigits}` : null);
-
-  const rawWhatsapp = seller.whatsappNumber || seller.buyerContactPhone;
-  const cleanWa = rawWhatsapp ? String(rawWhatsapp).replace(/\D/g, '') : '';
-  const standardWa = cleanWa.length === 12 && cleanWa.startsWith('91')
-    ? cleanWa.slice(2)
-    : (cleanWa.length === 11 && cleanWa.startsWith('0') ? cleanWa.slice(1) : cleanWa);
-  const displayWhatsapp = standardWa.length === 10
-    ? `+91 ${standardWa.slice(0, 5)} ${standardWa.slice(5)}`
-    : (rawWhatsapp ? String(rawWhatsapp).trim() : null);
-  const dialWhatsapp = standardWa.length === 10 ? `91${standardWa}` : cleanWa;
-
-  const rawEmail = seller.contactMail || seller.companyEmail || seller.contact?.email;
-  const isSafeEmail = rawEmail && typeof rawEmail === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail.trim());
-  const email = isSafeEmail ? rawEmail.trim() : null;
-
   const handleSendRFQ = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -109,19 +84,6 @@ export default function ContactRFQSection({ seller }) {
 
     setSubmitting(true);
     trackPortfolioEvent(seller.slug, 'rfq_start');
-
-    const targetWhatsapp = dialWhatsapp || (standardDigits.length === 10 ? `91${standardDigits}` : cleanDigits);
-    const msg = encodeURIComponent(
-      `🔔 *NEW FACTORY RFQ FROM XINDIA SHOWROOM*\n\n` +
-      `• *Buyer Name:* ${buyerName.trim()}\n` +
-      `• *Company / Brand:* ${buyerCompany.trim() || 'N/A'}\n` +
-      `• *Contact Phone:* +91 ${validDigits}\n` +
-      `• *Email:* ${buyerEmail.trim() || 'N/A'}\n` +
-      `• *Product / Requirement:* ${productReq.trim()}\n` +
-      `• *Target Quantity:* ${orderQty.trim() || 'Not specified'}\n` +
-      `• *Delivery Timeline:* ${timeline}\n\n` +
-      `Please provide formal quotation and commercial catalog.`
-    );
 
     try {
       const res = await fetch('/api/public/inquiries', {
@@ -148,8 +110,6 @@ export default function ContactRFQSection({ seller }) {
 
       setConfirmation({
         referenceNumber: data.referenceNumber,
-        targetWhatsapp,
-        whatsappMsg: msg,
         fanOut,
       });
 
@@ -189,27 +149,14 @@ export default function ContactRFQSection({ seller }) {
             </div>
             <h2 className="portfolio-section-title">Request Quotation & Contact Factory</h2>
             <p className="portfolio-section-desc">
-              Contact {seller.name} through XINDIA, or send an inquiry here from your browser.
+              Connect with {seller.name} on XINDIA. A direct browser inquiry is available if you prefer.
             </p>
-            <button type="button" className="portfolio-rfq-submit-btn" onClick={handleOpenInApp}>
-              <MessageSquare size={15} />
-              <span>Open seller contact in XINDIA · browser RFQ available below</span>
-            </button>
-            {playStoreUrl && (
-              <a
-                href={playStoreUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackPortfolioEvent(seller.slug, 'play_store_click')}
-                style={{ display: 'inline-flex', marginTop: 8, fontSize: 13, fontWeight: 700, color: 'var(--p-primary)' }}
-              >
-                Get XINDIA from Google Play
-              </a>
-            )}
+
           </div>
         </div>
 
         {/* ─── Main 2-Column Contact & RFQ Grid ───────────────────────────────── */}
+        <PortfolioProductAppActions appUrl={appUrl} playStoreUrl={playStoreUrl || undefined} sellerSlug={seller.slug} listenForContact>
         <motion.div
           className="portfolio-contact-split-grid"
           initial="hidden"
@@ -244,33 +191,6 @@ export default function ContactRFQSection({ seller }) {
                 <div style={{ display: 'inline-block', background: '#fff', border: '1px solid #86EFAC', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 800, color: '#15803D', marginBottom: 18 }}>
                   Reference: {confirmation.referenceNumber}
                 </div>
-                {confirmation.targetWhatsapp && (
-                  <div style={{ marginTop: 6, marginBottom: 14 }}>
-                    <a
-                      href={`https://wa.me/${confirmation.targetWhatsapp}?text=${confirmation.whatsappMsg}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="portfolio-rfq-submit-btn"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        textDecoration: 'none',
-                        background: '#25D366',
-                        color: '#fff',
-                        padding: '13px 24px',
-                        borderRadius: 12,
-                        fontWeight: 800,
-                        fontSize: 14,
-                        boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)',
-                      }}
-                    >
-                      <MessageSquare size={16} />
-                      <span>Chat Directly on WhatsApp (Optional)</span>
-                    </a>
-                  </div>
-                )}
                 <div>
                   <button
                     type="button"
@@ -453,66 +373,12 @@ export default function ContactRFQSection({ seller }) {
                 <div>
                   <div className="portfolio-exec-badge">Executive Management Desk</div>
                   <div className="portfolio-exec-name">{seller.companyOwner}</div>
-                  <div className="portfolio-exec-role">Director / Commercial Sales Head</div>
+                  <div className="portfolio-exec-role">Business contact</div>
                 </div>
               </div>
             )}
 
             <div className="portfolio-channels-list">
-              {displayPhone && dialPhone && (
-                <a href={`tel:${dialPhone}`} onClick={(event) => {
-                  trackPortfolioEvent(seller.slug, 'contact_click');
-                  if (openSellerInApp(seller._id || seller.id, seller.slug)) event.preventDefault();
-                }} className="portfolio-channel-card">
-                  <div className="portfolio-channel-icon" style={{ background: '#EFF6FF', color: '#3B82F6' }}>
-                    <PhoneCall size={18} />
-                  </div>
-                  <div>
-                    <div className="portfolio-channel-label">Direct Buyer Desk</div>
-                    <div className="portfolio-channel-val portfolio-mono">{displayPhone}</div>
-                  </div>
-                  <span className="portfolio-channel-btn-text">Call Desk</span>
-                </a>
-              )}
-
-              {displayWhatsapp && dialWhatsapp && (
-                <a
-                  href={`https://wa.me/${dialWhatsapp}`}
-                  onClick={(event) => {
-                    trackPortfolioEvent(seller.slug, 'whatsapp_click');
-                    if (openSellerInApp(seller._id || seller.id, seller.slug)) event.preventDefault();
-                  }}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="portfolio-channel-card whatsapp"
-                >
-                  <div className="portfolio-channel-icon" style={{ background: '#ECFDF5', color: '#059669' }}>
-                    <MessageSquare size={18} />
-                  </div>
-                  <div>
-                    <div className="portfolio-channel-label">Official WhatsApp Channel</div>
-                    <div className="portfolio-channel-val portfolio-mono">{displayWhatsapp}</div>
-                  </div>
-                  <span className="portfolio-channel-btn-text">Chat Now</span>
-                </a>
-              )}
-
-              {email && (
-                <a href={`mailto:${email}`} onClick={(event) => {
-                  trackPortfolioEvent(seller.slug, 'contact_click');
-                  if (openSellerInApp(seller._id || seller.id, seller.slug)) event.preventDefault();
-                }} className="portfolio-channel-card">
-                  <div className="portfolio-channel-icon" style={{ background: '#FCE7F3', color: '#DB2777' }}>
-                    <Mail size={18} />
-                  </div>
-                  <div>
-                    <div className="portfolio-channel-label">Corporate Email</div>
-                    <div className="portfolio-channel-val">{email}</div>
-                  </div>
-                  <span className="portfolio-channel-btn-text">Send Mail</span>
-                </a>
-              )}
-
               {isSafeWebsite && (
                 <a
                   href={formattedWebsite}
@@ -562,6 +428,7 @@ export default function ContactRFQSection({ seller }) {
             )}
           </div>
         </motion.div>
+        </PortfolioProductAppActions>
       </div>
     </section>
   );

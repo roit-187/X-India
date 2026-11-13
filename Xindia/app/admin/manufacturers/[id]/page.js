@@ -6,6 +6,7 @@ import { ArrowLeft, Edit3, Building2, Phone, MapPin, Factory, Landmark, ShieldCh
 import Badge from '@/components/admin/Badge';
 import Toggle from '@/components/admin/Toggle';
 import Modal from '@/components/admin/Modal';
+import ManufacturerPortfolioPanel from '@/components/admin/ManufacturerPortfolioPanel';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 function safeUrl(url) {
@@ -515,6 +516,12 @@ export default function ManufacturerDetailPage({ params }) {
           {m.planKey && <Badge label={`Tier: ${m.planKey}`} variant="none" />}
         </div>
       </div>
+
+      <ManufacturerPortfolioPanel
+        manufacturer={m}
+        canEdit={isSuperAdmin || hasPermission('manufacturers.edit')}
+        onSaved={(manufacturer) => setData((previous) => ({ ...previous, manufacturer: { ...previous.manufacturer, ...manufacturer } }))}
+      />
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }}>
         {/* Left main content column */}

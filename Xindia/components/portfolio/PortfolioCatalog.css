@@ -1,0 +1,47 @@
+/* Compact seller-first catalogue, including narrow embedded browser panels. */
+.portfolio-showroom-wrapper .portfolio-dock-brand { min-width: 0; }
+.portfolio-showroom-wrapper .portfolio-dock-brand-text { min-width: 0; }
+.portfolio-showroom-wrapper .portfolio-dock-brand-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.portfolio-showroom-wrapper .portfolio-product-card { min-width: 0; border-radius: 18px; background: #fff; }
+.portfolio-showroom-wrapper .portfolio-product-image-frame { aspect-ratio: 1; background: #f8fafc; }
+.portfolio-showroom-wrapper .portfolio-product-image { object-fit: contain; }
+.portfolio-showroom-wrapper .portfolio-product-name { height: auto; min-height: 2.7em; font-size: 15px; line-height: 1.35; }
+.portfolio-showroom-wrapper .portfolio-product-name-btn { min-height: 40px; }
+.portfolio-showroom-wrapper .portfolio-product-price { font-family: var(--p-font); font-size: 19px; overflow-wrap: anywhere; }
+.portfolio-showroom-wrapper .portfolio-product-price-row { flex-wrap: wrap; }
+.portfolio-showroom-wrapper .portfolio-product-moq { overflow-wrap: anywhere; }
+.portfolio-showroom-wrapper .portfolio-product-quick-rfq-btn { min-height: 44px; padding: 9px 13px; border-radius: 22px; background: var(--p-primary); color: #fff; }
+.portfolio-showroom-wrapper .portfolio-category-pill { min-height: 44px; }
+.portfolio-showroom-wrapper .portfolio-search-input { min-height: 46px; }
+.portfolio-showroom-wrapper .portfolio-product-custom-tags:empty { display: none; }
+.portfolio-showroom-wrapper .portfolio-product-quick-rfq-btn:focus-visible,
+.portfolio-showroom-wrapper .portfolio-dock-tab:focus-visible,
+.portfolio-showroom-wrapper .portfolio-product-image-open:focus-visible { outline: 3px solid var(--p-blue); outline-offset: -3px; }
+
+@media (max-width: 980px) {
+  .portfolio-showroom-wrapper .portfolio-dock-container { display: grid; grid-template-columns: minmax(0, 1fr) auto; height: auto; padding: 10px 16px; gap: 8px 12px; }
+  .portfolio-showroom-wrapper .portfolio-dock-brand { grid-column: 1 / -1; max-width: none; width: 100%; opacity: 1; transform: none; pointer-events: auto; }
+  .portfolio-showroom-wrapper .portfolio-dock-logo { flex: 0 0 38px; width: 38px; height: 38px; }
+  .portfolio-showroom-wrapper .portfolio-dock-tabs { grid-column: 1; min-width: 0; width: 100%; overflow-x: auto; }
+  .portfolio-showroom-wrapper .portfolio-dock-cta-wrap { grid-column: 2; }
+  .portfolio-showroom-wrapper .portfolio-dock-tab { min-height: 44px; white-space: nowrap; flex-shrink: 0; }
+  .portfolio-showroom-wrapper .portfolio-dock-tab-optional { display: inline-flex; }
+}
+
+@media (max-width: 640px) {
+  .portfolio-showroom-wrapper .portfolio-container { padding-left: 14px; padding-right: 14px; }
+  .portfolio-showroom-wrapper .portfolio-product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .portfolio-showroom-wrapper .portfolio-product-body { padding: 11px; }
+  .portfolio-showroom-wrapper .portfolio-product-name { font-size: 14px; min-height: 38px; }
+  .portfolio-showroom-wrapper .portfolio-product-description-preview { font-size: 12px; line-height: 1.4; min-height: 34px; }
+  .portfolio-showroom-wrapper .portfolio-product-price { font-size: 17px; }
+  .portfolio-showroom-wrapper .portfolio-product-unit { font-size: 11px; }
+  .portfolio-showroom-wrapper .portfolio-product-moq { font-size: 11px; padding: 3px 6px; }
+  .portfolio-showroom-wrapper .portfolio-product-quick-rfq-btn { font-size: 12px; width: 100%; }
+  .portfolio-showroom-wrapper .portfolio-sample-overlay-btn { font-size: 11px; padding: 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-showroom-wrapper .portfolio-product-card:hover,
+  .portfolio-showroom-wrapper .portfolio-product-card:hover .portfolio-product-image { transform: none; }
+}

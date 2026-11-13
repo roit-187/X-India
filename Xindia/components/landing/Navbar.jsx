@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePlayStoreUrl } from '@/lib/usePlayStoreUrl';
 
 const Navbar = () => {
+  const playStoreUrl = usePlayStoreUrl();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -28,6 +30,9 @@ const Navbar = () => {
         </a>
 
         <ul className="navbar-links">
+          <li>
+            <a href={playStoreUrl} target="_blank" rel="noopener noreferrer" className="btn-download-nav">Get app</a>
+          </li>
           <li>
             <a href="/login" className="btn-download-nav">Login</a>
           </li>
@@ -57,6 +62,9 @@ const Navbar = () => {
               borderTop: '1px solid rgba(0,0,0,0.06)'
             }}
           >
+            <a href={playStoreUrl} target="_blank" rel="noopener noreferrer" className="btn-download-nav" onClick={() => setMobileOpen(false)}>
+              Get app
+            </a>
             <motion.a
               href="/login"
               initial={{ opacity: 0, x: -20 }}

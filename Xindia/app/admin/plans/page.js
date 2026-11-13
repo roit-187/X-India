@@ -18,6 +18,7 @@ function PlanCard({ plan, billing, onEdit, onDelete }) {
   const [hovered, setHovered] = useState(false);
 
   const price = billing === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
+  const validityDays = billing === 'monthly' ? (plan.monthlyValidityDays ?? 30) : (plan.yearlyValidityDays ?? 365);
   const crossedPrice = billing === 'monthly' ? plan.crossedMonthlyPrice : plan.crossedYearlyPrice;
   const showCrossed = billing === 'monthly' ? plan.showMonthlyCrossedPrice : plan.showYearlyCrossedPrice;
   const discount = showCrossed ? calcDiscount(price, crossedPrice) : null;
@@ -90,7 +91,7 @@ function PlanCard({ plan, billing, onEdit, onDelete }) {
         {showCrossed && crossedPrice && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <span style={{ textDecoration: 'line-through', color: '#94A3B8', fontSize: 14 }}>
-              {formatPrice(crossedPrice)}/{billing === 'monthly' ? 'mo' : 'yr'}
+              {formatPrice(crossedPrice)} · {validityDays} days
             </span>
             {discount && (
               <span style={{
@@ -107,7 +108,7 @@ function PlanCard({ plan, billing, onEdit, onDelete }) {
             {formatPrice(price)}
           </span>
           <span style={{ fontSize: 12, color: '#64748B' }}>
-            /{billing === 'monthly' ? 'month' : 'year'}
+             · {validityDays} days
           </span>
         </div>
       </div>
@@ -252,7 +253,7 @@ export default function AdminPlansPage() {
               fontWeight: 700, fontSize: 13, transition: 'all 0.2s',
             }}
           >
-            {cycle.charAt(0).toUpperCase() + cycle.slice(1)}
+            {cycle === 'monthly' ? 'Option A' : 'Option B'}
           </button>
         ))}
       </div>

@@ -22,6 +22,7 @@ export default function PublicProductInquiryForm({ product, sellerSlug }) {
           ...form,
           buyerPhone: form.buyerPhone.trim(),
           productRequirement,
+          productId: String(product._id || ''),
           orderQty: form.orderQty.trim() || undefined,
           slug: sellerSlug,
           fanOut: false,
@@ -40,8 +41,9 @@ export default function PublicProductInquiryForm({ product, sellerSlug }) {
   }
 
   return (
-    <form className="public-product-inquiry" onSubmit={submit}>
-      <h2>Ask about this product</h2>
+    <form id="public-product-inquiry" className="public-product-inquiry" onSubmit={submit}>
+      <h2>Send a direct inquiry</h2>
+      <p>Your inquiry concerns {product.name}.</p>
       <label>Your name<input name="buyerName" value={form.buyerName} onChange={update} required maxLength={50} autoComplete="name" /></label>
       <label>Mobile number<input name="buyerPhone" value={form.buyerPhone} onChange={update} required inputMode="tel" autoComplete="tel" maxLength={20} /></label>
       <label>Company (optional)<input name="buyerCompany" value={form.buyerCompany} onChange={update} maxLength={100} autoComplete="organization" /></label>

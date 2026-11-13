@@ -1,9 +1,9 @@
 import { cookies } from 'next/headers';
 import { isSafePathSegments } from '@/lib/safePathSegments';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.SERVER_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-if (!process.env.NEXT_PUBLIC_API_URL) {
+if (!process.env.SERVER_API_URL && !process.env.NEXT_PUBLIC_API_URL) {
   console.error(
     '[seller proxy] NEXT_PUBLIC_API_URL is not set — falling back to http://localhost:5000. ' +
     'Set this explicitly in production; requests will simply fail (not silently succeed) if the backend is unreachable.'
@@ -56,6 +56,7 @@ async function proxy(request, { params }) {
   const init = {
     method: request.method,
     headers,
+    cache: 'no-store',
   };
 
   if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -71,7 +72,7 @@ async function proxy(request, { params }) {
   try {
     const res = await fetch(targetUrl, init);
     const data = await res.json();
-    return Response.json(data, { status: res.status });
+    return Response.json(data, { status: res.status, headers: { 'Cache-Control': 'no-store' } });
   } catch (netErr) {
     console.error(`[seller proxy] Backend at ${targetUrl} unreachable or returned a non-JSON response:`, netErr.message);
     return Response.json({ success: false, message: 'Seller service unavailable. Please try again shortly.' }, { status: 502 });

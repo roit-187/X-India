@@ -16,12 +16,16 @@ const ALERT_TYPES = [
   { key: 'SUSPICIOUS_ACTIVITY', label: 'Suspicious Activity' },
   { key: 'PAYMENT_DISPUTE', label: 'Payment Dispute' },
   { key: 'CONTACT_INQUIRY', label: 'Contact Inquiries' },
+  { key: 'PORTFOLIO_DESIGN_REQUEST', label: 'Portfolio Requests' },
+  { key: 'PORTFOLIO_RFQ', label: 'Portfolio RFQs' },
 ];
 
 // Issue #19: Operational filter chips replacing the cluttered 10-item dropdown
 const FILTER_CHIPS = [
   { key: '', label: 'All Alerts', icon: '📋', types: [] },
   { key: 'CONTACT_INQUIRY', label: 'Contact Inquiries', icon: '📬', types: ['CONTACT_INQUIRY'] },
+  { key: 'PORTFOLIO_DESIGN_REQUEST', label: 'Portfolio Requests', icon: '🌐', types: ['PORTFOLIO_DESIGN_REQUEST'] },
+  { key: 'PORTFOLIO_RFQ', label: 'Portfolio RFQs', icon: '🛍️', types: ['PORTFOLIO_RFQ'] },
   { key: 'COMPLAINT', label: 'Complaints', icon: '⚠️', types: ['COMPLAINT'] },
   { key: 'FLAG', label: 'Reports', icon: '🚩', types: ['FLAG', 'SUSPICIOUS_ACTIVITY'] },
   { key: 'MEETING_REQUEST', label: 'Visit Requests', icon: '🤝', types: ['MEETING_REQUEST'] },
@@ -54,6 +58,8 @@ const TYPE_ICONS = {
   SUSPICIOUS_ACTIVITY:    '🔐',
   PAYMENT_DISPUTE:        '💳',
   CONTACT_INQUIRY:        '📬',
+  PORTFOLIO_DESIGN_REQUEST: '🌐',
+  PORTFOLIO_RFQ: '🛍️',
 };
 
 const STATUS_COLORS = {
@@ -155,6 +161,41 @@ function AlertDetail({ alert, onClose, onStatusChange }) {
                 <div><span style={{ color: '#64748B' }}>Phone:</span> {alert.metadata.phone ? <a href={`tel:${String(alert.metadata.phone).replace(/[^0-9+]/g, '')}`} style={{ color: '#2563EB', fontWeight: 600 }}>{alert.metadata.phone}</a> : <span style={{ color: '#94A3B8' }}>Not provided</span>}</div>
                 <div><span style={{ color: '#64748B' }}>Subject:</span> <strong>{alert.metadata.subject || 'General'}</strong></div>
               </div>
+            </div>
+          )}
+
+          {alert.type === 'PORTFOLIO_DESIGN_REQUEST' && alert.metadata && (
+            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '14px 16px', marginBottom: 16, fontSize: 13 }}>
+              <div style={{ fontWeight: 700, marginBottom: 10, color: '#0F172A' }}>Custom Website Request</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px 16px', color: '#334155' }}>
+                <div><span style={{ color: '#64748B' }}>Seller:</span> <strong>{alert.metadata.sellerName || 'N/A'}</strong></div>
+                <div><span style={{ color: '#64748B' }}>Displayed fixed price:</span> <strong>{alert.metadata.offerAmount != null ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: alert.metadata.offerCurrency || 'INR', maximumFractionDigits: 0 }).format(Number(alert.metadata.offerAmount)) : 'N/A'}</strong></div>
+                <div><span style={{ color: '#64748B' }}>Phone:</span> {alert.metadata.sellerPhone ? <a href={`tel:${String(alert.metadata.sellerPhone).replace(/[^0-9+]/g, '')}`}>{alert.metadata.sellerPhone}</a> : 'Not provided'}</div>
+                <div><span style={{ color: '#64748B' }}>Email:</span> {alert.metadata.sellerEmail ? <a href={`mailto:${encodeURIComponent(alert.metadata.sellerEmail)}`}>{alert.metadata.sellerEmail}</a> : 'Not provided'}</div>
+              </div>
+              {alert.metadata.sellerPhone && (
+                <a href={`https://wa.me/${String(alert.metadata.sellerPhone).replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', marginTop: 12, color: '#047857', fontWeight: 700 }}>Contact seller on WhatsApp ↗</a>
+              )}
+              {alert.relatedEntityId && (
+                <div><a href={`/admin/manufacturers/${alert.relatedEntityId}`} style={{ display: 'inline-flex', marginTop: 10, color: '#2563EB', fontWeight: 700 }}>Open seller profile ↗</a></div>
+              )}
+            </div>
+          )}
+
+          {alert.type === 'PORTFOLIO_RFQ' && alert.metadata && (
+            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '14px 16px', marginBottom: 16, fontSize: 13 }}>
+              <div style={{ fontWeight: 700, marginBottom: 10, color: '#0F172A' }}>Portfolio buyer inquiry</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px 16px', color: '#334155' }}>
+                <div><span style={{ color: '#64748B' }}>Buyer:</span> <strong>{alert.metadata.buyerName || 'N/A'}</strong></div>
+                <div><span style={{ color: '#64748B' }}>Phone:</span> {alert.metadata.buyerPhone ? <a href={`tel:${String(alert.metadata.buyerPhone).replace(/[^0-9+]/g, '')}`}>{alert.metadata.buyerPhone}</a> : 'N/A'}</div>
+                <div><span style={{ color: '#64748B' }}>Email:</span> {alert.metadata.buyerEmail ? <a href={`mailto:${encodeURIComponent(alert.metadata.buyerEmail)}`}>{alert.metadata.buyerEmail}</a> : 'Not provided'}</div>
+                <div><span style={{ color: '#64748B' }}>Company:</span> {alert.metadata.buyerCompany || 'Individual'}</div>
+                <div><span style={{ color: '#64748B' }}>Product:</span> <strong>{alert.metadata.productName || alert.metadata.productRequirement || 'N/A'}</strong></div>
+                <div><span style={{ color: '#64748B' }}>Quantity:</span> {alert.metadata.orderQty || 'N/A'}</div>
+                <div><span style={{ color: '#64748B' }}>Timeline:</span> {alert.metadata.timeline || 'N/A'}</div>
+              </div>
+              {alert.metadata.productRequirement && <p style={{ margin: '10px 0 0', color: '#334155' }}>Requirement: {alert.metadata.productRequirement}</p>}
+              {alert.relatedEntityId && <a href={`/admin/manufacturers/${alert.relatedEntityId}`} style={{ display: 'inline-flex', marginTop: 10, color: '#2563EB', fontWeight: 700 }}>Open seller profile ↗</a>}
             </div>
           )}
 

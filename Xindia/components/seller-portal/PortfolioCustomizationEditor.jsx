@@ -2,19 +2,18 @@
 
 import { useEffect, useState } from 'react';
 
-const DEFAULT_ORDER = ['products', 'opportunities', 'ratings', 'contact', 'overview', 'factory'];
+const DEFAULT_ORDER = ['products', 'opportunities', 'overview', 'factory', 'ratings', 'contact'];
 const SECTION_LABELS = {
-  products: 'Products · QR landing page',
-  opportunities: 'Business opportunities · Products page',
-  ratings: 'Reviews · Products page',
-  contact: 'Contact & RFQ · Products page',
-  overview: 'Company overview · Home page',
-  factory: 'Factory details · Home page',
+  products: 'Products · first on entry',
+  opportunities: 'Business opportunities · after products',
+  ratings: 'Reviews',
+  contact: 'Contact & RFQ',
+  overview: 'Company overview · after opportunities',
+  factory: 'Factory details',
 };
 const OPTIONAL_SECTIONS = [
   ['factory', 'Factory and capabilities'],
   ['ratings', 'Reviews'],
-  ['opportunities', 'Business opportunities'],
 ];
 const THEMES = [
   ['industrial', 'Industrial navy'],
@@ -105,7 +104,7 @@ export default function PortfolioCustomizationEditor({ customization, portfolio,
     <section className="seller-card" style={{ marginBottom: 24 }}>
       <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 800, color: 'var(--sp-text)' }}>Customize your storefront</h3>
       <p style={{ margin: '0 0 18px', fontSize: 13, color: 'var(--sp-text-med)' }}>
-        Choose a visual style, arrange sections across the Products and Home pages, and hide optional sections. Home, Products, and Contact stay available. QR scans open Products.
+        Choose a visual style and arrange optional sections. Products, active opportunities, and company overview stay in that order. Home and Contact stay available. QR scans open Products.
       </p>
       <label style={{ display: 'grid', gap: 6, maxWidth: 360, fontSize: 13, fontWeight: 650 }}>
         Theme
@@ -115,8 +114,8 @@ export default function PortfolioCustomizationEditor({ customization, portfolio,
       </label>
       <h4 style={{ margin: '20px 0 8px', fontSize: 13 }}>Section order</h4>
       {[
-        ['Products page', ['products', 'opportunities', 'ratings', 'contact']],
-        ['Home page details', ['overview', 'factory']],
+        ['Always first', ['products', 'opportunities', 'overview']],
+        ['Additional details', ['factory', 'ratings', 'contact']],
       ].map(([groupLabel, pageSections]) => {
         const groupOrder = order.filter((id) => pageSections.includes(id));
         return (
@@ -127,8 +126,8 @@ export default function PortfolioCustomizationEditor({ customization, portfolio,
                 <li key={id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '6px 0' }}>
                   <span>{SECTION_LABELS[id] || id[0].toUpperCase() + id.slice(1)}</span>
                   <span style={{ display: 'flex', gap: 6 }}>
-                    <button type="button" className="seller-btn seller-btn-secondary" disabled={index === 0} onClick={() => moveWithinPage(id, -1, pageSections)} aria-label={`Move ${id} up`}>↑</button>
-                    <button type="button" className="seller-btn seller-btn-secondary" disabled={index === groupOrder.length - 1} onClick={() => moveWithinPage(id, 1, pageSections)} aria-label={`Move ${id} down`}>↓</button>
+                    <button type="button" className="seller-btn seller-btn-secondary" disabled={groupLabel === 'Always first' || index === 0} onClick={() => moveWithinPage(id, -1, pageSections)} aria-label={`Move ${id} up`}>↑</button>
+                    <button type="button" className="seller-btn seller-btn-secondary" disabled={groupLabel === 'Always first' || index === groupOrder.length - 1} onClick={() => moveWithinPage(id, 1, pageSections)} aria-label={`Move ${id} down`}>↓</button>
                   </span>
                 </li>
               ))}

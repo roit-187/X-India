@@ -45,13 +45,10 @@ export default function PortfolioStickyNav({ seller, slug, currentPage = 'catalo
 
       // Scroll Spy detection
       const scrollPosition = scrollY + 200;
-      for (let i = SECTIONS.length - 1; i >= 0; i--) {
-        const sec = document.getElementById(SECTIONS[i].id);
-        if (sec && sec.offsetTop <= scrollPosition) {
-          setActiveSection(SECTIONS[i].id);
-          break;
-        }
-      }
+      const nearest = SECTIONS.map(({ id }) => ({ id, element: document.getElementById(id) }))
+        .filter(({ element }) => element && element.getBoundingClientRect().top + scrollY <= scrollPosition)
+        .sort((a, b) => b.element.getBoundingClientRect().top - a.element.getBoundingClientRect().top)[0];
+      if (nearest) setActiveSection(nearest.id);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -71,7 +68,8 @@ export default function PortfolioStickyNav({ seller, slug, currentPage = 'catalo
   ].filter((section, index, all) => section && all.findIndex((item) => item?.id === section.id) === index);
   const visibleSections = [
     ...fixedSections,
-    ...orderedOptionalSections.filter((section) => !hiddenSections.has(section.id)),
+    ...orderedOptionalSections.filter((section) => section.id === 'opportunities'),
+    ...orderedOptionalSections.filter((section) => section.id !== 'opportunities' && !hiddenSections.has(section.id)),
   ].filter((section) => {
     if (section.id === 'factory') return hasFactoryContent;
     if (section.id === 'opportunities') return totalOpportunities > 0;
@@ -124,7 +122,7 @@ export default function PortfolioStickyNav({ seller, slug, currentPage = 'catalo
         <div className="portfolio-dock-tabs">
           {visibleSections.map((sec) => {
             const Icon = sec.icon;
-            const isActive = (sec.id === 'home' && currentPage === 'home') || (sec.id === 'products' && currentPage === 'catalog') || activeSection === sec.id;
+            const isActive = activeSection === sec.id;
 
             let count = null;
             if (sec.id === 'products' && totalProducts > 0) count = totalProducts;

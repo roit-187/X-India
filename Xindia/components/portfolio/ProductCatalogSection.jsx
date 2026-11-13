@@ -9,16 +9,14 @@ import {
   Search,
   Sparkles,
   X,
-  MessageSquare,
-  CheckCircle2,
   Maximize2,
   FileText,
 } from 'lucide-react';
 import { resolveImageUrl } from '@/lib/image';
-import ProductDetailModal from './ProductDetailModal';
 import PortfolioImage from './PortfolioImage';
 import { getPortfolioVerificationSignals } from '@/lib/portfolioTrust';
-import { openProductInApp, trackPortfolioEvent } from '@/lib/portfolioAnalytics';
+import { trackPortfolioEvent } from '@/lib/portfolioAnalytics';
+import './PortfolioCatalog.css';
 
 export default function ProductCatalogSection({ products = [], totalProducts = products.length, categories: initialCategories = [], seller }) {
   const [catalogProducts, setCatalogProducts] = useState(products);
@@ -31,11 +29,6 @@ export default function ProductCatalogSection({ products = [], totalProducts = p
   const [loadMoreError, setLoadMoreError] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDetailProduct, setSelectedDetailProduct] = useState(null);
-  const [sampleModalProduct, setSampleModalProduct] = useState(null);
-  const [sampleQty, setSampleQty] = useState('1 Sample Unit');
-  const [customSampleQty, setCustomSampleQty] = useState('');
-  const [sampleNotes, setSampleNotes] = useState('');
   const firstFilterEffect = useRef(true);
 
   useEffect(() => {
@@ -130,25 +123,13 @@ export default function ProductCatalogSection({ products = [], totalProducts = p
 
   const filteredProducts = catalogProducts;
 
-  const handleOpenSampleModal = (product) => {
-    setSampleModalProduct(product);
-    setSampleQty('1 Sample Unit');
-    setCustomSampleQty('');
-    setSampleNotes('');
-  };
-
-  const handleSendSampleRequest = (e) => {
-    e.preventDefault();
-    const requirement = [
-      `Sample request for ${sampleModalProduct.name}`,
-      `Requested quantity: ${sampleQty === 'Custom Quantity' ? customSampleQty.trim() || 'To be confirmed' : sampleQty}`,
-      sampleNotes.trim() ? `Requirements: ${sampleNotes.trim()}` : '',
-    ].filter(Boolean).join('\n');
-    window.dispatchEvent(new CustomEvent('xindia:portfolio-rfq-prefill', {
-      detail: { requirement },
-    }));
-    setSampleModalProduct(null);
-    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const openProductDetails = (product) => {
+    trackPortfolioEvent(seller?.slug, 'product_click', { productId: product._id });
+    const source = new URLSearchParams(window.location.search).get('src');
+    const params = new URLSearchParams();
+    if (['qr', 'direct_share', 'app', 'search'].includes(source)) params.set('src', source);
+    const query = params.toString();
+    window.location.assign(`/product/${encodeURIComponent(product._id)}${query ? `?${query}` : ''}`);
   };
 
   const itemVariants = {
@@ -281,9 +262,9 @@ export default function ProductCatalogSection({ products = [], totalProducts = p
             }}
           >
             {filteredProducts.map((p) => {
-              const custOpts = p.customizationOptions || {};
-              const hasLogo = custOpts.logoCustomization || custOpts.customLogo;
-              const hasPkg = custOpts.packagingCustomization || custOpts.customPackaging;
+              const custOpts = p.customizationCapabilities || {};
+              const hasLogo = custOpts.hasLogoPrinting;
+              const hasPkg = custOpts.hasCustomPackaging;
               const resolvedImg = resolveImageUrl(p.imageUrl || p.images?.[0]);
 
               return (
@@ -298,8 +279,8 @@ export default function ProductCatalogSection({ products = [], totalProducts = p
                     <button
                       type="button"
                       className="portfolio-product-image-open"
-                      onClick={() => openProductInApp(p._id, seller?.slug)}
-                      aria-label={`Open ${p.name} in XINDIA`}
+                      onClick={() => openProductDetails(p)}
+                      aria-label={`View ${p.name}`}
                     >
                       <PortfolioImage
                         src={resolvedImg}
@@ -327,11 +308,11 @@ export default function ProductCatalogSection({ products = [], totalProducts = p
                         className="portfolio-sample-overlay-btn"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleOpenSampleModal(p);
+                          openProductDetails(p);
                         }}
                       >
                         <Sparkles size={12} />
-                        <span>Request Sample</span>
+                        <span>Samples available</span>
                       </button>
                     )}
                   </div>
@@ -341,12 +322,18 @@ export default function ProductCatalogSection({ products = [], totalProducts = p
                       <button
                         type="button"
                         className="portfolio-product-name-btn"
-                        onClick={() => openProductInApp(p._id, seller?.slug)}
-                        aria-label={`Open ${p.name} in XINDIA`}
+                        onClick={() => openProductDetails(p)}
+                        aria-label={`View ${p.name}`}
                       >
                         {p.name}
                       </button>
                     </h3>
+
+                    {p.description && (
+                      <p className="portfolio-product-description-preview" title={p.description}>
+                        {p.description}
+                      </p>
+                    )}
 
                     <div className="portfolio-product-price-row">
                       <div className="portfolio-product-price">
@@ -383,10 +370,10 @@ export default function ProductCatalogSection({ products = [], totalProducts = p
                         className="portfolio-product-quick-rfq-btn"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedDetailProduct(p);
+                          openProductDetails(p);
                         }}
                       >
-                        Details & RFQ
+                        View details
                       </button>
                     </div>
                   </div>
@@ -407,96 +394,7 @@ export default function ProductCatalogSection({ products = [], totalProducts = p
         {loadMoreError && <p role="status" style={{ textAlign: 'center', color: '#B91C1C', marginTop: 12 }}>{loadMoreError}</p>}
       </div>
 
-      {/* ─── Sample Request Modal ───────────────────────────────────────────── */}
-      {sampleModalProduct && (
-        <div className="portfolio-modal-backdrop" onClick={() => setSampleModalProduct(null)}>
-          <div className="portfolio-modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="portfolio-modal-head">
-              <div>
-                <span className="portfolio-modal-eyebrow">Sample Request</span>
-                <h3 className="portfolio-modal-title">{sampleModalProduct.name}</h3>
-              </div>
-              <button
-                type="button"
-                className="portfolio-modal-close"
-                onClick={() => setSampleModalProduct(null)}
-              >
-                <X size={18} />
-              </button>
-            </div>
 
-            <form onSubmit={handleSendSampleRequest} className="portfolio-modal-form">
-              <div className="portfolio-modal-product-summary">
-                <div>
-                  <div className="portfolio-modal-price">
-                    {sampleModalProduct.samplePolicy?.price > 0
-                      ? `Sample price: ₹${sampleModalProduct.samplePolicy.price}`
-                      : 'Ask seller for sample pricing'}
-                  </div>
-                  <div className="portfolio-modal-moq">{sampleModalProduct.moq ? `Minimum order: ${sampleModalProduct.moq}` : 'Contact the seller to confirm minimum order.'}</div>
-                  {sampleModalProduct.samplePolicy?.leadTimeDays && (
-                    <div className="portfolio-modal-delivery">Seller-provided sample dispatch estimate: {sampleModalProduct.samplePolicy.leadTimeDays} days</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="portfolio-form-group">
-                <label className="portfolio-form-label">Sample Quantity Required</label>
-                <select
-                  className="portfolio-form-input"
-                  value={sampleQty}
-                  onChange={(e) => setSampleQty(e.target.value)}
-                >
-                  <option value="1 Sample Unit">1 Sample Unit (Prototype Check)</option>
-                  <option value="2-3 Sample Units">2-3 Sample Units (Multi-variant test)</option>
-                  <option value="Trial Batch (5-10 units)">Trial Batch (5-10 units)</option>
-                  <option value="Custom Quantity">Custom Quantity</option>
-                </select>
-              </div>
-
-              {sampleQty === 'Custom Quantity' && (
-                <div className="portfolio-form-group">
-                  <label className="portfolio-form-label" htmlFor="portfolio-custom-sample-quantity">Preferred quantity</label>
-                  <input
-                    id="portfolio-custom-sample-quantity"
-                    className="portfolio-form-input"
-                    value={customSampleQty}
-                    onChange={(event) => setCustomSampleQty(event.target.value)}
-                    maxLength={50}
-                    placeholder="Enter your preferred quantity"
-                  />
-                </div>
-              )}
-
-              <div className="portfolio-form-group">
-                <label className="portfolio-form-label">Customization / Requirements Note</label>
-                <textarea
-                  className="portfolio-form-textarea"
-                  rows={3}
-                  value={sampleNotes}
-                  onChange={(e) => setSampleNotes(e.target.value)}
-                  placeholder="e.g. Need logo printed on sample, specific color code, custom packaging test..."
-                />
-              </div>
-
-              <div className="portfolio-modal-actions">
-                <button type="submit" className="portfolio-modal-submit-btn">
-                  <MessageSquare size={16} />
-                  <span>Continue to RFQ form</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Comprehensive Product Card & Carousel Modal ────────────── */}
-      <ProductDetailModal
-        product={selectedDetailProduct}
-        seller={seller}
-        isOpen={Boolean(selectedDetailProduct)}
-        onClose={() => setSelectedDetailProduct(null)}
-      />
     </section>
   );
 }

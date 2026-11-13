@@ -5,16 +5,23 @@ const API_URL = typeof window !== 'undefined'
 async function apiFetch(path, { revalidate = 3600, tags, ...init } = {}) {
   return fetch(`${API_URL}${path}`, {
     ...init,
-    next: { revalidate, ...(tags ? { tags } : {}) },
+    ...(init.cache === 'no-store' ? {} : { next: { revalidate, ...(tags ? { tags } : {}) } }),
   });
 }
 
 export async function getSeller(slug) {
-  const res = await apiFetch(`/api/public/sellers/${slug}`, { revalidate: 60 });
+  const res = await apiFetch(`/api/public/sellers/${slug}`, { cache: 'no-store' });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('Failed to load seller');
   const data = await res.json();
   return data.seller;
+}
+
+export async function getSellerDestination(slug) {
+  const res = await fetch(`${API_URL}/api/public/sellers/${encodeURIComponent(slug)}/destination`, { cache: 'no-store' });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('Could not resolve this portfolio. Please try again.');
+  return res.json();
 }
 
 export async function getSellerProducts(slug, { page = 1, limit = 20, category } = {}) {
@@ -22,49 +29,43 @@ export async function getSellerProducts(slug, { page = 1, limit = 20, category }
   params.set('limit', String(limit));
   if (category && category !== 'all') params.set('category', category);
   const res = await apiFetch(`/api/public/sellers/${slug}/products?${params.toString()}`, {
-    revalidate: 60,
-    tags: [`products-${slug}`],
+    cache: 'no-store',
   });
-  if (!res.ok) return { products: [], total: 0, totalPages: 1 };
+  if (!res.ok) throw new Error('Could not load seller products. Please try again.');
   return res.json();
 }
 
 export async function getPublicProduct(id) {
   if (!/^[a-f\d]{24}$/i.test(String(id || ''))) return null;
-  try {
-    const res = await apiFetch(`/api/products/${encodeURIComponent(id)}`, { revalidate: 60 });
-    if (res.status === 404) return null;
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data?.success ? data.product || null : null;
-  } catch {
-    return null;
-  }
+  const res = await apiFetch(`/api/public/products/${encodeURIComponent(id)}`, { cache: 'no-store' });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('Could not load this product. Please try again.');
+  const data = await res.json();
+  return data?.success ? data.product || null : null;
 }
 
 export async function getSellerReviews(slug, { page = 1 } = {}) {
-  // HIGH-LOAD: Replaced cache: 'no-store' with 60s ISR revalidation and tags.
-  // This prevents Next.js from bailing out of static generation for the entire showroom page.
+  // Seller entitlement may change immediately when an admin edits plan validity.
   const res = await apiFetch(`/api/public/sellers/${slug}/reviews?page=${page}`, {
-    revalidate: 60,
-    tags: [`reviews-${slug}`],
+    cache: 'no-store',
   });
   if (!res.ok) return { reviews: [], averageRating: 0, totalReviews: 0, totalPages: 1 };
   return res.json();
 }
 
 export async function getSellerOpportunity(slug) {
-  const res = await apiFetch(`/api/public/sellers/${slug}/opportunity`);
+  const res = await apiFetch(`/api/public/sellers/${slug}/opportunity`, { cache: 'no-store' });
   if (!res.ok) return null;
   const data = await res.json();
   return data.opportunity;
 }
 
 export async function getSellerOpportunities(slug) {
-  const res = await apiFetch(`/api/public/sellers/${slug}/opportunities`);
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.opportunities || [];
+  const res = await apiFetch(`/api/public/sellers/${encodeURIComponent(slug)}/opportunities`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error('Could not load seller opportunities.');
+  return res.json();
 }
 
 export async function submitSellerReview(slug, payload) {

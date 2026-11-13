@@ -55,6 +55,10 @@ export function openProductInApp(productId, slug) {
 
 export function openSellerInApp(sellerId, slug, intent = 'contact') {
   if (!sellerId || typeof window === 'undefined') return false;
+  if (intent === 'contact' && document.getElementById('contact')) {
+    window.dispatchEvent(new CustomEvent('xindia:portfolio-contact', { detail: { slug } }));
+    return true;
+  }
   if (!/Android/i.test(window.navigator.userAgent)) return false;
 
   trackPortfolioEvent(slug, 'app_open');

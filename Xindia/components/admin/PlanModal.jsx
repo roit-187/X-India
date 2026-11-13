@@ -19,10 +19,12 @@ export default function PlanModal({ plan, isNew, onClose, onSave }) {
     order: 99,
     // Monthly
     monthlyPrice: '',
+    monthlyValidityDays: 30,
     crossedMonthlyPrice: '',
     showMonthlyCrossedPrice: false,
     // Yearly
     yearlyPrice: '',
+    yearlyValidityDays: 365,
     crossedYearlyPrice: '',
     showYearlyCrossedPrice: false,
     // Features
@@ -47,9 +49,11 @@ export default function PlanModal({ plan, isNew, onClose, onSave }) {
         isMostPopular: plan.isMostPopular || false,
         order: plan.order ?? 99,
         monthlyPrice: plan.monthlyPrice ?? '',
+        monthlyValidityDays: plan.monthlyValidityDays ?? 30,
         crossedMonthlyPrice: plan.crossedMonthlyPrice ?? '',
         showMonthlyCrossedPrice: plan.showMonthlyCrossedPrice || false,
         yearlyPrice: plan.yearlyPrice ?? '',
+        yearlyValidityDays: plan.yearlyValidityDays ?? 365,
         crossedYearlyPrice: plan.crossedYearlyPrice ?? '',
         showYearlyCrossedPrice: plan.showYearlyCrossedPrice || false,
         features: Array.isArray(plan.features) ? [...plan.features] : [],
@@ -95,13 +99,16 @@ export default function PlanModal({ plan, isNew, onClose, onSave }) {
     setError('');
     if (!form.name.trim()) return setError('Plan name is required.');
     if (!form.key.trim()) return setError('Plan key is required.');
-    if (!form.monthlyPrice || !form.yearlyPrice) return setError('Both monthly and yearly prices are required.');
+    if (form.monthlyPrice === '' || form.yearlyPrice === '') return setError('Both option prices are required.');
 
+    if (![form.monthlyValidityDays, form.yearlyValidityDays].every((value) => Number.isInteger(Number(value)) && Number(value) > 0)) return setError('Validity must be a positive whole number of days.');
     setSaving(true);
     try {
       const body = {
         ...form,
         monthlyPrice: parseFloat(form.monthlyPrice),
+        monthlyValidityDays: Number(form.monthlyValidityDays),
+        yearlyValidityDays: Number(form.yearlyValidityDays),
         yearlyPrice: parseFloat(form.yearlyPrice),
         crossedMonthlyPrice: form.crossedMonthlyPrice !== '' ? parseFloat(form.crossedMonthlyPrice) : null,
         crossedYearlyPrice: form.crossedYearlyPrice !== '' ? parseFloat(form.crossedYearlyPrice) : null,
@@ -204,12 +211,15 @@ export default function PlanModal({ plan, isNew, onClose, onSave }) {
 
           {/* ─── Monthly Pricing ─── */}
           <section>
-            <SectionLabel>📅 Monthly Pricing</SectionLabel>
+            <SectionLabel>Option A — price and validity</SectionLabel>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <FormField label="Monthly Real Price (₹) *">
+              <FormField label="Option A validity (days) *">
+                <input type="number" value={form.monthlyValidityDays} onChange={(e) => set('monthlyValidityDays', e.target.value)} style={inputStyle} min={1} step={1} required />
+              </FormField>
+              <FormField label="Option A price (₹) *">
                 <input type="number" value={form.monthlyPrice} onChange={(e) => set('monthlyPrice', e.target.value)} placeholder="e.g. 1999" style={inputStyle} min={0} required />
               </FormField>
-              <FormField label={`Monthly Crossed Price (₹)${monthlyDiscount ? ` — ${monthlyDiscount}% OFF` : ''}`}>
+              <FormField label={`Option A crossed price (₹)${monthlyDiscount ? ` — ${monthlyDiscount}% OFF` : ''}`}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input type="number" value={form.crossedMonthlyPrice} onChange={(e) => set('crossedMonthlyPrice', e.target.value)} placeholder="e.g. 3999" style={{ ...inputStyle, flex: 1 }} min={0} />
                   <Toggle checked={form.showMonthlyCrossedPrice} onChange={(v) => set('showMonthlyCrossedPrice', v)} />
@@ -221,12 +231,15 @@ export default function PlanModal({ plan, isNew, onClose, onSave }) {
 
           {/* ─── Yearly Pricing ─── */}
           <section>
-            <SectionLabel>🗓️ Yearly Pricing</SectionLabel>
+            <SectionLabel>Option B — price and validity</SectionLabel>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <FormField label="Yearly Real Price (₹) *">
+              <FormField label="Option B validity (days) *">
+                <input type="number" value={form.yearlyValidityDays} onChange={(e) => set('yearlyValidityDays', e.target.value)} style={inputStyle} min={1} step={1} required />
+              </FormField>
+              <FormField label="Option B price (₹) *">
                 <input type="number" value={form.yearlyPrice} onChange={(e) => set('yearlyPrice', e.target.value)} placeholder="e.g. 11994" style={inputStyle} min={0} required />
               </FormField>
-              <FormField label={`Yearly Crossed Price (₹)${yearlyDiscount ? ` — ${yearlyDiscount}% OFF` : ''}`}>
+              <FormField label={`Option B crossed price (₹)${yearlyDiscount ? ` — ${yearlyDiscount}% OFF` : ''}`}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input type="number" value={form.crossedYearlyPrice} onChange={(e) => set('crossedYearlyPrice', e.target.value)} placeholder="e.g. 23994" style={{ ...inputStyle, flex: 1 }} min={0} />
                   <Toggle checked={form.showYearlyCrossedPrice} onChange={(v) => set('showYearlyCrossedPrice', v)} />
@@ -290,6 +303,8 @@ export default function PlanModal({ plan, isNew, onClose, onSave }) {
               </button>
             </div>
           </section>
+
+          {!isNew && <p style={{ color: '#92400E', background: '#FFFBEB', padding: 12, borderRadius: 10, fontSize: 12 }}>Validity changes apply to existing subscriptions from their original period start dates and move upcoming plan dates. Reducing validity can immediately end access and grace. Paid amounts stay unchanged.</p>}
 
           {/* ─── Error & Submit ─── */}
           {error && <p style={{ color: '#EF4444', fontSize: 13, margin: 0 }}>{error}</p>}

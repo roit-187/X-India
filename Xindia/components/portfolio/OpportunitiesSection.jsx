@@ -27,13 +27,31 @@ import YouTubePlayer from '@/components/common/YouTubePlayer';
 import { trackPortfolioEvent } from '@/lib/portfolioAnalytics';
 import PortfolioImage from './PortfolioImage';
 
-export default function OpportunitiesSection({ opportunities = [], seller }) {
+export default function OpportunitiesSection({ opportunities = [], totalPages = 1, seller }) {
+  const [rows, setRows] = useState(opportunities);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
   const [lightboxList, setLightboxList] = useState([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
   // Hide entire section if no opportunities have been added
-  if (!opportunities || opportunities.length === 0) return null;
+  if (!rows || rows.length === 0) return null;
+
+  const loadMore = async () => {
+    if (loading || page >= totalPages) return;
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`/api/public/sellers/${encodeURIComponent(seller.slug)}/opportunities?page=${page + 1}&limit=12`);
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || 'Could not load opportunities.');
+      setRows((current) => [...current, ...(result.opportunities || []).filter((item) => !current.some((row) => row._id === item._id))]);
+      setPage(result.page);
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -74,6 +92,7 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
     window.dispatchEvent(new CustomEvent('xindia:portfolio-rfq-prefill', {
       detail: { requirement: `Business opportunity: ${op.title}` },
     }));
+    window.dispatchEvent(new CustomEvent('xindia:portfolio-contact', { detail: { slug: seller.slug } }));
     document.getElementById('contact')?.scrollIntoView({
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
       block: 'start',
@@ -107,7 +126,7 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
             visible: { transition: { staggerChildren: 0.08 } },
           }}
         >
-          {opportunities.map((op) => {
+          {rows.map((op) => {
             const mainImg = resolveImageUrl(op.imageUrl);
             const productPhotos = Array.isArray(op.productPhotos)
               ? op.productPhotos.map((p) => resolveImageUrl(p)).filter(Boolean)
@@ -166,7 +185,7 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
 
                     {/* Key Commercial Figure Cards */}
                     <div className="portfolio-opportunity-figures">
-                      {op.investment !== undefined && op.investment !== null && <div className="figure-card">
+                      {op.investment !== undefined && op.investment !== null && Number.isFinite(Number(op.investment)) && <div className="figure-card">
                         <div className="portfolio-opportunity-figure-label">Estimated Capital</div>
                         <div className="portfolio-opportunity-figure-value portfolio-mono" style={{ color: 'var(--p-primary)' }}>
                           ₹{Number(op.investment).toLocaleString('en-IN')}
@@ -183,7 +202,7 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
                       )}
 
                       {(op.profitRange || op.profitMargin) && <div className="figure-card">
-                        <div className="portfolio-opportunity-figure-label">Profit Margin</div>
+                        <div className="portfolio-opportunity-figure-label">Seller’s profit estimate</div>
                         <div className="portfolio-opportunity-figure-value" style={{ color: '#059669' }}>
                           {op.profitRange || op.profitMargin}
                         </div>
@@ -373,6 +392,8 @@ export default function OpportunitiesSection({ opportunities = [], seller }) {
             );
           })}
         </motion.div>
+        {page < totalPages && <button type="button" className="portfolio-rfq-badge-link" onClick={loadMore} disabled={loading} style={{ marginTop: 20 }}>{loading ? 'Loading…' : 'More opportunities'}</button>}
+        {error && <p role="alert">{error}</p>}
       </div>
 
       {/* ─── Fullscreen Photo Lightbox ──────────────────────────────────────── */}

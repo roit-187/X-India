@@ -21,6 +21,8 @@ async function proxy(request, { params }) {
   const init = {
     method: request.method,
     headers,
+    cache: 'no-store',
+    signal: AbortSignal.timeout(15000),
   };
 
   if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
@@ -32,7 +34,7 @@ async function proxy(request, { params }) {
   try {
     const res = await fetch(targetUrl, init);
     const data = await res.json();
-    return Response.json(data, { status: res.status });
+    return Response.json(data, { status: res.status, headers: { 'Cache-Control': res.headers.get('cache-control') || 'no-store' } });
   } catch (err) {
     console.error(`[public proxy] Error proxying ${request.method} /api/public/${path}:`, err.message);
     return Response.json({ success: false, message: 'Service unavailable' }, { status: 502 });

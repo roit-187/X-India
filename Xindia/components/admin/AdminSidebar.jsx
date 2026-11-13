@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Tag, Star, Settings, LogOut, UserCog, Shield, Bell, Receipt, Megaphone, ShieldCheck, Activity, MessageSquare, Sparkles, FileText, Wand2, Laptop } from 'lucide-react';
+import { LayoutDashboard, Factory, Users, Package, CreditCard, Coins, Tag, Star, Settings, LogOut, UserCog, Shield, Bell, Receipt, Megaphone, ShieldCheck, Activity, MessageSquare, Sparkles, FileText, Wand2, Laptop, Globe } from 'lucide-react';
 import SearchBar from './SearchBar';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
@@ -33,6 +33,8 @@ const ALL_LINKS = [
   { href: '/admin/activity',      label: 'Monitor Activity',      icon: Activity,        flag: 'super' },
   { href: '/admin/sessions',      label: 'Active Sessions',       icon: Laptop,          flag: 'always' },
   { href: '/admin/settings',      label: 'System & Server',       icon: Settings,        flag: 'super' },
+  { href: '/admin/portfolio-offer', label: 'Custom Website Offer', icon: Globe, flag: 'super' },
+  { href: '/admin/portfolio-requests', label: 'Portfolio Requests', icon: Globe, flag: 'manufacturer-edit' },
 ];
 
 const ROLE_LABELS = {
@@ -68,7 +70,7 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const {
     profile, role, isSuperAdmin,
-    canManageStaff, canManagePlans, canManageCredits, canManagePayments,
+    canManageStaff, canManagePlans, canManageCredits, canManagePayments, canEditManufacturers,
     loaded,
   } = useAdminPermissions();
 
@@ -99,6 +101,7 @@ export default function AdminSidebar() {
     if (flag === 'plans')    return canManagePlans;
     if (flag === 'credits')  return canManageCredits;
     if (flag === 'payments') return canManagePayments;
+    if (flag === 'manufacturer-edit') return canEditManufacturers;
     if (flag === 'super')    return isSuperAdmin;
     return false;
   });

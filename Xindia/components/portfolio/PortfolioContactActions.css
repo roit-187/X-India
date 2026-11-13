@@ -1,0 +1,13 @@
+.public-product-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 10px; }
+.public-product-primary { display: inline-flex; gap: 8px; min-height: 46px; align-items: center; justify-content: center; padding: 10px 18px; border: 0; border-radius: 10px; background: #102a56; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.public-choice-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 18px; background: rgba(15, 23, 42, .62); }
+.public-choice-dialog { position: relative; width: min(100%, 420px); padding: 26px; border-radius: 20px; background: #fff; box-shadow: 0 24px 70px rgba(0,0,0,.25); text-align: center; }
+.public-choice-close { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #f1f5f9; color: #475569; cursor: pointer; }
+.public-choice-icon { display: grid; place-items: center; width: 52px; height: 52px; margin: 0 auto 13px; border-radius: 16px; background: #eff6ff; color: #1d4ed8; }
+.public-choice-dialog h2 { margin: 0; color: #0f172a; font-size: 20px; line-height: 1.25; }
+.public-choice-dialog p { margin: 9px 0 18px; color: #64748b; font-size: 13px; line-height: 1.55; }
+.public-choice-primary, .public-choice-secondary { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 46px; margin-top: 8px; border-radius: 10px; font: inherit; font-weight: 750; text-decoration: none; cursor: pointer; }
+.public-choice-primary { border: 0; background: #102a56; color: #fff; }
+.public-choice-secondary { border: 1px solid #cbd5e1; background: #fff; color: #334155; }
+
+.public-choice-dialog { max-height: calc(100dvh - 36px); overflow-y: auto; }

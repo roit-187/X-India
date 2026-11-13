@@ -3,6 +3,8 @@ import '../../portfolio.css';
 import { getSeller } from '@/lib/api';
 import { PortfolioMotionProvider } from '@/components/portfolio/PortfolioMotionProvider';
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata({ params }) {
   const seller = await getSeller(params.slug);
   if (!seller) return { title: 'Seller Not Found — XINDIA' };

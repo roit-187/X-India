@@ -1,8 +1,8 @@
 import { cookies } from 'next/headers';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.SERVER_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-if (!process.env.NEXT_PUBLIC_API_URL) {
+if (!process.env.SERVER_API_URL && !process.env.NEXT_PUBLIC_API_URL) {
   console.error(
     '[admin-login] NEXT_PUBLIC_API_URL is not set — falling back to http://localhost:5000. ' +
     'Set this explicitly in production; requests will simply fail (not silently authenticate) if the backend is unreachable.'

@@ -4,6 +4,7 @@ import {
   getSellerProducts,
   getSellerReviews,
   getSellerOpportunities,
+  getSellerDestination,
 } from '@/lib/api';
 
 import PortfolioStickyNav from '@/components/portfolio/PortfolioStickyNav';
@@ -21,9 +22,19 @@ import PortfolioViewTracker from '@/components/portfolio/PortfolioViewTracker';
 import PortfolioInitialScroll from '@/components/portfolio/PortfolioInitialScroll';
 import PortfolioRouteMotion from '@/components/portfolio/PortfolioMotionProvider';
 
-export const revalidate = 60; // ISR revalidate every 60 seconds
+// Subscription validity and custom destinations must be checked for every request.
+export const dynamic = 'force-dynamic';
 
 export default async function SellerDigitalShowroomPage({ params, searchParams }) {
+  const resolved = await getSellerDestination(params.slug);
+  if (!resolved) notFound();
+  if (resolved.destination && searchParams?.standard !== '1') {
+    const destination = new URL(resolved.destination);
+    if (typeof searchParams?.src === 'string' && ['qr', 'direct_share', 'app', 'search'].includes(searchParams.src)) {
+      destination.searchParams.set('src', searchParams.src);
+    }
+    redirect(destination.href);
+  }
   const seller = await getSeller(params.slug);
   if (!seller) notFound();
 
@@ -36,11 +47,12 @@ export default async function SellerDigitalShowroomPage({ params, searchParams }
   }
 
   // Parallel data fetching for blazing fast performance
-  const [productsData, reviewsData, opportunities] = await Promise.all([
+  const [productsData, reviewsData, opportunityData] = await Promise.all([
     getSellerProducts(params.slug, { page: 1, limit: 20 }),
     getSellerReviews(params.slug, { page: 1 }),
     getSellerOpportunities(params.slug),
   ]);
+  const opportunities = opportunityData.opportunities || [];
 
   const products = productsData?.products || [];
   const reviews = reviewsData?.reviews || [];
@@ -67,19 +79,20 @@ export default async function SellerDigitalShowroomPage({ params, searchParams }
       />
     ) : null,
     opportunities: opportunities.length > 0 ? (
-      <OpportunitiesSection opportunities={opportunities} seller={seller} />
+      <OpportunitiesSection opportunities={opportunities} totalPages={opportunityData.totalPages} seller={seller} />
     ) : null,
     factory: <FactorySection seller={seller} />,
     contact: <ContactRFQSection seller={seller} />,
   };
-  const defaultSectionOrder = ['overview', 'products', 'opportunities', 'ratings', 'factory', 'contact'];
+  const defaultSectionOrder = ['products', 'opportunities', 'overview', 'factory', 'ratings', 'contact'];
   const hiddenSections = new Set(customization.hiddenSections || []);
   const savedSectionOrder = Array.isArray(customization.sectionOrder)
     ? customization.sectionOrder.filter((id) => defaultSectionOrder.includes(id))
     : [];
-  const sectionOrder = savedSectionOrder.length
+  const requestedOrder = savedSectionOrder.length
     ? [...savedSectionOrder, ...defaultSectionOrder.filter((id) => !savedSectionOrder.includes(id))]
     : defaultSectionOrder;
+  const sectionOrder = ['products', 'opportunities', 'overview', ...requestedOrder.filter((id) => !['products', 'opportunities', 'overview'].includes(id))];
 
   return (
     <PortfolioRouteMotion pageKey="catalog">
@@ -92,7 +105,7 @@ export default async function SellerDigitalShowroomPage({ params, searchParams }
         currentPage="catalog"
         totalProducts={productsData?.total ?? products.length}
         totalReviews={totalReviews}
-        totalOpportunities={opportunities.length}
+        totalOpportunities={opportunityData.total || opportunities.length}
       />
 
       <div id="home">
@@ -100,7 +113,7 @@ export default async function SellerDigitalShowroomPage({ params, searchParams }
       </div>
 
       {sectionOrder.map((id) => {
-        if ((id !== 'products' && hiddenSections.has(id)) || !allSections[id]) return null;
+        if ((!['products', 'opportunities', 'overview'].includes(id) && hiddenSections.has(id)) || !allSections[id]) return null;
         return <div key={id} style={{ display: 'contents' }}>{allSections[id]}</div>;
       })}
 

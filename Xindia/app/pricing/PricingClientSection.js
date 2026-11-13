@@ -28,6 +28,7 @@ function loadRazorpayScript() {
 
 function PlanCard({ plan, billing, onSelectPlan, isAuthenticated }) {
   const price = billing === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
+  const validityDays = billing === 'monthly' ? plan.monthlyValidityDays : plan.yearlyValidityDays;
   const crossedPrice = billing === 'monthly' ? plan.crossedMonthlyPrice : plan.crossedYearlyPrice;
   const showCrossed = billing === 'monthly' ? plan.showMonthlyCrossedPrice : plan.showYearlyCrossedPrice;
   const discount = showCrossed ? calcDiscount(price, crossedPrice) : null;
@@ -64,7 +65,7 @@ function PlanCard({ plan, billing, onSelectPlan, isAuthenticated }) {
         {showCrossed && crossedPrice && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <span style={{ textDecoration: 'line-through', color: '#CBD5E1', fontSize: 15 }}>
-              {formatPrice(crossedPrice)}/{billing === 'monthly' ? 'mo' : 'yr'}
+              {formatPrice(crossedPrice)} · {validityDays} days
             </span>
             {discount && (
               <span style={{
@@ -78,13 +79,8 @@ function PlanCard({ plan, billing, onSelectPlan, isAuthenticated }) {
         )}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
           <span style={{ fontSize: 36, fontWeight: 900, color: plan.color }}>{formatPrice(price)}</span>
-          <span style={{ fontSize: 14, color: '#94A3B8' }}>/{billing === 'monthly' ? 'month' : 'year'}</span>
+          <span style={{ fontSize: 14, color: '#94A3B8' }}> · {validityDays} days</span>
         </div>
-        {billing === 'yearly' && (
-          <p style={{ margin: '6px 0 0', fontSize: 12, color: '#64748B' }}>
-            Billed annually — {formatPrice(Math.round(price / 12))}/month
-          </p>
-        )}
       </div>
 
       {/* CTA Button */}
@@ -101,7 +97,7 @@ function PlanCard({ plan, billing, onSelectPlan, isAuthenticated }) {
             transition: 'opacity 0.2s',
           }}
         >
-          Upgrade with GST Invoice →
+          Choose this membership →
         </button>
       ) : (
         <a
@@ -299,20 +295,13 @@ export default function PricingClientSection({ plans }) {
                 boxShadow: billing === cycle ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
               }}
             >
-              {cycle === 'monthly' ? 'Monthly' : 'Yearly'}
-              {cycle === 'yearly' && (
-                <span style={{
-                  marginLeft: 6, background: '#DCFCE7', color: '#16A34A',
-                  fontSize: 10, fontWeight: 800, borderRadius: 6, padding: '2px 7px',
-                }}>
-                  Save more
-                </span>
-              )}
+              {cycle === 'monthly' ? 'Option A' : 'Option B'}
             </button>
           ))}
         </div>
       </div>
 
+      {plans.length === 0 && <p role="status" style={{ color: '#FFFFFF', textAlign: 'center' }}>Membership plans are unavailable right now. Please retry later.</p>}
       {/* Plans Grid */}
       <div style={{
         display: 'grid',
@@ -367,7 +356,7 @@ export default function PricingClientSection({ plans }) {
             </button>
 
             <h3 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 800, color: '#0F172A' }}>
-              Confirm Corporate Upgrade
+              Confirm Membership Purchase
             </h3>
             <p style={{ margin: '0 0 20px', fontSize: 13, color: '#64748B' }}>
               Statutory GST B2B Invoice (SAC 998439) with 18% Input Tax Credit will be issued upon payment.
@@ -382,7 +371,7 @@ export default function PricingClientSection({ plans }) {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14 }}>
                 <span style={{ color: '#64748B' }}>Plan:</span>
-                <strong style={{ color: '#0F172A' }}>{activeCheckoutPlan.name} ({billing})</strong>
+                <strong style={{ color: '#0F172A' }}>{activeCheckoutPlan.name} · {billing === 'monthly' ? activeCheckoutPlan.monthlyValidityDays : activeCheckoutPlan.yearlyValidityDays} days</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, borderTop: '1px solid #E2E8F0', paddingTop: 8 }}>
                 <span style={{ fontWeight: 700, color: '#0F172A' }}>Total Amount:</span>
@@ -471,7 +460,7 @@ export default function PricingClientSection({ plans }) {
         textAlign: 'center', paddingBottom: 60,
         color: '#64748B', fontSize: 13,
       }}>
-        <p>All plans include statutory GST B2B invoices and a 7-day grace period. Cancel anytime.</p>
+        <p>Memberships include GST invoices. Paid upcoming plans start after your current paid period; requesting a plan does not activate it.</p>
       </div>
     </div>
   );
