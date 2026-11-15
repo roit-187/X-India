@@ -46,7 +46,7 @@ const Hero = () => {
         >
           <motion.div variants={itemVariants} className="hero-badge">
             <span className="hero-badge-dot" />
-            Trusted by 25,000+ Entrepreneurs
+            Discover businesses on XINDIA
           </motion.div>
 
           <motion.h1 variants={itemVariants}>
@@ -68,21 +68,6 @@ const Hero = () => {
             <a href="#entrepreneurs" className="hero-audience-link">
               For Entrepreneurs
             </a>
-          </motion.div>
-
-          <motion.div variants={itemVariants} className="hero-stats">
-            <div className="hero-stat">
-              <div className="hero-stat-value">25,000<span className="accent">+</span></div>
-              <div className="hero-stat-label">Entrepreneurs</div>
-            </div>
-            <div className="hero-stat">
-              <div className="hero-stat-value">500<span className="accent">+</span></div>
-              <div className="hero-stat-label">Verified Manufacturers</div>
-            </div>
-            <div className="hero-stat">
-              <div className="hero-stat-value">₹12 Crore<span className="accent">+</span></div>
-              <div className="hero-stat-label">Business Created</div>
-            </div>
           </motion.div>
 
           <motion.div variants={itemVariants} className="hero-store-buttons">
@@ -117,7 +102,7 @@ const Hero = () => {
               </div>
               <div>
                 <div className="hero-float-text">Revenue Growing</div>
-                <div className="hero-float-subtext">+43% this month</div>
+                <div className="hero-float-subtext">Explore business opportunities</div>
               </div>
             </motion.div>
 
@@ -131,7 +116,7 @@ const Hero = () => {
               </div>
               <div>
                 <div className="hero-float-text">New Leads</div>
-                <div className="hero-float-subtext">12 qualified buyers</div>
+                <div className="hero-float-subtext">Connect with buyers</div>
               </div>
             </motion.div>
 

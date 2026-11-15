@@ -61,7 +61,7 @@ const DownloadCTA = () => {
 
 
             <p className="download-note">
-              Available on iOS &amp; Android. No hidden charges.
+              Available on Android. No hidden charges.
             </p>
           </motion.div>
 

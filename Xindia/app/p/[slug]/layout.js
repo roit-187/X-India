@@ -9,10 +9,13 @@ export async function generateMetadata({ params }) {
   const seller = await getSeller(params.slug);
   if (!seller) return { title: 'Seller Not Found — XINDIA' };
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live';
+  const canonical = new URL(`/p/${encodeURIComponent(seller.slug || params.slug)}`, siteUrl).href;
   return {
+    alternates: { canonical },
     title: `${seller.name} — ${seller.verified ? 'Verified Seller Portfolio' : 'Seller Portfolio'} | XINDIA`,
     description: (seller.portfolioAbout || seller.description || `${seller.name} on XINDIA — India's Business Launchpad.`).slice(0, 160),
     openGraph: {
+      url: canonical,
       title: `${seller.name} — ${seller.verified ? 'XINDIA verified seller' : 'Seller portfolio'}`,
       description: (seller.portfolioAbout || seller.description || `${seller.name} on XINDIA`).slice(0, 160),
       images: [seller.coverImage || seller.logo || `${siteUrl}/og-image.jpg`],
@@ -28,6 +31,7 @@ export default async function SellerPortfolioLayout({ children, params }) {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     name: seller.name,
+    url: new URL(`/p/${encodeURIComponent(seller.slug || params.slug)}`, process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live').href,
     image: seller.logo,
     description: seller.portfolioAbout || seller.description,
     address: seller.address,

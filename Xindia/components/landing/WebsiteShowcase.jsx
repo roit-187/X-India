@@ -1,11 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { Check, ArrowRight, Globe, Search as SearchIcon, Share2, MessageSquare, RefreshCcw } from 'lucide-react';
+import LandingInfoModal from './LandingInfoModal';
 
 const WebsiteShowcase = () => {
+  const [showModal, setShowModal] = useState(false);
   const [ref, inView] = useInView({ threshold: 0.15, triggerOnce: true });
 
   const features = [
@@ -125,17 +127,25 @@ const WebsiteShowcase = () => {
               ))}
             </ul>
 
-            <motion.a
-              href="#website"
+            <motion.button
+              type="button"
+              onClick={() => setShowModal(true)}
               className="btn-website-cta"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
             >
               Get Your Free Business Website <ArrowRight size={16} />
-            </motion.a>
+            </motion.button>
           </motion.div>
         </div>
       </div>
+      {showModal && <LandingInfoModal
+        variant="portfolio"
+        onClose={() => setShowModal(false)}
+        title="Your business, easy to share"
+        description="Show buyers your catalogue through the standard XINDIA seller portfolio. If you want a distinct design, you can request a separately priced custom website in the app."
+        points={['Use your seller portfolio link and QR code for marketing.', 'Keep your product catalogue connected to your seller profile.', 'Ask for a custom website when your business needs its own design.']}
+      />}
     </section>
   );
 };

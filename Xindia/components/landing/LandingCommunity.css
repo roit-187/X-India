@@ -1,0 +1,6 @@
+.landing-community { text-align: center; }
+.landing-community-icon { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; margin-bottom: 22px; border-radius: 20px; background: #fff0e8; color: #e8581c; }
+.landing-community .section-title { margin: 12px auto 18px; }
+.landing-community-count { margin: 18px 0; color: #10223e; font-size: clamp(18px, 3vw, 24px); font-weight: 600; }
+.landing-community-count strong { color: #e8581c; font-size: clamp(38px, 7vw, 64px); font-weight: 800; }
+.landing-community .section-subtitle { margin-left: auto; margin-right: auto; }

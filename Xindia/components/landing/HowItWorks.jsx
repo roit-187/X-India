@@ -1,11 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { ArrowRight, Compass, Search, Handshake, UserPlus, MessageSquare, CreditCard } from 'lucide-react';
+import LandingInfoModal from './LandingInfoModal';
 
 const HowItWorks = () => {
+  const [activeModal, setActiveModal] = useState(null);
   const [ref, inView] = useInView({ threshold: 0.15, triggerOnce: true });
 
   const entrepreneurSteps = [
@@ -76,6 +78,7 @@ const HowItWorks = () => {
         <div className="hiw-grid">
           {/* Entrepreneurs Panel */}
           <motion.div
+            id="entrepreneurs"
             className="hiw-panel entrepreneurs"
             custom={0}
             variants={panelVariants}
@@ -104,19 +107,21 @@ const HowItWorks = () => {
                 </motion.li>
               ))}
             </ul>
-            <motion.a
-              href="#explore"
+            <motion.button
+              type="button"
+              onClick={() => setActiveModal('opportunities')}
               className="hiw-cta orange"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
               Explore Business Opportunities
               <span className="hiw-cta-arrow">→</span>
-            </motion.a>
+            </motion.button>
           </motion.div>
 
           {/* Manufacturers Panel */}
           <motion.div
+            id="manufacturers"
             className="hiw-panel manufacturers"
             custom={1}
             variants={panelVariants}
@@ -145,18 +150,30 @@ const HowItWorks = () => {
                 </motion.li>
               ))}
             </ul>
-            <motion.a
-              href="#list-business"
+            <motion.button
+              type="button"
+              onClick={() => setActiveModal('seller')}
               className="hiw-cta blue"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
               List Your Business Free
               <span className="hiw-cta-arrow">→</span>
-            </motion.a>
+            </motion.button>
           </motion.div>
         </div>
       </div>
+      {activeModal && <LandingInfoModal
+        variant={activeModal}
+        onClose={() => setActiveModal(null)}
+        title={activeModal === 'opportunities' ? 'Find your next business opportunity' : 'Grow your business with XINDIA'}
+        description={activeModal === 'opportunities'
+          ? 'Explore business opportunities and connect with relevant manufacturers in the XINDIA app.'
+          : 'Create your seller profile, show your products and let buyers discover your business through XINDIA.'}
+        points={activeModal === 'opportunities'
+          ? ['Browse opportunities with their available details.', 'Explore manufacturers and products.', 'Continue the conversation in the app.']
+          : ['Share your standard seller portfolio and catalogue through a link and QR code.', 'Keep products and business details connected to your XINDIA profile.', 'Request a separately priced custom website for your brand in the app.']}
+      />}
     </section>
   );
 };

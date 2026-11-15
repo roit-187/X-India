@@ -84,7 +84,7 @@ export async function getAllPublishedSlugs() {
   // a bulk endpoint, this quietly returns an empty list rather than failing
   // the whole sitemap build.
   try {
-    const res = await apiFetch('/api/public/sellers/slugs', { revalidate: 60 });
+    const res = await apiFetch('/api/public/sellers/slugs', { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
     return data.slugs || [];

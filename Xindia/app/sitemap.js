@@ -1,7 +1,9 @@
 import { getAllPublishedSlugs } from '@/lib/api';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live';
-const SUB_PAGES = ['', '/products', '/factory', '/ratings', '/opportunities', '/contact'];
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://xindia.live').replace(/\/$/, '');
+
+// Refresh as sellers publish, renew or change destination; do not freeze at build time.
+export const dynamic = 'force-dynamic';
 
 export default async function sitemap() {
   const entries = [
@@ -9,15 +11,18 @@ export default async function sitemap() {
   ];
 
   const sellers = await getAllPublishedSlugs();
-  for (const { slug, updatedAt } of sellers) {
-    for (const sub of SUB_PAGES) {
-      entries.push({
-        url: `${SITE_URL}/p/${slug}${sub}`,
-        lastModified: updatedAt ? new Date(updatedAt) : new Date(),
-        changeFrequency: 'daily',
-        priority: sub === '' ? 0.8 : 0.5,
-      });
-    }
+  for (const { slug, updatedAt, destination } of sellers) {
+    // Legacy sub-pages redirect to this single canonical document. Custom sites
+    // publish their own sitemap; omit the XINDIA URL while it redirects away.
+    if (!slug) continue;
+    if (destination) continue;
+    const modifiedAt = updatedAt ? new Date(updatedAt) : null;
+    entries.push({
+      url: `${SITE_URL}/p/${encodeURIComponent(slug)}`,
+      ...(modifiedAt && Number.isFinite(modifiedAt.getTime()) ? { lastModified: modifiedAt } : {}),
+      changeFrequency: 'daily',
+      priority: 0.8,
+    });
   }
 
   return entries;

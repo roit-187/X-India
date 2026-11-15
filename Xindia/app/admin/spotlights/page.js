@@ -77,6 +77,14 @@ function SpotlightContent() {
   // Top Section: 'PRODUCTS' | 'BUSINESSES' | 'BANNERS'
   const [section, setSection] = useState('PRODUCTS');
 
+  // ── Banner Carousel Settings (from /api/admin/spotlight/banner-settings) ─────
+  const [bannerCarouselSettings, setBannerCarouselSettings] = useState({
+    totalSlots: 6,
+    autoRotateEnabled: false,
+    autoScrollIntervalSeconds: 5,
+  });
+  const [settingsSaving, setSettingsSaving] = useState(false);
+
   // Data & Pagination
   const [campaigns, setCampaigns] = useState([]);
   const [counts, setCounts] = useState({
@@ -198,6 +206,38 @@ function SpotlightContent() {
       fetchCampaigns();
     }
   }, [loaded, fetchCampaigns]);
+
+  // Load banner carousel settings when the BANNERS tab is opened
+  useEffect(() => {
+    if (section !== 'BANNERS') return;
+    fetch('/api/admin/spotlight/banner-settings')
+      .then(r => r.json())
+      .then(data => { if (data.success) setBannerCarouselSettings(data.data); })
+      .catch(() => {});
+  }, [section]);
+
+  const saveBannerCarouselSettings = async (patch) => {
+    setSettingsSaving(true);
+    try {
+      const next = { ...bannerCarouselSettings, ...patch };
+      const res = await fetch('/api/admin/spotlight/banner-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(next),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBannerCarouselSettings(data.data);
+        showToast('Banner settings saved.', 'success');
+      } else {
+        showToast(data.message || 'Failed to save settings.', 'error');
+      }
+    } catch {
+      showToast('Network error saving settings.', 'error');
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
 
   const handleSelectEntity = useCallback(async (entity) => {
     setSelectedEntity(entity);
@@ -581,26 +621,84 @@ function SpotlightContent() {
   // ── Render 6-Slot Grid for Banners ──────────────────────────────────────────
   const renderBannerStoryboard = () => {
     const activeBanners = campaigns.filter((c) => c.type === 'EXPLORE_BANNER' && c.isActive && !isExpired(c));
-    const slots = [1, 2, 3, 4, 5, 6].map((slotNum) => {
+    const totalSlots = bannerCarouselSettings.totalSlots || 6;
+    const slots = Array.from({ length: totalSlots }, (_, i) => i + 1).map((slotNum) => {
       const banner = activeBanners.find((b) => (b.slotPosition || 1) === slotNum);
       return { slotNum, banner };
     });
 
     return (
       <div style={{ marginBottom: 30 }}>
+        {/* ── Settings Control Bar ── */}
+        <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 12, padding: '14px 18px', marginBottom: 18, display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'center' }}>
+          {/* Auto-Rotation Toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Auto-Rotate</span>
+            <button
+              onClick={() => saveBannerCarouselSettings({ autoRotateEnabled: !bannerCarouselSettings.autoRotateEnabled })}
+              disabled={settingsSaving}
+              style={{
+                width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
+                background: bannerCarouselSettings.autoRotateEnabled ? '#7C3AED' : '#CBD5E1',
+                position: 'relative', transition: 'background 0.2s',
+              }}
+            >
+              <span style={{
+                position: 'absolute', top: 3, left: bannerCarouselSettings.autoRotateEnabled ? 22 : 3,
+                width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s',
+              }} />
+            </button>
+            <span style={{ fontSize: 11, color: bannerCarouselSettings.autoRotateEnabled ? '#7C3AED' : '#94A3B8', fontWeight: 600 }}>
+              {bannerCarouselSettings.autoRotateEnabled ? 'ON' : 'OFF'}
+            </span>
+          </div>
+
+          {/* Scroll Interval */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Interval</span>
+            <select
+              value={bannerCarouselSettings.autoScrollIntervalSeconds}
+              onChange={e => saveBannerCarouselSettings({ autoScrollIntervalSeconds: parseInt(e.target.value, 10) })}
+              disabled={settingsSaving || !bannerCarouselSettings.autoRotateEnabled}
+              style={{ fontSize: 13, padding: '3px 8px', borderRadius: 6, border: '1px solid #CBD5E1', background: '#fff', cursor: 'pointer' }}
+            >
+              {[3, 5, 8, 10, 15].map(v => <option key={v} value={v}>{v}s</option>)}
+            </select>
+          </div>
+
+          {/* Slot Count Stepper */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Slots</span>
+            <button
+              onClick={() => bannerCarouselSettings.totalSlots > 1 && saveBannerCarouselSettings({ totalSlots: bannerCarouselSettings.totalSlots - 1 })}
+              disabled={settingsSaving || bannerCarouselSettings.totalSlots <= 1}
+              style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #CBD5E1', background: '#fff', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >−</button>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', minWidth: 20, textAlign: 'center' }}>{bannerCarouselSettings.totalSlots}</span>
+            <button
+              onClick={() => bannerCarouselSettings.totalSlots < 12 && saveBannerCarouselSettings({ totalSlots: bannerCarouselSettings.totalSlots + 1 })}
+              disabled={settingsSaving || bannerCarouselSettings.totalSlots >= 12}
+              style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #CBD5E1', background: '#fff', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >+</button>
+          </div>
+
+          {settingsSaving && <span style={{ fontSize: 11, color: '#7C3AED' }}>Saving…</span>}
+        </div>
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8 }}>
               <ImageIcon size={18} color="#7C3AED" />
-              Explore Hero Carousel (Max 6 Active Slides)
+              Explore Hero Carousel ({bannerCarouselSettings.totalSlots} Slots Configured)
             </h3>
             <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748B' }}>
               These slides rotate automatically at the top of the mobile app&apos;s Explore screen.
+              Pinned slots stay fixed until their duration expires or you remove them. Empty slots auto-fill with organic posts.
             </p>
           </div>
 
-          <div style={{ fontSize: 13, fontWeight: 700, color: activeBanners.length >= 6 ? '#EA580C' : '#10B981' }}>
-            {activeBanners.length} / 6 Slots Occupied
+          <div style={{ fontSize: 13, fontWeight: 700, color: activeBanners.length >= bannerCarouselSettings.totalSlots ? '#EA580C' : '#10B981' }}>
+            {activeBanners.length} / {bannerCarouselSettings.totalSlots} Slots Occupied
           </div>
         </div>
 
@@ -737,9 +835,9 @@ function SpotlightContent() {
                       </button>
                       <button
                         onClick={() => handleMoveBannerSlot(banner, 1)}
-                        disabled={slotNum === 6}
+                        disabled={slotNum === bannerCarouselSettings.totalSlots}
                         className="admin-btn admin-btn-secondary"
-                        style={{ padding: '4px 8px', fontSize: 11, opacity: slotNum === 6 ? 0.4 : 1 }}
+                        style={{ padding: '4px 8px', fontSize: 11, opacity: slotNum === bannerCarouselSettings.totalSlots ? 0.4 : 1 }}
                         title="Move Slide Right"
                       >
                         <ArrowRight size={12} />
@@ -795,13 +893,13 @@ function SpotlightContent() {
                 }}
               >
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', marginBottom: 6 }}>
-                  SLOT #{slotNum} (EMPTY)
+                  SLOT #{slotNum} — AUTO-ROTATING
                 </span>
                 <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#EDE9FE', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
                   <Plus size={18} />
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>Assign Business to Slide #{slotNum}</div>
-                <div style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>Tap to search and upload banner</div>
+                <div style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>Currently auto-fills with organic posts · Tap to pin a specific listing</div>
               </div>
             );
           })}
