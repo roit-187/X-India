@@ -15,7 +15,7 @@ import { resolveImageUrl } from '@/lib/image';
 import PortfolioImage from './PortfolioImage';
 import { getPortfolioVerificationSignals } from '@/lib/portfolioTrust';
 
-export default function PortfolioHero({ seller, slug }) {
+export default function PortfolioHero({ seller, slug, hasProductsSection = true }) {
   const [copied, setCopied] = useState(false);
   const verificationSignals = getPortfolioVerificationSignals(seller);
 
@@ -169,11 +169,13 @@ export default function PortfolioHero({ seller, slug }) {
             )}
 
             {/* CTAs */}
-            <motion.div variants={itemVariants} className="portfolio-header-actions">
-              <a href={`${portfolioPath}#products`} className="portfolio-ghost-btn">
-                <span>View Catalog</span>
-              </a>
-            </motion.div>
+            {hasProductsSection && (
+              <motion.div variants={itemVariants} className="portfolio-header-actions">
+                <a href={`${portfolioPath}#products`} className="portfolio-ghost-btn">
+                  <span>View Catalog</span>
+                </a>
+              </motion.div>
+            )}
           </div>
         </motion.div>
       </div>

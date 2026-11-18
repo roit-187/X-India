@@ -25,8 +25,7 @@ export function getPortfolioVerificationSignals(seller) {
   const documents = seller.verifiedDocuments || {};
   DOCUMENT_SIGNALS.forEach(([id, title, description, icon]) => {
     const documentVerified = Boolean(documents[id]?.verifiedAt);
-    const sellerFieldVerified = id === 'gst' && seller.gstVerified;
-    if (documentVerified || sellerFieldVerified) {
+    if (documentVerified) {
       signals.push({ id, title, description, icon });
     }
   });

@@ -24,7 +24,8 @@ const SECTIONS = [
 ];
 
 export default function PortfolioStickyNav({ seller, slug, currentPage = 'catalog', totalProducts = 0, totalReviews = 0, totalOpportunities = 0 }) {
-  const [activeSection, setActiveSection] = useState(currentPage === 'home' ? 'home' : 'products');
+  const hasProductsSection = totalProducts > 0 || Boolean(seller?.catalogue?.pdfUrl || seller?.catalogue?.storageUrl);
+  const [activeSection, setActiveSection] = useState(currentPage === 'home' ? 'home' : (hasProductsSection ? 'products' : 'home'));
   const [isScrolled, setIsScrolled] = useState(false);
   const portfolioPath = `/p/${encodeURIComponent(seller?.slug || slug || '')}`;
   const factoryPhotos = Array.isArray(seller?.manufacturingPlants) && seller.manufacturingPlants.length > 0
@@ -66,11 +67,13 @@ export default function PortfolioStickyNav({ seller, slug, currentPage = 'catalo
       .map((id) => SECTIONS.find((section) => section.id === id)),
     ...SECTIONS.filter((section) => !['home', 'products'].includes(section.id)),
   ].filter((section, index, all) => section && all.findIndex((item) => item?.id === section.id) === index);
+  const hasCataloguePdf = Boolean(seller?.catalogue?.pdfUrl || seller?.catalogue?.storageUrl);
   const visibleSections = [
     ...fixedSections,
     ...orderedOptionalSections.filter((section) => section.id === 'opportunities'),
     ...orderedOptionalSections.filter((section) => section.id !== 'opportunities' && !hiddenSections.has(section.id)),
   ].filter((section) => {
+    if (section.id === 'products') return totalProducts > 0 || hasCataloguePdf;
     if (section.id === 'factory') return hasFactoryContent;
     if (section.id === 'opportunities') return totalOpportunities > 0;
     if (section.id === 'ratings') return totalReviews > 0;

@@ -43,7 +43,7 @@ export default async function SellerDigitalShowroomPage({ params, searchParams }
     const source = typeof searchParams?.src === 'string' && ['qr', 'direct_share', 'app', 'search'].includes(searchParams.src)
       ? `?src=${encodeURIComponent(searchParams.src)}`
       : '';
-    redirect(`/p/${encodeURIComponent(seller.slug)}${source}#products`);
+    redirect(`/p/${encodeURIComponent(seller.slug)}${source}`);
   }
 
   // Parallel data fetching for blazing fast performance
@@ -59,17 +59,20 @@ export default async function SellerDigitalShowroomPage({ params, searchParams }
   const averageRating = reviewsData?.averageRating ?? 0;
   const totalReviews = reviewsData?.totalReviews ?? 0;
   const hasReviews = reviews.length > 0 || totalReviews > 0;
+  const totalProducts = productsData?.total ?? products.length;
+  const hasCataloguePdf = Boolean(seller?.catalogue?.pdfUrl || seller?.catalogue?.storageUrl);
+  const hasProductsSection = products.length > 0 || totalProducts > 0 || hasCataloguePdf;
   const customization = seller.portfolioCustomization || {};
   const allSections = {
     overview: <OverviewSection seller={seller} />,
-    products: (
+    products: hasProductsSection ? (
       <ProductCatalogSection
         products={products}
-        totalProducts={productsData?.total ?? products.length}
+        totalProducts={totalProducts}
         categories={productsData?.categories || []}
         seller={seller}
       />
-    ),
+    ) : null,
     ratings: hasReviews ? (
       <RatingsSection
         reviews={reviews}
@@ -109,7 +112,7 @@ export default async function SellerDigitalShowroomPage({ params, searchParams }
       />
 
       <div id="home">
-        <PortfolioHero seller={seller} slug={params.slug} />
+        <PortfolioHero seller={seller} slug={params.slug} hasProductsSection={hasProductsSection} />
       </div>
 
       {sectionOrder.map((id) => {
